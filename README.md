@@ -20,7 +20,8 @@ Each file is the whole script of one game card. The rules for writing one (hooks
 | `Vibecode3D_Play_Canyon.livecodescript` | Canyon: 3D canyon run from the 2D "Defensive" |
 | `Vibecode3D_Play_Hunter.livecodescript` | Hunter: first-person gem hunt |
 | `Vibecode3D_Play_demo.livecodescript` | Demo: engine showcase |
-| `Vibecode3D_Play_Simple_Test1.livecodescript`, `..._Test2` | small tests |
+| `Vibecode3D_Play_Simple_Test1.livecodescript` | Spinning cube: the standard first test (click reverses the spin) |
+| `Vibecode3D_Play_Simple_Test2.livecodescript` | small test |
 | `Vibecode3D_Play_Face.livecodescript` | Face: Claude's face as vector blocks, the "LIB_MCP connected" card. Needs `../LIB_MCP` and `../LIB_MAP` |
 
 ### Putting a game into the stack
