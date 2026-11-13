@@ -56,10 +56,10 @@ File: {file}   (folder {folder})
 This is part {part} of {parts}. {context}
 Functions in this part: {names}
 
-Write one section per function, in this order. If there is code outside any function
-(setup, globals, widget definitions, settings), start with a section `### Top level`.
-If the list above says "none", write ONLY the `### Top level` section. Never make a
-section for the file name.
+Write one section per function, in this order. {toplevel}
+Never make a section for the file name.
+Answer once: write each section a single time, then stop. Do not discuss these
+instructions, check your answer aloud or write a corrected version.
 
 ### <function name>
 - **Does:** one or two sentences.
@@ -92,7 +92,9 @@ Now write the file summary in exactly this format:
 - **Kind:** one of: engine-core, library, level-script, ui-dialog, tool, converter,
   exporter, network, shader, emitter-settings, data, test/example.
 - **Purpose:** two or three sentences: what the file is for, as a whole.
-- **Depends on:** other files or folders it loads or needs (files it loads, `Data/` paths, globals set elsewhere).
+- **Depends on:** copied from the **Uses:** lines of your part notes above: files it loads,
+  `Data/` paths written in it, engine calls and globals it needs from other files.
+  Nothing from the background in the system message. "nothing" if the Uses lines are empty.
 - **Provides:** the main functions or globals other files use.
 - **Assets it needs:** models, images, sounds, emitters, fonts it names (exact file names, max 10).
 - **Procedural:** what asset it generates from numbers or rules instead of loading a file, or "none"
