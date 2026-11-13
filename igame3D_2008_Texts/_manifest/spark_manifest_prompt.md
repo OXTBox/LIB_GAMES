@@ -121,9 +121,13 @@ Write the folder manifest in exactly this format:
 # {folder}
 - **Role:** two or three sentences: what this folder is for in the engine or game.
 - **Entry point:** the file that starts or loads the rest, or "none".
-- **Files:** one line per file: `name - what it is` (all files, code and data).
-- **Shared with other folders:** what it needs from elsewhere and what others take from it.
-- **Procedure candidates:** things here that could be produced by code instead of
-  stored as files, or code that already does so.
-- **Glossary:** the 5 to 12 most important terms, `term - meaning`, taken only from the notes above.
+- **Files:** one line per file: `name - what it is` in at most 8 words (all files, code
+  and data; a `.fl` file is the FLUID twin of the `.lua` with the same name: say only that).
+- **Shared with other folders:** ONE line, at most 25 words: the main things it needs from
+  elsewhere and what others take from it. No lists of paths.
+- **Procedure candidates:** at most 3, one short line each: things here that could be
+  produced by code instead of stored as files, or code that already does so.
+- **Glossary:** the 5 to 10 most important terms, `term - meaning` (one line each), taken
+  only from the notes above.
+Keep the whole manifest short: it must fit, and it is read next to the file notes.
 - **Verdict:** keep / port / drop, and a reason.

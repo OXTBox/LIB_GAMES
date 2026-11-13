@@ -184,6 +184,24 @@ when run_spark.sh starts its next python process, i.e. the "everything else" pha
 - `check_drafts.py` now flags **self-talk** and **padded Depends on** (negations such as
   "no `Data/` paths" are skipped); `--help` prints its usage instead of running.
 
+**Status 2026-11-13 00:10 and prompt v4.** 225 drafts, 179 clean; 42% of the requests done.
+The v3 fixes held: 4 self-talk answers, all fixed by the automatic retry; the 7 set-aside
+drafts were redone. New fault: folder notes ran out of tokens in the "Shared with other
+folders" list (4 notes, plus one file note). Prompt v4 (v3 kept as `spark/.prompt_v3_2026-11-13.md`)
+caps the Files, Shared and Procedure lines. Also, the owner: `.fl` FLUID files duplicate the
+`.lua` beside them in murgaLua iGame3D, so they are listed but no longer sent. That leaves 897
+requests instead of 1,413 (about 10 hours). The 5 cut-off drafts went to `superseded/prompt_v3/`
+and the run was restarted (resumable). `Scripts/Functions/_FOLDER.md`, cut off twice before,
+now comes out complete. `Fluid/Mappers` (17 .lua, all dated 2009-01-13) reviewed by Claude by function sets:
+three lines of one tool family. Dungeon draw: Dungeon3D = DungeonDraw -> DungeonDraw3D ->
+DungeonDraw3Dn ~ **DungeonDraw3D8** (final: `resestGrid` fixed, wall copy + quad mesh), side
+branch DungeonMagicDraw. Dungeon mapper: MapperB < DungoneMap < DungeonMapperNOBSD ->
+DungeonMapperworks (= the functions of `Scripts/Functions/dungeon_functions.lua`; the final tool
+is `Fluid/DungeonMapper/DungeonMapper1226830pm.lua`) and **DungeonMapperNaked** (the window
+alone, loading the library). Mapper: **Mapper** (colour cycling) -> Mapper2 < **Mapper3**
+(drag drawing); Mapper4 < **Mapper5** (button-list browser), MapperA a cut of it. Spark reads
+only the 5 in bold (`ONLY` in spark_manifest.py), about 30 requests instead of 125.
+
 ## 6. Glossary seed (Claude, to be grown from Spark's Glossary lines)
 
 - **Data root / gameroot** — folder holding `Data/`; all paths relative to it. `IG3D_ROOT` scene info.

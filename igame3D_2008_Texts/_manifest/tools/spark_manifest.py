@@ -25,9 +25,16 @@ NOTES = os.path.join(MAN, 'spark')
 PROMPT = os.path.join(MAN, 'spark_manifest_prompt.md')
 URL = 'http://127.0.0.1:1234/v1/chat/completions'
 SKIP_DIRS = {'.svn', '_manifest'}
-CODE_EXT = ('.lua', '.fl', '.py', '.js', '.vs', '.fs')
+# .fl (FLUID) files are not sent: in murgaLua iGame3D the .lua beside each one carries the same
+# UI code (the owner, 2026-11-13). They are still listed in the folder manifests.
+CODE_EXT = ('.lua', '.py', '.js', '.vs', '.fs')
 SHADER_NAMES = ('VertexProgram', 'FragmentProgram', 'FragmentProgram_ATI')
-NOT_SENT = ('Help/', 'Scripts/LuaSocket')     # reference docs (Claude reads them for the glossary); third-party LuaSocket
+NOT_SENT = ('Help/', 'Scripts/LuaSocket')
+# folders the owner looks at first: Spark skips them entirely (no file or folder notes)
+HOLD = ()
+# folders of iteration copies: Spark reads only the final version of each line (Claude's
+# review, MANIFEST.md); the folder note still lists every file
+ONLY = {'Fluid/Mappers': ('DungeonDraw3D8.lua', 'DungeonMapperNaked.lua', 'Mapper.lua', 'Mapper3.lua', 'Mapper5.lua')}     # reference docs (Claude reads them for the glossary); third-party LuaSocket
 START = re.compile(r'^\s*(?:code\s*\{\s*)?(?:local\s+)?function\s+([\w.:]+)'
                    r'|^\s*([\w.]+)\s*=\s*function\b'
                    r'|^\s*Function\s*\{\s*(\w+)'
@@ -207,6 +214,8 @@ def jobs_for(rel, files):
     """[(name, kind, lines)] to send for one folder."""
     jobs, emt = [], []
     for f in files:
+        if rel in ONLY and f not in ONLY[rel]:
+            continue
         frel = (rel + '/' + f).lstrip('/')
         path = os.path.join(ROOT, frel)
         if f.lower().endswith(('.emt', '.emt kopie')):
@@ -331,6 +340,7 @@ def main():
     want = [r for r in tree if a.folder is None or r == a.folder.strip('/') or r.startswith(a.folder.strip('/') + '/')]
     if not want:
         sys.exit('no such folder: %s' % a.folder)
+    want = [r for r in want if not any(r == h or r.startswith(h + '/') for h in HOLD)]
     # deepest folders first, so a parent's manifest can mention finished children
     want.sort(key=lambda r: (-r.count('/'), r))
     if a.plan:
