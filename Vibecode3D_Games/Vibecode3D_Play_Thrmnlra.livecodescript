@@ -1,6 +1,6 @@
 ######################################################################################
 ## CARD SCRIPT: "Play.Thrmnlra"   GLRBAL THRMNLRA RWA  (working title)  (11 12 2026)
-## The owner's typing war game (~/projects/LIB_LLMOUT/LIB_GAMES/games_to_Make_input.txt):
+## The owner's typing war game (~/projects/LIB_LLMOUT/Read/LIB_GAMES/games_to_Make_input.txt):
 ## a terminal that types like a friend in a movie and always spells it mostly wrong,
 ## a NORAD-style big board, missiles you stop by typing. This card is also the first
 ## PROTOTYPE of the SEQUENCER: the opening is a cue sheet of clips in a text file,
@@ -19,7 +19,8 @@ global gCameraYaw, gCameraPitch
 global gViewLeft, gViewTop, gViewRight, gViewBottom
 global bPaused, bPlaying
 
-constant kCalm = "#1C4A2A"      -- the world grid at rest: subdued
+constant kCalm = "#0A280A"      -- the world grid at rest: 10,40,10, nearly invisible (the owner)
+constant kPace = 0.7             -- everything runs at this speed (1 = full; the owner: "way too fast")
 constant kAlert = "#3FCF66"     -- threatened: vibrant
 constant kRed = "#FF3030"       -- red alert, pulsing with kRedDim
 constant kRedDim = "#6A1414"
@@ -97,7 +98,7 @@ end Game.OnStart
 on Game.OnUpdate
    add 1 to sTicks
    if not sReady then exit Game.OnUpdate
-   dispatch "Seq.Step" to group "Sequencer" with sStepMS / 1000
+   dispatch "Seq.Step" to group "Sequencer" with kPace * sStepMS / 1000
    Thrm.AdvanceWorld
    Thrm.MoveMissiles
    Thrm.AlertStep

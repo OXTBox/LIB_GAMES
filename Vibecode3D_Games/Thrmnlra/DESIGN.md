@@ -1,6 +1,6 @@
 # GLRBAL THRMNLRA RWA (working title "Thrmnlra")
 
-The owner's idea, read 2026-11-12. Original text: `~/projects/LIB_LLMOUT/LIB_GAMES/games_to_Make_input.txt` (read and acted on).
+The owner's idea, read 2026-11-12. Original text: `~/projects/LIB_LLMOUT/Read/LIB_GAMES/games_to_Make_input.txt` (read and acted on).
 
 A typing war game. A terminal that types like a friend texting in a movie, and always spells
 everything mostly wrong. A NORAD-style big board. Missiles you can only stop by typing.
