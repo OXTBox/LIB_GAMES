@@ -24,6 +24,7 @@ Each file is the whole script of one game card. The rules for writing one (hooks
 | `Vibecode3D_Play_Simple_Test2.livecodescript` | small test |
 | `Vibecode3D_Play_Antack.livecodescript` | Antack: the owner's uDevGame 2002 T3D game as a vector game. Title, Fight 1-4, Trainer, You Win / You Lost. Data: `Antack/antack_data.txt`, made from `T3D_Texts` by `tools/t3d_to_antack.py` |
 | `Vibecode3D_Play_Face.livecodescript` | Face: Claude's face as vector blocks, the "LIB_MCP connected" card. Needs `../LIB_MCP` and `../LIB_MAP` |
+| `Vibecode3D_Play_Heroes.livecodescript` | PROMPT & GLAZE: third person in a 1-bit generated vector maze (`Bit.Maze`). Stick-figure heroes from LIB_MOCAP clips (walk, idle); the one you don't play follows by `Map.FindPath`; TAB switches, Shift hurries; reach the gold beacon together for a new maze. Needs `../LIB_BIT`, `../LIB_MAP`, `../LIB_MOCAP/library` |
 
 ### Putting a game into the stack
 
