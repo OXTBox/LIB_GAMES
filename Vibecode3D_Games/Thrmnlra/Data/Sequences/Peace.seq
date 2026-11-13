@@ -1,0 +1,10 @@
+# SEQUENCE  Peace  (Thrmnlra)  every missile recalled before the enemy woke up.
+# Reached from Map.seq's Outbound clip (peace=Peace). Then back to GREETINGS.
+when      | track | clip    | settings                                                         | what
+0         | world | Cue     | call=Thrm.Clock; mode=time                                       |
++0.4      | term  | Type    | text=NOBODY WILL EVER KNOW WHAT YOU ALMOST DID.; cps=24; color=#C8C8C8 | the machine, quietly
++1.2      | world | Cue     | call=Thrm.World; mood=off                                        | the map goes dark
+with      | term  | Fade    | dur=0.4; clear=yes                                               |
++0.5      | term  | Console | x=0.35; y=0.45; w=0.6; rows=3; size=16; clear=yes                 |
++0        | term  | Type    | text=STRANGE GAME.; cps=6; cursor=yes; linger=2.5                 | the computer types it
++0        | term  | Fade    | dur=1.2; clear=yes                                               | fade to black, and GREETINGS again
