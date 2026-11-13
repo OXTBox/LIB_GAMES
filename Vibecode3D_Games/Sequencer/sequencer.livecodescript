@@ -17,6 +17,7 @@ script "Sequencer"
 ##   Term.*  (the vector terminal layer below)
 ## Settings may hold sequence variables: {name}, or {name:filter} where the card answers
 ##   function Seq.Filter filterName, value   (e.g. Thrmnlra's "garble": the name misspelled)
+##   and LIB_GENERICA labels: {@list:n} = label n of that list (after the game's Gen.Load)
 ## A clip kind answers:  Clip.Start settingsArray, what   Clip.Step secondsSinceStart
 ##   (return "done" when finished)   Clip.Key key (return "taken")   Clip.Stop
 ##   and optionally Clip.Watch key: sees EVERY key first, without taking it (Hotword)
@@ -366,7 +367,15 @@ function Seq.Fill pText
          put char offset(":", tRef) + 1 to -1 of tRef into tFilter
          put char 1 to offset(":", tRef) - 1 of tRef into tRef
       end if
-      put sVars[tRef] into tVal
+      if char 1 of tRef is "@" then
+         -- {@list:n}: label n of a LIB_GENERICA list (the game loaded a set with Gen.Load)
+         put empty into tVal
+         dispatch function "Gen.Label" to me with char 2 to -1 of tRef, tFilter
+         if it is "handled" then put the result into tVal
+         put empty into tFilter
+      else
+         put sVars[tRef] into tVal
+      end if
       if tFilter is not empty then
          dispatch function "Seq.Filter" to this card with tFilter, tVal
          if it is "handled" then put the result into tVal

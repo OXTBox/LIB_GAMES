@@ -63,6 +63,8 @@ with defcon +0.9 | world | Cue | call=Thrm.World; mood=alert     | the grid wake
   that takes it.
 - A key that no clip takes shows STAND BY. `Seq.KeyLog()` lists the last 40 keys and which
   clip took each one.
+- `{@list:n}` puts in label n of a LIB_GENERICA list (the game's words: `{@game_events_text:1}`),
+  once the game has loaded a set with `Gen.Load` (LIB_GENERICA: retheme by editing labels).
 - Lines starting with `#` are comments, and the `when | track ...` header line is skipped.
   A `|` can't appear inside a setting.
 
