@@ -1,2 +1,5 @@
 TEMPLATES_DO_NOT_COMMIT/
 *:Zone.Identifier
+igame3D_2008_Texts/_manifest/spark/_run.log
+*.partial
+__pycache__/
