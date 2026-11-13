@@ -12,6 +12,7 @@ on Clip.Start pSet, pWhat
    if sMax is not a number then put 20 into sMax
    if pSet["text"] is not empty then get Term.Print(pSet["text"], pSet["color"])
    put Term.Print("> _", pSet["color"]) into sId
+   Term.Sticky sId
    put empty into sTyped
    put false into sDone
    put 0 into sNow
@@ -47,4 +48,5 @@ on Clip.Key pKey
 end Clip.Key
 
 on Clip.Stop
+   Term.Sticky empty
 end Clip.Stop

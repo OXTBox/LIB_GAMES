@@ -62,6 +62,7 @@ on Drill.Next
    -- the trap is called exactly like the others: only the missing order gives it away
    if sTrap and sN is the number of items of sWords then put sNow + sTrapWait into sTrapAt
    put Term.Print("> _", empty) into sTypedId
+   Term.Sticky sTypedId
 end Drill.Next
 
 on Clip.Step pT
@@ -98,6 +99,7 @@ on Clip.Key pKey
             dispatch "Thrm.Fire" to this card with "blue", 0     -- it really launches
             dispatch "Thrm.Typo" to this card with 1             -- and they notice
             get Term.Print(any item of sTrapFail, kBad)
+            dispatch "Thrm.CloseUp" to this card with 2.5
             Drill.Next
          end if
       end if
@@ -123,9 +125,10 @@ on Clip.Key pKey
    else
       get Term.Print(any item of sAlertYell, kBad)
    end if
-   put Term.Print("> " & char 1 to sPos of sWord, empty) into sTypedId    -- carry on below the yelling
+   dispatch "Thrm.CloseUp" to this card with 1.8     -- cut to his face while he yells
    return "taken"
 end Clip.Key
 
 on Clip.Stop
+   Term.Sticky empty
 end Clip.Stop

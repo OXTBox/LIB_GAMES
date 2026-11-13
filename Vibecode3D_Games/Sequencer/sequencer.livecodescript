@@ -25,7 +25,7 @@ script "Sequencer"
 ######################################################################################
 
 local sPaths, sKinds, sRows, sRowCount, sClock, sName, sRunning, sVars, sSerial, sJump
-local sTerm, sTermDirty, sBits, sFade, sCon, sFont, sPath
+local sTerm, sTermDirty, sBits, sFade, sCon, sFont, sPath, sHide
 
 -------------------------------------------------------------------- setup
 
@@ -456,6 +456,21 @@ on Term.Clear
    put true into sTermDirty
 end Term.Clear
 
+-- hide items and paths whose id starts with one of these prefixes (commas between), e.g.
+-- "trail.,lbl." while the camera cuts to a close-up; empty shows everything again
+on Term.Hide pPrefixes
+   put pPrefixes into sHide
+   put true into sTermDirty
+end Term.Hide
+
+function Term.Hidden pId
+   local tP
+   repeat for each item tP in sHide
+      if tP is not empty and char 1 to the number of chars of tP of pId is tP then return true
+   end repeat
+   return false
+end Term.Hidden
+
 on Term.SetFade pFade
    put max(0, min(1, pFade)) into sFade
    put true into sTermDirty
@@ -481,6 +496,13 @@ function Term.CenterX pText, pSize
    put Term.View() into tV
    return round((item 1 of tV + item 3 of tV - the number of chars of pText * pSize) / 2)
 end Term.CenterX
+
+-- 0..1 of the view width -> card pixels
+function Term.X pFrac
+   local tV
+   put Term.View() into tV
+   return round(item 1 of tV + (item 3 of tV - item 1 of tV) * pFrac)
+end Term.X
 
 -- 0..1 of the view height -> card pixels
 function Term.Y pFrac
@@ -508,34 +530,56 @@ function Term.Cols
    return sCon["cols"]
 end Term.Cols
 
--- a new console line; scrolls the oldest away when the console is full
+-- a new console line; scrolls the oldest away when the console is full. A sticky line
+-- (Term.Sticky: the player's input line) always stays last: new lines go in above it.
 function Term.Print pText, pColor
-   local tId, tN, tLine, k
+   local tId, tSticky, tLines
    add 1 to sSerial
    put "con" & sSerial into tId
-   if sCon["count"] >= sCon["rows"] then
-      Term.Remove line 1 of sCon["lines"]
-      delete line 1 of sCon["lines"]
-      subtract 1 from sCon["count"]
-      put 0 into k
-      repeat for each line tLine in sCon["lines"]
-         if sTerm[tLine]["size"] is not empty then
-            Term.Set tLine, sTerm[tLine]["text"], sCon["x"], sCon["y"] + k * Term.LineH(), sCon["size"], sTerm[tLine]["color"]
-         end if
-         add 1 to k
-      end repeat
-   end if
-   put sCon["count"] into tN
    if pColor is empty then put sCon["color"] into pColor
-   Term.Set tId, pText, sCon["x"], sCon["y"] + tN * Term.LineH(), sCon["size"], pColor
-   if sCon["lines"] is empty then
+   put sCon["sticky"] into tSticky
+   set the wholeMatches to true
+   if tSticky is not empty and lineOffset(tSticky, sCon["lines"]) is 0 then put empty into tSticky
+   if tSticky is not empty then
+      delete line lineOffset(tSticky, sCon["lines"]) of sCon["lines"]
+      put sCon["lines"] into tLines
+      if tLines is empty then
+         put tId & cr & tSticky into sCon["lines"]
+      else
+         put tLines & cr & tId & cr & tSticky into sCon["lines"]
+      end if
+   else if sCon["lines"] is empty then
       put tId into sCon["lines"]
    else
       put cr & tId after sCon["lines"]
    end if
-   add 1 to sCon["count"]
+   Term.Set tId, pText, sCon["x"], sCon["y"], sCon["size"], pColor
+   repeat while the number of lines of sCon["lines"] > sCon["rows"]
+      if line 1 of sCon["lines"] is tSticky then exit repeat
+      Term.Remove line 1 of sCon["lines"]
+      delete line 1 of sCon["lines"]
+   end repeat
+   put the number of lines of sCon["lines"] into sCon["count"]
+   Term.ConsoleLayout
    return tId
 end Term.Print
+
+-- the input line that stays at the bottom of the console (empty: none)
+on Term.Sticky pId
+   put pId into sCon["sticky"]
+end Term.Sticky
+
+-- put every console line on its row, top to bottom
+on Term.ConsoleLayout
+   local k, tLine
+   put 0 into k
+   repeat for each line tLine in sCon["lines"]
+      if sTerm[tLine]["size"] is not empty and sTerm[tLine]["y"] is not sCon["y"] + k * Term.LineH() then
+         Term.Set tLine, sTerm[tLine]["text"], sCon["x"], sCon["y"] + k * Term.LineH(), sCon["size"], sTerm[tLine]["color"]
+      end if
+      add 1 to k
+   end repeat
+end Term.ConsoleLayout
 
 function Term.LineH
    return round(sCon["size"] * 1.6)
@@ -547,6 +591,7 @@ on Term.ConsoleClear
       Term.Remove tLine
    end repeat
    put empty into sCon["lines"]
+   put empty into sCon["sticky"]
    put 0 into sCon["count"]
 end Term.ConsoleClear
 
@@ -652,11 +697,13 @@ on Term.Render
    if not sTermDirty then exit Term.Render
    put false into sTermDirty
    repeat for each key tId in sTerm
+      if sHide is not empty and Term.Hidden(tId) then next repeat
       put sTerm[tId]["color"] into tColor
       put sTerm[tId]["pts"] after tBuf[tColor]
    end repeat
    -- paths: one graphic per colour and dash pattern ("#4C8CFF/2,5,10,20")
    repeat for each key tId in sPath
+      if sHide is not empty and Term.Hidden(tId) then next repeat
       put sPath[tId]["color"] & "/" & sPath[tId]["dashes"] into tColor
       put cr & sPath[tId]["pts"] & cr after tBuf[tColor]
    end repeat

@@ -28,6 +28,7 @@ on Clip.Start pSet, pWhat
    get Term.Print(tText, kBad)
    put Term.Print(sKey, kKeyColor) into sKeyId
    put Term.Print("> _", empty) into sTypedId
+   Term.Sticky sTypedId
    put 0 into sPos
    put false into sMutated
    put 0 into sErrors
@@ -88,4 +89,5 @@ on Recall.Finish pResult
 end Recall.Finish
 
 on Clip.Stop
+   Term.Sticky empty
 end Clip.Stop

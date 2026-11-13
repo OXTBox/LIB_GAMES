@@ -28,7 +28,16 @@ constant kEnemy = "#FF5050"
 constant kLife = "#50FF90"      -- the green resource all life needs
 constant kArmed = "#D0E8FF"     -- a battery with a target: lit up
 constant kChosen = "#FFB000"    -- a chosen target's label
-constant kCamX = 0, kCamY = 500, kCamZ = 360   -- the big-board camera (Engine.SetCam)
+constant kCamX = 0, kCamY = 360, kCamZ = 200   -- the big-board camera (Engine.SetCam): close, so the
+constant kLookZ = 60                            -- world fills the screen under a top console; it looks
+                                                -- this far past the centre, so the map sits low
+constant kSargeClip = "Animazoo_hands_on_hips"  -- the TRON fists-on-hips idle (LIB_MOCAP library)
+constant kSargeM = 120                -- engine units a metre for the Sarge: a giant standing on the back of the map
+constant kSargeColor = "#FFB000"
+constant kSargeFrames = 240           -- the first 8 seconds of the idle, looped
+constant kStudioX = 8000              -- the close-up studio, far off the map
+constant kFaceCell = 10, kFaceHeight = 6, kFaceDist = 380   -- the grid face (as on Play.Face)
+constant kOverlays = "trail.,lbl.,mlbl.,alert"     -- map overlays hidden in a close-up
 constant kTrailDashes = "2,5,10,20"   -- trail look: 2 px on, 5 off, 10 on, 20 off
 constant kTrailKeep = 3               -- seconds a trail stays after its missile lands
 constant kKeyStep = 0.3               -- world seconds one keystroke buys (clock mode "keys")
@@ -51,6 +60,8 @@ local sBank          -- world seconds bought by keystrokes, not yet played out
 local sAlert         -- the alerted enemy base line, and when its tag goes: [line|until]
 local sGarbled       -- [text] its misspelling, kept so the sergeant gets your name wrong the same way
 local sEnemyAlerted  -- true once a missile of yours crossed midway (or a typo woke them)
+local sSarge         -- [key|frame|frames|fps|loaded]: the drill sergeant on the map
+local sClose         -- [until|panel|face|n]: an angry close-up is on screen
 
 -------------------------------------------------------------------- engine hooks
 
@@ -72,6 +83,8 @@ on Game.OnStart
    put 0 into sWorldT
    put 0 into sBank
    put empty into sAlert
+   put empty into sSarge
+   put empty into sClose
    Thrm.MakeMeshes
    Thrm.Stage
    if sError is not empty then
@@ -88,6 +101,8 @@ on Game.OnUpdate
    Thrm.AdvanceWorld
    Thrm.MoveMissiles
    Thrm.AlertStep
+   Thrm.SargeStep
+   Thrm.CloseUpStep
    if sMood is "red" and sTicks mod 12 is 0 then Thrm.GridColor
 end Game.OnUpdate
 
@@ -266,11 +281,9 @@ end Thrm.World
 on Thrm.BuildWorld
    local tSpots, tSpot, tKey
    -- above the map, looking down at it like a big board
-   Engine.SetCam kCamX, kCamY, kCamZ
-   put 0 into gCameraYaw
-   put -atan2(kCamY, kCamZ) into gCameraPitch
+   Thrm.BoardCamera
    put empty into sWorld["bases"]
-   put "-420,-150|-380,40|-300,-60|-430,170|-260,150" into tSpots
+   put "-360,-150|-380,40|-290,-60|-430,170|-260,150" into tSpots
    set the itemDel to "|"
    repeat for each item tSpot in tSpots
       set the itemDel to comma
@@ -278,7 +291,7 @@ on Thrm.BuildWorld
       put tKey && "blue" && item 1 of tSpot && item 2 of tSpot & cr after sWorld["bases"]
       set the itemDel to "|"
    end repeat
-   put "420,140|380,-40|300,60|430,-170|260,-150" into tSpots
+   put "420,140|380,-40|300,60|360,-170|250,-150" into tSpots
    repeat for each item tSpot in tSpots
       set the itemDel to comma
       put Entity.Spawn("Thrm.Base", item 1 of tSpot, 0, item 2 of tSpot, kEnemy) into tKey
@@ -338,6 +351,8 @@ on Thrm.ClearWorld
       dispatch "Term.Remove" to group "Sequencer" with "lbl." & tKey
    end repeat
    put empty into sSites
+   if sSarge["key"] is not empty then Entity.Kill sSarge["key"]
+   put empty into sSarge["key"]
    dispatch "Term.Remove" to group "Sequencer" with "alert"
    put empty into sAlert
    put "time" into sClockMode
@@ -567,11 +582,205 @@ on Thrm.ShowTargets pNames
       put x && z && tKey into sSites[tName]
       put Thrm.Screen(x, -6, z) into tXY
       if tXY is not empty then
-         dispatch "Term.Set" to group "Sequencer" with "lbl." & tName, tName, \
-               round(word 1 of tXY - the number of chars of tName * 5), round(word 2 of tXY + 10), 10, kEnemy
+         -- centred under the site, but kept inside the view
+         put round(word 1 of tXY - the number of chars of tName * 5) into x
+         put max(gViewLeft + 4, min(x, gViewRight - 4 - the number of chars of tName * 10)) into x
+         dispatch "Term.Set" to group "Sequencer" with "lbl." & tName, tName, x, round(word 2 of tXY + 10), 10, kEnemy
       end if
    end repeat
 end Thrm.ShowTargets
+
+-- above the map, looking down at it like a big board
+on Thrm.BoardCamera
+   Engine.SetCam kCamX, kCamY, kCamZ
+   put 0 into gCameraYaw
+   put -atan2(kCamY, kCamZ + kLookZ) into gCameraPitch
+end Thrm.BoardCamera
+
+-------------------------------------------------------------------- the Sarge
+
+-- Cue: call=Thrm.Sarge; show=yes|no; x=0; z=-150   the wide shot: a giant stick figure on
+-- the map in the TRON fists-on-hips pose (Amazing Couple's PROMPT idle, from LIB_MOCAP)
+on Thrm.Sarge pSet
+   local x, z
+   if pSet["show"] is "no" then
+      if sSarge["key"] is not empty then Entity.Kill sSarge["key"]
+      put empty into sSarge["key"]
+      exit Thrm.Sarge
+   end if
+   if sSarge["loaded"] is not true then Thrm.LoadSarge
+   if sSarge["frames"] is not a number or sSarge["frames"] < 1 then exit Thrm.Sarge
+   put pSet["x"] into x
+   if x is not a number then put 0 into x
+   put pSet["z"] into z
+   if z is not a number then put -150 into z
+   if sSarge["key"] is empty then put Entity.Spawn("Thrm.Sarge.1", x, 0, z, kSargeColor) into sSarge["key"]
+   SetObjectPosition sSarge["key"], x, 0, z
+   SetObjectRotation sSarge["key"], 0, pi, 0       -- facing the camera
+   put 1 into sSarge["frame"]
+end Thrm.Sarge
+
+-- the stick clip -> one engine mesh per frame (as Couple.LoadClip does)
+on Thrm.LoadSarge
+   local tFile, tText, tLine, tJoints, tEdges, tFrame, tV, tM, i, tE, tA, tB
+   put true into sSarge["loaded"]
+   put 0 into sSarge["frames"]
+   put Thrm.FindFile("LIB_MOCAP/library/" & kSargeClip & "/" & kSargeClip & "_stick.txt") into tFile
+   if tFile is empty then exit Thrm.LoadSarge
+   put URL ("file:" & tFile) into tText
+   replace numToChar(13) with empty in tText
+   put 30 into sSarge["fps"]
+   put 0 into tFrame
+   repeat for each line tLine in tText
+      if tLine is empty or char 1 of tLine is "#" then next repeat
+      set the itemDel to comma
+      switch item 1 of tLine
+         case "fps"
+            put item 2 of tLine into sSarge["fps"]
+            break
+         case "joints"
+            put item 2 of tLine into tJoints
+            break
+         case "edges"
+            put item 2 of tLine into tEdges
+            break
+         default
+            if (char 1 of tLine is "-" or char 1 of tLine is a number) and tFrame < kSargeFrames then
+               add 1 to tFrame
+               put tLine into tV
+               split tV by comma
+               put Mesh.New() into tM
+               repeat with i = 0 to tJoints - 1
+                  Mesh.AddVertex tM, tV[3 * i + 1] * kSargeM, -tV[3 * i + 2] * kSargeM, tV[3 * i + 3] * kSargeM
+               end repeat
+               repeat for each word tE in tEdges
+                  set the itemDel to "-"
+                  put item 1 of tE + 1 into tA
+                  put item 2 of tE + 1 into tB
+                  set the itemDel to comma
+                  Mesh.AddLine tM, tA, tB
+               end repeat
+               Mesh.Define "Thrm.Sarge." & tFrame, tM
+            end if
+      end switch
+   end repeat
+   put tFrame into sSarge["frames"]
+end Thrm.LoadSarge
+
+on Thrm.SargeStep
+   local n
+   if sSarge["key"] is empty then exit Thrm.SargeStep
+   add sSarge["fps"] * sStepMS / 1000 to sSarge["frame"]
+   if sSarge["frame"] >= sSarge["frames"] + 1 then put 1 into sSarge["frame"]
+   put trunc(sSarge["frame"]) into n
+   Thrm.SetMesh sSarge["key"], "Thrm.Sarge." & n
+end Thrm.SargeStep
+
+-- swap the mesh an object is drawn with (as Antack.SetMesh)
+on Thrm.SetMesh pKey, pMesh
+   local tOut, tLine
+   if gObjectTransforms[pKey]["mesh"] is pMesh then exit Thrm.SetMesh
+   repeat for each line tLine in gSceneObjects
+      if word 2 of tLine is pKey then put pMesh into word 1 of tLine
+      put tLine & cr after tOut
+   end repeat
+   delete the last char of tOut
+   put tOut into gSceneObjects
+   put pMesh into gObjectTransforms[pKey]["mesh"]
+end Thrm.SetMesh
+
+-- Cue: call=Thrm.CloseUp; dur=2.5 (or called with a number of seconds): cut to the Sarge's
+-- angry grid face (the LIB_MCP face style: raised vector blocks on a dim grid panel),
+-- mouth flapping while he shouts. The map's overlays hide; the camera comes back after.
+on Thrm.CloseUp pSet
+   local tDur
+   if pSet is an array then
+      put pSet["dur"] into tDur
+   else
+      put pSet into tDur
+   end if
+   if tDur is not a number then put 2 into tDur
+   if not Thrm.MakeFaces() then exit Thrm.CloseUp
+   if sClose["until"] is empty then
+      put Entity.Spawn("Thrm.FacePanel", kStudioX, 0, kFaceDist, "30,95,105") into sClose["panel"]
+      put Entity.Spawn("Thrm.Face1", kStudioX, 0, kFaceDist, kSargeColor) into sClose["face"]
+      Engine.SetCam -kStudioX, 0, 0
+      put 0 into gCameraYaw
+      put 0 into gCameraPitch
+      dispatch "Term.Hide" to group "Sequencer" with kOverlays
+   end if
+   put max(sClose["until"], Thrm.Now() + tDur) into sClose["until"]
+end Thrm.CloseUp
+
+on Thrm.CloseUpStep
+   if sClose["until"] is empty then exit Thrm.CloseUpStep
+   if Thrm.Now() >= sClose["until"] then
+      Entity.Kill sClose["panel"]
+      Entity.Kill sClose["face"]
+      put empty into sClose
+      dispatch "Term.Hide" to group "Sequencer" with empty
+      if sWorld["grid"] is not empty then
+         Thrm.BoardCamera
+      else
+         Engine.ResetCamera
+      end if
+      exit Thrm.CloseUpStep
+   end if
+   -- he shouts: the mouth flaps, the head shakes
+   if sTicks mod 4 is 0 then
+      add 1 to sClose["n"]
+      Thrm.SetMesh sClose["face"], "Thrm.Face" & (sClose["n"] mod 2 + 1)
+      SetObjectRotation sClose["face"], 0, (random(9) - 5) / 100, (random(5) - 3) / 100
+      SetObjectRotation sClose["panel"], 0, 0, 0
+   end if
+end Thrm.CloseUpStep
+
+-- the two shouting faces and the panel, from Data/Faces (48 x 26 one-bit grids, as
+-- LIB_MCP's claude_face_bits.txt) through LIB_MAP's Map.BlockEdges
+function Thrm.MakeFaces
+   global gMeshCache
+   local tLib, tA, tB, tBlank
+   if gMeshCache["Thrm.Face1"]["count"] is not empty then return true
+   put Thrm.FindFile("LIB_MAP/livecode/lib_map.livecodescript") into tLib
+   put Thrm.FindFile("LIB_GAMES/Vibecode3D_Games/Thrmnlra/Data/Faces/sarge_shout1.txt") into tA
+   put Thrm.FindFile("LIB_GAMES/Vibecode3D_Games/Thrmnlra/Data/Faces/sarge_shout2.txt") into tB
+   if tLib is empty or tA is empty or tB is empty then return false
+   start using stack tLib
+   put URL ("file:" & tA) into tA
+   put URL ("file:" & tB) into tB
+   replace numToChar(13) with empty in tA
+   replace numToChar(13) with empty in tB
+   put tA into tBlank
+   replace "1" with "0" in tBlank
+   Mesh.Define "Thrm.Face1", Thrm.FaceMesh(Map.BlockEdges(tA, kFaceCell, kFaceHeight, false))
+   Mesh.Define "Thrm.Face2", Thrm.FaceMesh(Map.BlockEdges(tB, kFaceCell, kFaceHeight, false))
+   Mesh.Define "Thrm.FacePanel", Thrm.FaceMesh(Map.BlockEdges(tBlank, kFaceCell, kFaceHeight, true))
+   return true
+end Thrm.MakeFaces
+
+-- LIB_MAP segments (x,y up,z out of the panel) -> wire mesh facing the camera (as Face.SegmentsToMesh)
+function Thrm.FaceMesh pSegments
+   local tMesh, tSeg, tIndex, tA, tB
+   put Mesh.New() into tMesh
+   set the itemDel to comma
+   repeat for each line tSeg in pSegments
+      if the number of items of tSeg < 6 then next repeat
+      put Thrm.FaceVertex(tMesh, tIndex, item 1 of tSeg, item 2 of tSeg, item 3 of tSeg) into tA
+      put Thrm.FaceVertex(tMesh, tIndex, item 4 of tSeg, item 5 of tSeg, item 6 of tSeg) into tB
+      Mesh.AddLine tMesh, tA, tB
+   end repeat
+   return tMesh
+end Thrm.FaceMesh
+
+function Thrm.FaceVertex @pMesh, @pIndex, pX, pY, pZ
+   local tKey
+   put pX & "," & pY & "," & pZ into tKey
+   if pIndex[tKey] is empty then
+      Mesh.AddVertex pMesh, pX, -pY, -pZ
+      put the result into pIndex[tKey]
+   end if
+   return pIndex[tKey]
+end Thrm.FaceVertex
 
 -- world point -> card pixels "x y" for the big-board camera (empty if behind it)
 function Thrm.Screen pX, pY, pZ

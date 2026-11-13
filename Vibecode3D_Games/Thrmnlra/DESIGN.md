@@ -73,6 +73,17 @@ turns vibrant when threatened, pulses at the last-minute red alert, then boom: p
   the missile screen. Typing LAUNCH any time before the drill skips the tutorial
   (Hotword clip, background) with the Sarge's disapproval.
 
+- "The Sarge: a stick figure from wide angle and the MCP grid face for angry close-ups."
+  WIDE: a giant stick figure at the back of the map in the TRON fists-on-hips idle (Amazing
+  Couple's PROMPT idle, LIB_MOCAP Animazoo_hands_on_hips). CLOSE-UP: his own angry 48x26 grid
+  face (Data/Faces: campaign hat, V brows, shouting mouth in two frames), built like the
+  LIB_MCP face card, cut in on his big lines (Cue Thrm.CloseUp) and on every typo yell.
+- "Make the game world larger; take the targeting text out of the console; the player is
+  stuck looking DOWN... important updating stuff should stay toward the top to lift the
+  head." The console is now 4 rows at the TOP (input line sticky at its bottom); the target
+  names are only on the map; MISSILES OUTBOUND is a fixed line at the top of the map;
+  titles flash mid-screen; the camera is closer so the world fills the screen.
+
 ## Built (prototype, 2026-11-12)
 
 - `Data/Sequences/Intro.seq`: steps 1-4 (login, countdown, big board, launch, title).

@@ -30,6 +30,7 @@ on Clip.Start pSet, pWhat
       put "[" & char 1 of tOpt & "]" & char 2 to -1 of tOpt after tLine
    end repeat
    put Term.Print(tLine && "> _", sColor) into sOptId
+   Term.Sticky sOptId
    put sOptId & cr after sIds
    put empty into sTyped
    put empty into sChosen
@@ -129,4 +130,5 @@ on Ask.Choose pOpt
 end Ask.Choose
 
 on Clip.Stop
+   Term.Sticky empty
 end Clip.Stop

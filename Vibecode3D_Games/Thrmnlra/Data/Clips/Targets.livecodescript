@@ -1,6 +1,6 @@
 script "Thrmnlra_Clip_Targets"
-## CLIP Targets (Thrmnlra): "SYSTEM ONLINE. CHOOSE YOUR TARGETS". A two-column list like
-## an arcade high-score table, bait names you want to type. Type a whole name: it is
+## CLIP Targets (Thrmnlra): "SYSTEM ONLINE. CHOOSE YOUR TARGETS". The bait names stand over
+## their sites on the map (Thrm.ShowTargets), not in the console. Type a whole name: it is
 ## chosen (no Return needed) and one of your batteries lights up (the card's Thrm.Target).
 ## A letter that starts no name on the list is a typo: the enemy fires (Thrm.Typo).
 ## Use hold=yes.
@@ -20,15 +20,12 @@ on Clip.Start pSet, pWhat
    if sPick is not a number then put 3 into sPick
    put pSet["var"] into sVar
    dispatch "Thrm.ShowTargets" to this card with sNames     -- their names on the map too
-   get Term.Print("CHOOSE" && sPick && "TARGETS: TYPE A NAME", kBad)
-   -- two columns, like the high-score table of an arcade cabinet
-   put (the number of items of sNames + 1) div 2 into tHalf
+   -- the names are on the map, over their sites: the player looks up at the action,
+   -- not down at a table (the owner's note: keep the eyes on the screen, the head up)
+   get Term.Print("CHOOSE" && sPick && "TARGETS: TYPE A NAME YOU SEE ON THE MAP", kBad)
    put empty into sRowIds
-   repeat with k = 1 to tHalf
-      put Targets.Row(k, tHalf) into tLine
-      put Term.Print(tLine, empty) & cr after sRowIds
-   end repeat
    put Term.Print("> _", empty) into sTypedId
+   Term.Sticky sTypedId
    put empty into sChosen
    put empty into sTyped
    put empty into sDoneAt
@@ -106,10 +103,7 @@ on Targets.Choose pName
       put comma & pName after sChosen
    end if
    put empty into sTyped
-   put (the number of items of sNames + 1) div 2 into tHalf
-   repeat with k = 1 to tHalf
-      Term.Text line k of sRowIds, Targets.Row(k, tHalf)
-   end repeat
+   get Term.Print("TARGET" && the number of items of sChosen & ":" && pName, kChosenColor)
    dispatch "Thrm.Target" to this card with pName, the number of items of sChosen
    if the number of items of sChosen >= sPick then
       if sVar is not empty then Seq.SetVar sVar, sChosen
@@ -120,4 +114,5 @@ on Targets.Choose pName
 end Targets.Choose
 
 on Clip.Stop
+   Term.Sticky empty
 end Clip.Stop

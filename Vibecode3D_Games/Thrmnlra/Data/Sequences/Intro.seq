@@ -33,7 +33,7 @@ when      | track | clip      | settings                                        
 with      | board | Title     | items=DEFCON 4,DEPHQN 3,DEF1ON 2,DECFON 1; every=0.9; size=34; y=0.18; color=#FF4040; blink=yes; dur=1.6; keep=yes; id=defcon | DEFCON counts down, misspelled
 with defcon +0.9 | world | Cue       | call=Thrm.World; mood=alert                                             | the grid wakes up
 with defcon +2.7 | world | Cue       | call=Thrm.World; mood=red                                               | red alert: the grid pulses
-+0.2      | term  | Console   | x=0.05; y=0.70; w=0.9; rows=8; size=14; clear=yes                       | the operator's line, under the map
++0.2      | term  | Console   | x=0.05; y=0.25; w=0.9; rows=4; size=14; clear=yes                       | the operator's line, at the top under the board (heads up: the map is the show)
 +0        | term  | Type      | text=LAUNCH MISSILES?; cps=24; cursor=no                                |
 +0        | term  | Ask       | options=YES,NO; anykey=yes; var=launch; hold=yes                        | TYPE YES OR NO: the first key down is enough
 +0        | term  | Type      | text=LARNCHING MIZSILES...; cps=20                                      |

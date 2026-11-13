@@ -22,9 +22,12 @@ on Clip.Start pSet, pWhat
    put 0 into sFlash
    put 0 into sErrors
    put empty into sShown
-   put Term.Print(empty, kList) into sListId
+   -- the list is a fixed line under the console (top of the map), so messages never scroll it away
+   put "outbound.list" into sListId
+   Term.Set sListId, "MISSILES OUTBOUND:", Term.X(0.05), Term.Y(0.30), 12, kList
    get Term.Print("TYPE AN ASSET NAME TO RECALL OR DETONATE", kBad)
    put Term.Print("> _", empty) into sTypedId
+   Term.Sticky sTypedId
    Outbound.List
 end Clip.Start
 
@@ -104,4 +107,6 @@ on Clip.Key pKey
 end Clip.Key
 
 on Clip.Stop
+   Term.Sticky empty
+   Term.Remove sListId
 end Clip.Stop
