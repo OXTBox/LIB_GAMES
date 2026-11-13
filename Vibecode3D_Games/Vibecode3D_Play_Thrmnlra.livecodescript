@@ -1,6 +1,6 @@
 ######################################################################################
 ## CARD SCRIPT: "Play.Thrmnlra"   GLRBAL THRMNLRA RWA  (working title)  (11 12 2026)
-## The owner's typing war game (LIB_GAMES/input/clauderead/games_to_Make_input.txt):
+## The owner's typing war game (~/projects/LIB_LLMOUT/LIB_GAMES/games_to_Make_input.txt):
 ## a terminal that types like a friend in a movie and always spells it mostly wrong,
 ## a NORAD-style big board, missiles you stop by typing. This card is also the first
 ## PROTOTYPE of the SEQUENCER: the opening is a cue sheet of clips in a text file,
