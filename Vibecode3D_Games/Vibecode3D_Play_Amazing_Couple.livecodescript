@@ -9,6 +9,11 @@
 ##           A D / left right arrows   turn                TAB  switch hero
 ## SKILLS    PROMPT gets the job done no matter what; GLAZE: barter, charm, influence.
 ##           Shown on screen, not used yet.
+## THE BALL  (owner's notes, 11 14 2026) a Big Ball of Vectors polyhedron is loose in every
+##           maze; in the first one it waits right up the hall. It hops and rolls and LOSES
+##           A SIDE EVERY TIME IT LANDS. Walk into it to KICK it (harder when running);
+##           E picks it up into your hands, E again kicks it. A worn-out ball shatters and
+##           a new one turns up in another room.
 ## NEEDS     ../LIB_BIT, ../LIB_MAP and ../LIB_MOCAP/library (the clips named below).
 ######################################################################################
 
@@ -34,6 +39,14 @@ constant kRun = "Animazoo_Running_-_Jog"
 constant kMaxIdleFrames = 300   -- longer idles are cut to their first 10 seconds
 constant kPromptColor = "#40E0FF"
 constant kGlazeColor = "#FF60D0"
+-- the ball (from Big Ball of Vectors): sides lost one per bounce
+constant kBallSides = 16      -- a new ball's sides
+constant kBallMinSides = 3    -- below this it shatters
+constant kBallR = 11          -- radius, engine units
+constant kBallHop = 4.6       -- upward speed at each bounce, units a step (peak about 90)
+constant kBallGrav = 0.12     -- units a step a step
+constant kBallRoll = 0.9      -- rolling speed along the corridors
+constant kBallColor = "#FFFFFF"
 
 local sStepMS = 33, sTicks = 0
 local sGrid, sCols, sRows, sLeft, sTop, sSeed
@@ -42,6 +55,8 @@ local sHero          -- [PROMPT|GLAZE][key|x|z|yaw|anim|frame|speed|color|path|p
 local sActive        -- "PROMPT" or "GLAZE"
 local sKeyWas, sTestKeys, sError
 local sCamX, sCamY, sCamZ, sBeacon, sExitCell, sNextMazeAt, sMsgUntil
+local sBall          -- [key|x|z|h|vh|vx|vz|sides|state (loose|found)|by]
+local sBallFound = 0, sBallLost = 0, sBallMsg, sBallMsgUntil
 
 -------------------------------------------------------------------- engine hooks
 
@@ -58,6 +73,8 @@ on Game.OnStart
    put empty into sError
    put empty into sTestKeys
    put 1 into sSeed
+   put 0 into sBallFound
+   put 0 into sBallLost
    Couple.LoadLibraries
    if sError is empty then Couple.LoadClips
    if sError is not empty then
@@ -80,6 +97,7 @@ on Game.OnUpdate
    Couple.Animate "PROMPT"
    Couple.Animate "GLAZE"
    Couple.Camera false
+   Couple.BallUpdate
    Couple.CheckExit
    Couple.ShowHUD
 end Game.OnUpdate
@@ -218,6 +236,8 @@ on Couple.NewMaze
    put "PROMPT" into sActive
    put Couple.FirstHeading() into sHero["PROMPT"]["yaw"]
    put sHero["PROMPT"]["yaw"] into sHero["GLAZE"]["yaw"]
+   put empty into sBall          -- Scene.ClearAll took the old ball
+   Couple.BallSpawn (sSeed is 1)   -- the first maze: right up the hall
    Couple.Camera true
 end Couple.NewMaze
 
@@ -452,6 +472,204 @@ on Couple.Animate pName
    SetObjectRotation tKey, item 1 of tE, item 2 of tE, item 3 of tE
 end Couple.Animate
 
+-------------------------------------------------------------------- the ball
+-- A Big Ball of Vectors polyhedron loose in the maze: it hops (high enough to be seen over
+-- the walls) and rolls along the corridors, and every landing costs it a side.
+
+-- a new ball. pNearStart (the first maze): sitting still two cells up the first hall, so
+-- the heroes meet it as soon as they walk (owner: players respond to a ball instantly).
+-- Otherwise: a random room away from the first room and the beacon, rolling.
+on Couple.BallSpawn pNearStart
+   local tCol, tRow, tTries, a
+   if sBall["key"] is not empty then Entity.Kill sBall["key"]
+   if pNearStart is true then
+      if Couple.Open(3, 2) then
+         put 4 into tCol
+         put 2 into tRow
+      else
+         put 2 into tCol
+         put 4 into tRow
+      end if
+      put 0 into sBall["vx"]
+      put 0 into sBall["vz"]
+   else
+      put 0 into tTries
+      repeat
+         add 1 to tTries
+         put 2 * random(kRooms) into tCol
+         put 2 * random(kRooms) into tRow
+         if tCol & comma & tRow is sExitCell then next repeat
+         if tCol + tRow > 6 or tTries > 50 then exit repeat
+      end repeat
+      put random(628) / 100 into a
+      put kBallRoll * sin(a) into sBall["vx"]
+      put kBallRoll * cos(a) into sBall["vz"]
+   end if
+   put Couple.CellX(tCol) into sBall["x"]
+   put Couple.CellZ(tRow) into sBall["z"]
+   put 0 into sBall["h"]
+   put kBallHop into sBall["vh"]
+   put kBallSides into sBall["sides"]
+   put "loose" into sBall["state"]
+   put empty into sBall["by"]
+   put false into sBall["met"]
+   put 0 into sBall["cool"]
+   put empty into sBall["key"]
+   Couple.BallReshape
+end Couple.BallSpawn
+
+-- the polyhedron with the sides it has left (as Big Ball of Vectors builds it)
+on Couple.BallReshape
+   local tName
+   if sBall["key"] is not empty then Entity.Kill sBall["key"]
+   put "Couple.Ball." & sBall["sides"] into tName
+   Mesh.Define tName, MeshSphere(kBallR, max(2, sBall["sides"] div 2), sBall["sides"])
+   put Entity.Spawn(tName, sBall["x"], -(kBallR + sBall["h"]), sBall["z"], kBallColor) into sBall["key"]
+   SetObjectRotationSpeed sBall["key"], 0.03, 0.05, 0
+end Couple.BallReshape
+
+on Couple.BallUpdate
+   local tName, dx, dz, d, tX, tZ, tYaw, tSpeed, tKeys, tE
+   if sBall["key"] is empty then exit Couple.BallUpdate
+   -- E, once a press: pick the ball up when near it; kick it when holding it
+   put Couple.Keys() into tKeys
+   put (101 is among the items of tKeys or 69 is among the items of tKeys) into tE
+   if tE and sKeyWas["e"] is not true then Couple.BallUse
+   put tE into sKeyWas["e"]
+   if sBall["state"] is "held" then
+      -- in the hands of the hero holding it, at chest height in front
+      put sBall["by"] into tName
+      put sHero[tName]["yaw"] into tYaw
+      put sHero[tName]["x"] + sin(tYaw) * 18 into sBall["x"]
+      put sHero[tName]["z"] + cos(tYaw) * 18 into sBall["z"]
+      SetObjectPosition sBall["key"], sBall["x"], -34, sBall["z"]
+      exit Couple.BallUpdate
+   end if
+   -- hop: every landing costs a side
+   subtract kBallGrav from sBall["vh"]
+   add sBall["vh"] to sBall["h"]
+   if sBall["h"] <= 0 then
+      put 0 into sBall["h"]
+      put kBallHop into sBall["vh"]
+      subtract 1 from sBall["sides"]
+      if sBall["sides"] < kBallMinSides then
+         -- worn out: it shatters, and a new one turns up somewhere else
+         FX.Sparks sBall["x"], -kBallR, sBall["z"], 14, kBallColor
+         add 1 to sBallLost
+         Couple.BallSay "THE BALL WORE OUT  A NEW ONE IS LOOSE"
+         Couple.BallSpawn false
+         exit Couple.BallUpdate
+      end if
+      Couple.BallReshape
+   end if
+   -- roll; a kicked ball slows down to its rolling speed; walls turn it back
+   put sqrt(sBall["vx"] ^ 2 + sBall["vz"] ^ 2) into tSpeed
+   if tSpeed > kBallRoll then
+      put sBall["vx"] * 0.97 into sBall["vx"]
+      put sBall["vz"] * 0.97 into sBall["vz"]
+   end if
+   put sBall["x"] + sBall["vx"] into tX
+   put sBall["z"] + sBall["vz"] into tZ
+   if Couple.BallFits(tX, sBall["z"]) then
+      put tX into sBall["x"]
+   else
+      put -sBall["vx"] into sBall["vx"]
+   end if
+   if Couple.BallFits(sBall["x"], tZ) then
+      put tZ into sBall["z"]
+   else
+      put -sBall["vz"] into sBall["vz"]
+   end if
+   SetObjectPosition sBall["key"], sBall["x"], -(kBallR + sBall["h"]), sBall["z"]
+   -- a hero walking into it kicks it the way the hero faces (harder when running)
+   if sBall["cool"] > 0 then subtract 1 from sBall["cool"]
+   repeat for each item tName in "PROMPT,GLAZE"
+      put sBall["x"] - sHero[tName]["x"] into dx
+      put sBall["z"] - sHero[tName]["z"] into dz
+      put sqrt(dx * dx + dz * dz) into d
+      if d < 26 and sBall["cool"] <= 0 then
+         put sHero[tName]["yaw"] into tYaw
+         if abs(sHero[tName]["speed"]) > 0.3 then
+            put sin(tYaw) * (2.5 + abs(sHero[tName]["speed"]) * 1.5) into sBall["vx"]
+            put cos(tYaw) * (2.5 + abs(sHero[tName]["speed"]) * 1.5) into sBall["vz"]
+            put 3 into sBall["vh"]
+         else if d > 0.01 then
+            -- standing still: it just bumps off
+            put dx / d * 1.2 into sBall["vx"]
+            put dz / d * 1.2 into sBall["vz"]
+         end if
+         put 12 into sBall["cool"]
+         Couple.BallMet tName, "KICKED"
+         exit repeat
+      end if
+   end repeat
+end Couple.BallUpdate
+
+-- E: the hero you play picks the ball up when it is near, or kicks it when holding it
+on Couple.BallUse
+   local dx, dz, tYaw
+   if sBall["key"] is empty then exit Couple.BallUse
+   if sBall["state"] is "held" then
+      if sBall["by"] is not sActive then exit Couple.BallUse
+      put sHero[sActive]["yaw"] into tYaw
+      put "loose" into sBall["state"]
+      put sHero[sActive]["x"] + sin(tYaw) * 30 into sBall["x"]
+      put sHero[sActive]["z"] + cos(tYaw) * 30 into sBall["z"]
+      if not Couple.BallFits(sBall["x"], sBall["z"]) then
+         put sHero[sActive]["x"] into sBall["x"]
+         put sHero[sActive]["z"] into sBall["z"]
+      end if
+      put sin(tYaw) * 6 into sBall["vx"]
+      put cos(tYaw) * 6 into sBall["vz"]
+      put 22 into sBall["h"]
+      put 2 into sBall["vh"]
+      put 15 into sBall["cool"]
+      Couple.BallSay sActive && "KICKED THE BALL"
+      exit Couple.BallUse
+   end if
+   put sHero[sActive]["x"] - sBall["x"] into dx
+   put sHero[sActive]["z"] - sBall["z"] into dz
+   if dx * dx + dz * dz < 56 * 56 then          -- within reach: about two thirds of a cell
+      put "held" into sBall["state"]
+      put sActive into sBall["by"]
+      Couple.BallMet sActive, "HAS"
+   end if
+end Couple.BallUse
+
+-- the first touch of each ball counts it as found
+on Couple.BallMet pName, pHow
+   if sBall["met"] is not true then
+      put true into sBall["met"]
+      add 1 to sBallFound
+      FX.Sparks sBall["x"], -kBallR - sBall["h"], sBall["z"], 14, sHero[pName]["color"]
+   end if
+   Couple.BallSay pName && pHow && "THE BALL  (" & sBall["sides"] && "SIDES LEFT)"
+end Couple.BallMet
+
+-- the ball (a circle of radius kBallR) fits at x,z
+function Couple.BallFits pX, pZ
+   local dx, dz, tCell
+   repeat for each item dx in (-kBallR & comma & kBallR)
+      repeat for each item dz in (-kBallR & comma & kBallR)
+         put Couple.CellAt(pX + dx, pZ + dz) into tCell
+         if not Couple.Open(item 1 of tCell, item 2 of tCell) then return false
+      end repeat
+   end repeat
+   return true
+end Couple.BallFits
+
+on Couple.BallSay pText
+   put pText into sBallMsg
+   put sTicks + round(3000 / sStepMS) into sBallMsgUntil
+end Couple.BallSay
+
+-- tests: put the loose ball at the hero you play
+on Couple.TestBallHere
+   put sHero[sActive]["x"] into sBall["x"]
+   put sHero[sActive]["z"] into sBall["z"]
+   put 0 into sBall["h"]
+end Couple.TestBallHere
+
 -------------------------------------------------------------------- camera, beacon, HUD
 
 -- behind and above the hero you play, looking at its chest; pSnap jumps there at once
@@ -499,7 +717,17 @@ on Couple.ShowHUD
    end if
    HUD.Set "Couple.Who", "PLAYING " & sActive & "   (TAB: " & tOther & ")", gViewLeft + 20, gViewBottom - 78, 14
    HUD.Set "Couple.Skills", sHero[sActive]["skills"], gViewLeft + 20, gViewBottom - 56, 11
-   HUD.Set "Couple.Help", "W S WALK   SHIFT RUN   A D TURN   FIND THE GOLD BEACON", gViewLeft + 20, gViewBottom - 30, 11
+   HUD.Set "Couple.Help", "W S WALK   SHIFT RUN   A D TURN   E BALL   FIND THE GOLD BEACON", gViewLeft + 20, gViewBottom - 30, 11
+   if sBall["state"] is "held" then
+      HUD.Set "Couple.Ball", sBall["by"] && "HOLDS THE BALL (" & sBall["sides"] && "SIDES)   E: KICK IT   FOUND" && sBallFound && "  WORN OUT" && sBallLost, gViewLeft + 20, gViewBottom - 100, 12
+   else
+      HUD.Set "Couple.Ball", "THE BALL IS LOOSE:" && sBall["sides"] && "SIDES LEFT   WALK INTO IT TO KICK, E TO PICK UP   FOUND" && sBallFound && "  WORN OUT" && sBallLost, gViewLeft + 20, gViewBottom - 100, 12
+   end if
+   if sBallMsgUntil is a number and sTicks < sBallMsgUntil then
+      HUD.Set "Couple.BallMsg", sBallMsg, gViewLeft + 20, gViewTop + 170, 16
+   else
+      HUD.Remove "Couple.BallMsg"
+   end if
    if sMsgUntil is a number and sTicks < sMsgUntil then
       HUD.Set "Couple.Swap", sActive, gViewLeft + 20, gViewTop + 130, 24
    else
@@ -528,7 +756,8 @@ end Couple.TestPlace
 function Couple.State
    return sActive & "|" & round(sHero["PROMPT"]["x"]) & "," & round(sHero["PROMPT"]["z"]) & "|" & \
          round(sHero["GLAZE"]["x"]) & "," & round(sHero["GLAZE"]["z"]) & "|" & sHero["PROMPT"]["anim"] & "," & sHero["GLAZE"]["anim"] & \
-         "|" & Couple.CellAt(sHero["PROMPT"]["x"], sHero["PROMPT"]["z"]) & ";" & Couple.CellAt(sHero["GLAZE"]["x"], sHero["GLAZE"]["z"])
+         "|" & Couple.CellAt(sHero["PROMPT"]["x"], sHero["PROMPT"]["z"]) & ";" & Couple.CellAt(sHero["GLAZE"]["x"], sHero["GLAZE"]["z"]) & \
+         "|ball " & sBall["state"] & "," & sBall["sides"] & "," & round(sBall["x"]) & "," & round(sBall["z"]) & "," & sBallFound & "," & sBallLost
 end Couple.State
 
 -- swap the mesh an object is drawn with (from Antack)
