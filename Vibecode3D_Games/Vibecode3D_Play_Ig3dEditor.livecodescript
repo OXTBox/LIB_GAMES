@@ -1,0 +1,266 @@
+######################################################################################
+## CARD SCRIPT: "Play.Ig3dEditor"   iGAME3D MAIN UI, REMADE  (11 13 2026)
+## The 2007/2026 iGame3D main window's toolbar (ig3d_UI_MAIN, harvested by XTJSON), remade
+## in the Vibecode3D engine: every tool in its old left-to-right order, a Unicode symbol in
+## place of each missing PNG icon (chosen from the icon's name), the old tooltip kept.
+## Wired now: the primitives, camera, colours, light, play, GL controller (orbit).
+## Every other tool says what it did in iGame3D (a list to judge: keep / adapt / junk).
+## CONTROLS  click a tool    hover: the old tooltip    W A S D / arrows: move the camera
+## NEEDS     nothing outside the engine. Map: LIB_ig3d/MAIN_UI_REUSE.md, TOOLBAR_MAP below.
+######################################################################################
+
+global gObjectTransforms, gSceneObjects
+global gCameraYaw, gCameraPitch
+global bPaused, bPlaying
+
+local sMade, sSelected, sColorN, sOrbit, sTicks, sCamX, sCamY, sCamZ, sMsgUntil, sLight
+
+-- TOOLBAR_MAP: name | Unicode code point | 2007 icon | group | tooltip (iGame3D)
+constant kTools = "level|2699|console.png|editing mode|Level settings;snapshot|25D9|snapshot.png|camera tools|Snapshot of the 3D view;colors|25D0|colorball16x16.png|camera tools|Colours;light|2600|lights.png|light|Position lights;objects|263A|32x32zombie3.png|actors and effects|Access view settings (actors);particles|2733|particlesicon24x24.png|actors and effects|Particles;camera|25CE|meshView.png|camera tools|Camera / mesh view;GLController|2725|repositiontoolnew2.png|camera tools|Show/hide the GL controller;pathselect|21E2|pathSelectIcon.png|mesh tools|Path selection;path|270E|pathToolIcon.png|mesh tools|Path editing;select_mesh|25A6|tool6.png|vertex tools|Mesh editing;vertex|2022|tool2.png|vertex tools|Create vertex;line|2571|tool3.png|vertex tools|Connect vertices;disconnect|2702|tool5.png|vertex tools|Disconnect mesh line;split|22D4|tool4.png|vertex tools|Split mesh line;quad|25AD|22x22quadtool.png|primitives|Quad;cube|25A3|cube.png|primitives|Cube;dropMesh|2913|dropMeshicon.png|primitives|Drop mesh;Terrain|25B2|quad.png|primitives|Import image to terrain;Play_Game|25B6|playGameButton.png|editing mode|Play (Escape exits);sounds|266A|soundicon22x22.png|actors and effects|Sounds;cylinder|232D|cylinder.png|primitives|Cylinder;cone|25B3|cone.png|primitives|Cone;sphere|25CF|sphere.png|primitives|Sphere;WindowPickPop|2750|windows.png|windows|Open windows;bones|27DF|bone.png|mesh tools|Bones"
+
+constant kInk = "#7CFF7C"
+
+on Game.OnStart
+   Engine.ResetCamera
+   Scene.ClearAll
+   Particles.Clear
+   HUD.Clear
+   Collision.ClearRules
+   put 0 into sTicks
+   put 0 into sColorN
+   put false into sOrbit
+   put empty into sMade
+   put empty into sSelected
+   put 0 into sCamX
+   put -160 into sCamY
+   put -520 into sCamZ
+   Ig.Camera
+   Mesh.Define "Ig.Floor", MeshGrid(16, 16, 50)
+   get Entity.Spawn("Ig.Floor", 0, 0, 0, "#0A280A")
+   Ig.BuildToolbar
+   Ig.Say "iGAME3D MAIN UI, REMADE.  CLICK A TOOL.  HOVER FOR THE OLD TOOLTIP."
+end Game.OnStart
+
+on Ig.Camera
+   Engine.SetCam -sCamX, -sCamY, -sCamZ
+   put atan2(-sCamX, -sCamZ) into gCameraYaw
+   put -atan2(-sCamY, sqrt(sCamX ^ 2 + sCamZ ^ 2)) into gCameraPitch
+end Ig.Camera
+
+-------------------------------------------------------------------- the toolbar
+
+-- one row of real buttons in a card-sized group "Ig3dTools", under the engine's status bars
+on Ig.BuildToolbar
+   local tTool, n, x, tName, tGroup
+   lock screen
+   if there is not a group "Ig3dTools" of this card then
+      reset the templateGroup
+      create group "Ig3dTools"
+      set the lockLoc of group "Ig3dTools" to true
+      set the rect of group "Ig3dTools" to the rect of this card
+   end if
+   set the visible of group "Ig3dTools" to true
+   put the short id of group "Ig3dTools" into tGroup
+   set the itemDel to "|"
+   put 0 into n
+   repeat for each item tTool in Ig.ToolList()
+      add 1 to n
+   end repeat
+   put 6 into x
+   put 0 into n
+   repeat for each line tTool in Ig.ToolList()
+      add 1 to n
+      put item 1 of tTool into tName
+      if there is not a button tName of group id tGroup then
+         reset the templateButton
+         create button tName in group id tGroup
+      end if
+      set the rect of button tName of group id tGroup to x, 112, x + 27, 140
+      set the label of button tName of group id tGroup to numToCodepoint(baseConvert(item 2 of tTool, 16, 10))
+      set the textSize of button tName of group id tGroup to 17
+      set the textColor of button tName of group id tGroup to Ig.GroupColor(item 4 of tTool)
+      set the backgroundColor of button tName of group id tGroup to "#061006"
+      set the borderColor of button tName of group id tGroup to "#1C4A2A"
+      set the showBorder of button tName of group id tGroup to true
+      set the opaque of button tName of group id tGroup to true
+      set the toolTip of button tName of group id tGroup to item 5 of tTool & cr & "(iGame3D 2007: " & item 3 of tTool & ", " & item 4 of tTool & ")"
+      set the script of button tName of group id tGroup to "on mouseUp" & cr & "   Ig.Tool the short name of me" & cr & "end mouseUp" & cr & \
+            "on mouseEnter" & cr & "   Ig.Hover the short name of me" & cr & "end mouseEnter"
+      add 28 to x
+   end repeat
+   set the itemDel to comma
+   unlock screen
+end Ig.BuildToolbar
+
+function Ig.ToolList
+   local t
+   put kTools into t
+   replace ";" with cr in t
+   return t
+end Ig.ToolList
+
+function Ig.GroupColor pGroup
+   switch pGroup
+      case "primitives"
+         return "#40E0FF"
+      case "camera tools"
+         return "#FFB000"
+      case "light"
+         return "#FFE060"
+      case "actors and effects"
+         return "#FF60D0"
+      case "editing mode"
+         return "#FF5050"
+      default
+         return kInk
+   end switch
+end Ig.GroupColor
+
+function Ig.ToolInfo pName
+   local tTool
+   set the itemDel to "|"
+   repeat for each line tTool in Ig.ToolList()
+      if item 1 of tTool is pName then return tTool
+   end repeat
+   return empty
+end Ig.ToolInfo
+
+on Ig.Hover pName
+   local tTool
+   put Ig.ToolInfo(pName) into tTool
+   set the itemDel to "|"
+   if tTool is not empty then Ig.Say toUpper(item 5 of tTool) & "   (" & toUpper(item 4 of tTool) & ")"
+end Ig.Hover
+
+-------------------------------------------------------------------- what the tools do
+
+on Ig.Tool pName
+   local tTool, tKey, x, z
+   put Ig.ToolInfo(pName) into tTool
+   put (random(9) - 5) * 50 into x
+   put (random(7) - 4) * 50 into z
+   switch pName
+      case "sphere"
+         Ig.Make "Ig.Sphere", MeshSphere(30, 4, 8), x, z
+         break
+      case "cone"
+         Ig.Make "Ig.Cone", MeshPyramid(8, 30, 60), x, z
+         break
+      case "cylinder"
+         Ig.Make "Ig.Cylinder", MeshPrism(8, 28, 60), x, z
+         break
+      case "cube"
+         Ig.Make "Ig.Cube", MeshBox(50, 50, 50), x, z
+         break
+      case "quad"
+         Ig.Make "Ig.Quad", MeshBox(80, 2, 80), x, z
+         break
+      case "Terrain"
+         Ig.Make "Ig.Terrain", MeshGrid(6, 6, 30), x, z
+         break
+      case "dropMesh"
+         if sSelected is not empty then
+            SetObjectPosition sSelected, GetObjectPosition(sSelected, "x"), -15, GetObjectPosition(sSelected, "z")
+            Ig.Say "DROPPED THE LAST OBJECT TO THE FLOOR"
+         end if
+         break
+      case "colors"
+         if sSelected is not empty then Ig.Recolor
+         break
+      case "camera"
+         put 0 into sCamX
+         put -160 into sCamY
+         put -520 into sCamZ
+         Ig.Camera
+         Ig.Say "CAMERA RESET"
+         break
+      case "GLController"
+         put not sOrbit into sOrbit
+         Ig.Say "ORBIT" && (sOrbit is true)
+         break
+      case "Play_Game"
+         put not sOrbit into sOrbit
+         Ig.Say "PLAY" && (sOrbit is true) && " (THE OLD PLAY BUTTON RAN THE LEVEL'S LUA GAME LOOP)"
+         break
+      case "light"
+         if sLight is not empty then Entity.Kill sLight
+         Mesh.Define "Ig.Light", MeshPyramid(4, 10, 20)
+         put Entity.Spawn("Ig.Light", x, -200, z, "#FFE060") into sLight
+         Ig.Say "A LIGHT MARKER PLACED (VIBECODE3D DRAWS LINES: NO LIGHTING YET)"
+         break
+      default
+         set the itemDel to "|"
+         Ig.Say "NOT WIRED YET:" && toUpper(item 5 of tTool) && "- IN iGAME3D:" && toUpper(item 4 of tTool)
+   end switch
+end Ig.Tool
+
+on Ig.Make pMesh, pGeo, pX, pZ
+   Mesh.Define pMesh, pGeo
+   put Entity.Spawn(pMesh, pX, -30, pZ, Ig.NextColor()) into sSelected
+   put sSelected & cr after sMade
+   Ig.Say "MADE" && toUpper(char 4 to -1 of pMesh) && "(" & the number of lines of sMade && "OBJECTS)"
+end Ig.Make
+
+function Ig.NextColor
+   add 1 to sColorN
+   return item (sColorN mod 6) + 1 of "#40E0FF,#FF60D0,#FFB000,#7CFF7C,#FF5050,#D0E8FF"
+end Ig.NextColor
+
+-- an object's colour is its graphic: respawn it with the next colour
+on Ig.Recolor
+   local tMesh, x, y, z
+   put gObjectTransforms[sSelected]["mesh"] into tMesh
+   put GetObjectPosition(sSelected, "x") into x
+   put GetObjectPosition(sSelected, "y") into y
+   put GetObjectPosition(sSelected, "z") into z
+   Entity.Kill sSelected
+   put Entity.Spawn(tMesh, x, y, z, Ig.NextColor()) into sSelected
+   put sSelected & cr after sMade
+   Ig.Say "RECOLOURED"
+end Ig.Recolor
+
+on Ig.Say pText
+   HUD.Set "Ig.Msg", pText, 10, 660, 11
+   put sTicks + 150 into sMsgUntil
+end Ig.Say
+
+-------------------------------------------------------------------- the loop
+
+on Game.OnUpdate
+   local tKeys
+   add 1 to sTicks
+   put the keysDown into tKeys
+   if 119 is among the items of tKeys or 65362 is among the items of tKeys then add 8 to sCamZ
+   if 115 is among the items of tKeys or 65364 is among the items of tKeys then subtract 8 from sCamZ
+   if 97 is among the items of tKeys or 65361 is among the items of tKeys then subtract 8 from sCamX
+   if 100 is among the items of tKeys or 65363 is among the items of tKeys then add 8 to sCamX
+   if sOrbit then
+      put 520 * sin(sTicks / 90) into sCamX
+      put -520 * cos(sTicks / 90) into sCamZ
+   end if
+   Ig.Camera
+   if sMsgUntil is a number and sTicks > sMsgUntil then
+      HUD.Remove "Ig.Msg"
+      put empty into sMsgUntil
+   end if
+end Game.OnUpdate
+
+on Game.OnClick pX, pY, pButton
+end Game.OnClick
+
+on Game.OnKill pKey, pX, pY, pZ
+end Game.OnKill
+
+on Game.OnPause
+end Game.OnPause
+
+on Game.OnResume
+end Game.OnResume
+
+on Game.OnStop
+   HUD.Clear
+   if there is a group "Ig3dTools" then set the visible of group "Ig3dTools" to false
+end Game.OnStop
+
+on Collision.Hit pA, pB
+end Collision.Hit
