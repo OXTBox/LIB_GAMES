@@ -115,19 +115,19 @@ on Game.OnUpdate
       exit Game.OnUpdate
    end if
    -- a turn is remembered until the next move; never straight back
-   if 65361 is among the items of tKeys and sDC = 0 then
+   if (65361 is among the items of tKeys or 97 is among the items of tKeys) and sDC = 0 then
       put -1 into sWantC
       put 0 into sWantR
    end if
-   if 65363 is among the items of tKeys and sDC = 0 then
+   if (65363 is among the items of tKeys or 100 is among the items of tKeys) and sDC = 0 then
       put 1 into sWantC
       put 0 into sWantR
    end if
-   if 65362 is among the items of tKeys and sDR = 0 then
+   if (65362 is among the items of tKeys or 119 is among the items of tKeys) and sDR = 0 then
       put 0 into sWantC
       put -1 into sWantR
    end if
-   if 65364 is among the items of tKeys and sDR = 0 then
+   if (65364 is among the items of tKeys or 115 is among the items of tKeys) and sDR = 0 then
       put 0 into sWantC
       put 1 into sWantR
    end if

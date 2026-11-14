@@ -110,8 +110,8 @@ on Game.OnUpdate
       end if
       exit Game.OnUpdate
    end if
-   if 65361 is among the items of tKeys then subtract kCannonSpeed from sCX
-   if 65363 is among the items of tKeys then add kCannonSpeed to sCX
+   if (65361 is among the items of tKeys or 97 is among the items of tKeys) then subtract kCannonSpeed from sCX
+   if (65363 is among the items of tKeys or 100 is among the items of tKeys) then add kCannonSpeed to sCX
    put max(kLeft + 20, min(kRight - 20, sCX)) into sCX
    SetObjectPosition sCannon, sCX, kCannonY, kZ
    if 32 is among the items of tKeys and sShot is empty then

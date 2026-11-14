@@ -109,10 +109,10 @@ on Game.OnUpdate
       end if
       exit Game.OnUpdate
    end if
-   if 65361 is among the items of tKeys then subtract kBatSpeed from sBatX
-   if 65363 is among the items of tKeys then add kBatSpeed to sBatX
-   if 65362 is among the items of tKeys then subtract kBatSpeed from sBatY
-   if 65364 is among the items of tKeys then add kBatSpeed to sBatY
+   if (65361 is among the items of tKeys or 97 is among the items of tKeys) then subtract kBatSpeed from sBatX
+   if (65363 is among the items of tKeys or 100 is among the items of tKeys) then add kBatSpeed to sBatX
+   if (65362 is among the items of tKeys or 119 is among the items of tKeys) then subtract kBatSpeed from sBatY
+   if (65364 is among the items of tKeys or 115 is among the items of tKeys) then add kBatSpeed to sBatY
    put max(-kW + kBatW, min(kW - kBatW, sBatX)) into sBatX
    put max(-kH + kBatH, min(kH - kBatH, sBatY)) into sBatY
    SetObjectPosition sBat, sBatX, sBatY, kNear

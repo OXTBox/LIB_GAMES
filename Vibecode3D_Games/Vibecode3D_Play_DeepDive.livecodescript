@@ -98,10 +98,10 @@ on Game.OnUpdate
       end if
       exit Game.OnUpdate
    end if
-   if 65361 is among the items of tKeys then subtract kSwim from sX
-   if 65363 is among the items of tKeys then add kSwim to sX
-   if 65362 is among the items of tKeys then subtract kSwim from sY
-   if 65364 is among the items of tKeys then add kSwim to sY
+   if (65361 is among the items of tKeys or 97 is among the items of tKeys) then subtract kSwim from sX
+   if (65363 is among the items of tKeys or 100 is among the items of tKeys) then add kSwim to sX
+   if (65362 is among the items of tKeys or 119 is among the items of tKeys) then subtract kSwim from sY
+   if (65364 is among the items of tKeys or 115 is among the items of tKeys) then add kSwim to sY
    put max(kLeft + 20, min(kRight - 20, sX)) into sX
    put max(kSurface, min(kBed, sY)) into sY
    SetObjectPosition sDiver, sX, sY, kZ

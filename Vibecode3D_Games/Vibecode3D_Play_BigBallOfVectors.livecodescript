@@ -120,10 +120,10 @@ on Game.OnUpdate
       add (random(5) - 3) * 0.9 to sVX
       add (random(5) - 3) * 0.9 to sVZ
    else
-      if 65361 is among the items of tKeys then subtract kPush from sVX
-      if 65363 is among the items of tKeys then add kPush to sVX
-      if 65362 is among the items of tKeys then add kPush to sVZ
-      if 65364 is among the items of tKeys then subtract kPush from sVZ
+      if (65361 is among the items of tKeys or 97 is among the items of tKeys) then subtract kPush from sVX
+      if (65363 is among the items of tKeys or 100 is among the items of tKeys) then add kPush to sVX
+      if (65362 is among the items of tKeys or 119 is among the items of tKeys) then add kPush to sVZ
+      if (65364 is among the items of tKeys or 115 is among the items of tKeys) then subtract kPush from sVZ
    end if
    put sVX * kDrag into sVX
    put sVZ * kDrag into sVZ

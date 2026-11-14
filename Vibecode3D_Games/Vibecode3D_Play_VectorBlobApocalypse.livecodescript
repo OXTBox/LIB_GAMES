@@ -94,8 +94,8 @@ on Game.OnUpdate
       if 32 is among the items of tKeys and sTicks > 30 then Game.OnStart
       exit Game.OnUpdate
    end if
-   if 65361 is among the items of tKeys then subtract kSpin from sAim
-   if 65363 is among the items of tKeys then add kSpin to sAim
+   if (65361 is among the items of tKeys or 97 is among the items of tKeys) then subtract kSpin from sAim
+   if (65363 is among the items of tKeys or 100 is among the items of tKeys) then add kSpin to sAim
    SetObjectRotation sGun, 1.5708, sAim, 0        -- the pyramid lies down and points along the aim
    -- shooting: one shot every 5 steps while Space is held
    if sCool > 0 then subtract 1 from sCool

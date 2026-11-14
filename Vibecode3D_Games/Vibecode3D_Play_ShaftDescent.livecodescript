@@ -167,9 +167,9 @@ on Game.OnUpdate
       exit Game.OnUpdate
    end if
    -- run: quick to start, quick to stop
-   if 65361 is among the items of tKeys then
+   if (65361 is among the items of tKeys or 97 is among the items of tKeys) then
       put max(-kRun, sVX - 0.9) into sVX
-   else if 65363 is among the items of tKeys then
+   else if (65363 is among the items of tKeys or 100 is among the items of tKeys) then
       put min(kRun, sVX + 0.9) into sVX
    else
       put sVX * 0.6 into sVX

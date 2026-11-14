@@ -113,9 +113,9 @@ on Game.OnUpdate
       exit Game.OnUpdate
    end if
    -- the ship: its nose points along (sin a, -cos a); up the screen at a = 0
-   if 65361 is among the items of tKeys then subtract kTurn from sA
-   if 65363 is among the items of tKeys then add kTurn to sA
-   if 65362 is among the items of tKeys then
+   if (65361 is among the items of tKeys or 97 is among the items of tKeys) then subtract kTurn from sA
+   if (65363 is among the items of tKeys or 100 is among the items of tKeys) then add kTurn to sA
+   if (65362 is among the items of tKeys or 119 is among the items of tKeys) then
       add sin(sA) * kThrust to sVX
       subtract cos(sA) * kThrust from sVY
    end if

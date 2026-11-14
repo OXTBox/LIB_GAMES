@@ -225,10 +225,10 @@ on Game.OnUpdate
       exit Game.OnUpdate
    end if
    put empty into tWant
-   if 65361 is among the items of tKeys then put "-1,0" into tWant
-   if 65363 is among the items of tKeys then put "1,0" into tWant
-   if 65362 is among the items of tKeys then put "0,-1" into tWant
-   if 65364 is among the items of tKeys then put "0,1" into tWant
+   if (65361 is among the items of tKeys or 97 is among the items of tKeys) then put "-1,0" into tWant
+   if (65363 is among the items of tKeys or 100 is among the items of tKeys) then put "1,0" into tWant
+   if (65362 is among the items of tKeys or 119 is among the items of tKeys) then put "0,-1" into tWant
+   if (65364 is among the items of tKeys or 115 is among the items of tKeys) then put "0,1" into tWant
    Maze.MoveAgent sActive, tWant
    repeat with n = 1 to sFoeCount
       Maze.MoveFoe n

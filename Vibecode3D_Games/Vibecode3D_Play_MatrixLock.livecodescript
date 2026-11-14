@@ -4,7 +4,7 @@
 ## wireframe shapes made of cubes drop from above, one at a time. Walk out of the way and
 ## rotate the falling shape. Shapes stay where they land; a filled row of the floor clears.
 ## Teaches: grids in 3D, rotation, a shadow showing where a thing will land.
-## CONTROLS  Arrows: step   Space: rotate the falling shape   Escape: stop
+## CONTROLS  Arrows or WASD: step   Space: rotate the falling shape   Escape: stop
 ## RULES     a shape landing on you, or being walled in with no free cell to step to,
 ##           costs a life. Clear the rows the level asks for. 5 levels.
 ######################################################################################
@@ -346,11 +346,11 @@ on Game.OnUpdate
    -- one step a press (held: one every 6 steps)
    put 0 into dc
    put 0 into dr
-   if 65361 is among the items of tKeys then put -1 into dc
-   if 65363 is among the items of tKeys then put 1 into dc
-   if 65362 is among the items of tKeys then put -1 into dr
-   if 65364 is among the items of tKeys then put 1 into dr
-   if (dc is not 0 or dr is not 0) and (Lock.Pressed(65361, tKeys) or Lock.Pressed(65363, tKeys) or Lock.Pressed(65362, tKeys) or Lock.Pressed(65364, tKeys) or sTicks mod 6 is 0) then
+   if (65361 is among the items of tKeys or 97 is among the items of tKeys) then put -1 into dc
+   if (65363 is among the items of tKeys or 100 is among the items of tKeys) then put 1 into dc
+   if (65362 is among the items of tKeys or 119 is among the items of tKeys) then put -1 into dr
+   if (65364 is among the items of tKeys or 115 is among the items of tKeys) then put 1 into dr
+   if (dc is not 0 or dr is not 0) and (Lock.Pressed(65361, tKeys) or Lock.Pressed(97, tKeys) or Lock.Pressed(65363, tKeys) or Lock.Pressed(100, tKeys) or Lock.Pressed(65362, tKeys) or Lock.Pressed(119, tKeys) or Lock.Pressed(65364, tKeys) or Lock.Pressed(115, tKeys) or sTicks mod 6 is 0) then
       if dc is not 0 and Lock.Free(sPC + dc, sPR) then add dc to sPC
       if dr is not 0 and Lock.Free(sPC, sPR + dr) then add dr to sPR
       SetObjectPosition sPlayer, Lock.X(sPC), 0, Lock.Z(sPR)

@@ -148,7 +148,7 @@ on Game.OnUpdate
       end if
       exit Game.OnUpdate
    end if
-   put (32 is among the items of tKeys or 65362 is among the items of tKeys) into tJump
+   put (32 is among the items of tKeys or (65362 is among the items of tKeys or 119 is among the items of tKeys)) into tJump
    put (tJump and sJumpWas is not true) into tPress
    put tJump into sJumpWas
    -- the vine swings on its own
@@ -168,8 +168,8 @@ on Game.OnUpdate
          put kJump * 0.8 into sVY
       end if
    else
-      if 65361 is among the items of tKeys then subtract kRunSpeed from sX
-      if 65363 is among the items of tKeys then add kRunSpeed to sX
+      if (65361 is among the items of tKeys or 97 is among the items of tKeys) then subtract kRunSpeed from sX
+      if (65363 is among the items of tKeys or 100 is among the items of tKeys) then add kRunSpeed to sX
       put max(kLeft + 12, sX) into sX
       if sY >= kGround and not Vine.OverPit(sX) then
          -- on the floor

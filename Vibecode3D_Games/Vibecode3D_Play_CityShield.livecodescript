@@ -92,10 +92,10 @@ on Game.OnUpdate
       put tSpace into sSpaceWas
       exit Game.OnUpdate
    end if
-   if 65361 is among the items of tKeys then subtract kAimSpeed from sAX
-   if 65363 is among the items of tKeys then add kAimSpeed to sAX
-   if 65362 is among the items of tKeys then subtract kAimSpeed from sAY
-   if 65364 is among the items of tKeys then add kAimSpeed to sAY
+   if (65361 is among the items of tKeys or 97 is among the items of tKeys) then subtract kAimSpeed from sAX
+   if (65363 is among the items of tKeys or 100 is among the items of tKeys) then add kAimSpeed to sAX
+   if (65362 is among the items of tKeys or 119 is among the items of tKeys) then subtract kAimSpeed from sAY
+   if (65364 is among the items of tKeys or 115 is among the items of tKeys) then add kAimSpeed to sAY
    put max(kLeft, min(kRight, sAX)) into sAX
    put max(kTop, min(kGround - 60, sAY)) into sAY
    SetObjectPosition sCross, sAX, sAY, kZ

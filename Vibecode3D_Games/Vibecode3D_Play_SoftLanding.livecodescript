@@ -106,16 +106,16 @@ on Game.OnUpdate
    end if
    add sGravity to sVY
    if sFuel > 0 then
-      if 65362 is among the items of tKeys then
+      if (65362 is among the items of tKeys or 119 is among the items of tKeys) then
          subtract kThrust from sVY
          subtract 2 from sFuel
          if random(2) = 1 then FX.Sparks sX, sY + 18, kZ, 1, "orange"
       end if
-      if 65361 is among the items of tKeys then
+      if (65361 is among the items of tKeys or 97 is among the items of tKeys) then
          subtract kSide from sVX
          subtract 1 from sFuel
       end if
-      if 65363 is among the items of tKeys then
+      if (65363 is among the items of tKeys or 100 is among the items of tKeys) then
          add kSide to sVX
          subtract 1 from sFuel
       end if

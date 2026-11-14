@@ -99,11 +99,11 @@ on Game.OnUpdate
       exit Game.OnUpdate
    end if
    put 0 into tLean
-   if 65361 is among the items of tKeys then
+   if (65361 is among the items of tKeys or 97 is among the items of tKeys) then
       subtract kRun from sManX
       put -1 into tLean
    end if
-   if 65363 is among the items of tKeys then
+   if (65363 is among the items of tKeys or 100 is among the items of tKeys) then
       add kRun to sManX
       put 1 into tLean
    end if

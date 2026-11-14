@@ -96,8 +96,8 @@ on Game.OnUpdate
       exit Game.OnUpdate
    end if
    put sBatW / 2 into tHalf
-   if 65361 is among the items of tKeys then subtract kBatSpeed from sBatX
-   if 65363 is among the items of tKeys then add kBatSpeed to sBatX
+   if (65361 is among the items of tKeys or 97 is among the items of tKeys) then subtract kBatSpeed from sBatX
+   if (65363 is among the items of tKeys or 100 is among the items of tKeys) then add kBatSpeed to sBatX
    put max(kLeft + tHalf, min(kRight - tHalf, sBatX)) into sBatX
    SetObjectPosition sBat, sBatX, kBatY, kZ
    if sStuck then
