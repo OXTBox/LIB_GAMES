@@ -24,6 +24,7 @@ constant kStartY = 9           -- shapes start this many cubes up
 constant kShapes = "0,0 1,0 2,0|0,0 1,0 0,1 1,1|0,0 1,0 2,0 1,1|0,0 0,1 0,2 1,2|0,0 1,0 1,1 2,1|0,0 1,0|0,0"
 
 on Game.OnStart
+   focus on nothing          -- arrow keys belong to the game, never to a menu or a field
    Engine.ResetCamera
    Scene.ClearAll
    Particles.Clear
@@ -408,3 +409,7 @@ end Lock.State
 on Game.OnStop
    HUD.Clear
 end Game.OnStop
+
+-- the arrows move you; a focused menu or field must never get them
+on arrowKey pKey
+end arrowKey

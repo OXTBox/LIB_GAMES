@@ -20,6 +20,7 @@ constant kHop = 50               -- a lane, and a hop sideways
 constant kCols = 17
 
 on Game.OnStart
+   focus on nothing          -- arrow keys belong to the game, never to a menu or a field
    Engine.ResetCamera
    Scene.ClearAll
    Particles.Clear
@@ -180,3 +181,7 @@ end Cross.State
 on Game.OnStop
    HUD.Clear
 end Game.OnStop
+
+-- the arrows move you; a focused menu or field must never get them
+on arrowKey pKey
+end arrowKey

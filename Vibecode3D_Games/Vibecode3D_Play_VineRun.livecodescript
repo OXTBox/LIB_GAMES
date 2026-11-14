@@ -27,6 +27,7 @@ constant kVineLen = 230
 constant kVineTop = -120
 
 on Game.OnStart
+   focus on nothing          -- arrow keys belong to the game, never to a menu or a field
    Engine.ResetCamera
    Scene.ClearAll
    Particles.Clear
@@ -262,3 +263,7 @@ end Vine.State
 on Game.OnStop
    HUD.Clear
 end Game.OnStop
+
+-- the arrows move you; a focused menu or field must never get them
+on arrowKey pKey
+end arrowKey

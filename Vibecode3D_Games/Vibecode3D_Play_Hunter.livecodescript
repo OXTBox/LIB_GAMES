@@ -28,6 +28,7 @@ global gCameraPitch
 global gViewLeft,gViewTop,gViewRight,gViewBottom
 global CenterX,CenterY
 global bPaused,bPlaying -- engine flags (globals, so the card can set them)
+global gNoMouse        -- true while an AI tests: never grab or move the owner's mouse
 
 constant kMaxAmmo = 12
 constant kReloadTicks = 45 -- 1.5 s
@@ -49,6 +50,7 @@ local sMsgTicks = 0, sGameOverTicks = 0, sHudAmmo, sHudShield, sHudGems
 ## ---------------------------------------------------------------- START / STOP
 
 on Game.OnStart
+   focus on nothing          -- arrow keys belong to the game, never to a menu or a field
    Engine.ResetCamera
    put Engine.Info("stepMS") into sStepMS
    Scene.ClearAll
@@ -79,7 +81,7 @@ on Game.OnStart
    Collision.SetGroup "Player","player",28
 
    -- The pointer becomes the crosshair and is held at the centre.
-   set the lockCursor to true
+   if gNoMouse is not true then set the lockCursor to true
    set the cursor to cross
    put false into sMouseReady
    Hunter.CenterMouse
@@ -103,7 +105,7 @@ on Game.OnPause
 end Game.OnPause
 
 on Game.OnResume
-   set the lockCursor to true
+   if gNoMouse is not true then set the lockCursor to true
    set the cursor to cross
    put false into sMouseReady
 end Game.OnResume
@@ -382,6 +384,7 @@ end Game.OnUpdate
 ## Only while this stack is the front window: an error dialog or the IDE taking
 ## focus must never have its pointer dragged back to the game.
 on Hunter.Look
+   if gNoMouse is true then exit Hunter.Look
    if the short name of the topStack is not the short name of this stack then
       put false into sMouseReady
       exit Hunter.Look
@@ -852,3 +855,7 @@ on rawKeyUp pKey
    end if
    pass rawKeyUp
 end rawKeyUp
+
+-- the arrows move you; a focused menu or field must never get them
+on arrowKey pKey
+end arrowKey

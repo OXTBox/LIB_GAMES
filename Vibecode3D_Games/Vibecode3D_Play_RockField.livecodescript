@@ -24,6 +24,7 @@ constant kThrust = 0.35
 constant kShotSpeed = 14
 
 on Game.OnStart
+   focus on nothing          -- arrow keys belong to the game, never to a menu or a field
    Engine.ResetCamera
    Scene.ClearAll
    Particles.Clear
@@ -226,3 +227,7 @@ end Rock.State
 on Game.OnStop
    HUD.Clear
 end Game.OnStop
+
+-- the arrows move you; a focused menu or field must never get them
+on arrowKey pKey
+end arrowKey

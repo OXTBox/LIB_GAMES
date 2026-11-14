@@ -7,17 +7,19 @@
 ## A spear that breaks a cube returns to the hand; one that misses bounces off the walls
 ## and is dangerous until it lies still and is picked up.
 ## Teaches: aiming, bouncing, a shield that repairs itself.
-## CONTROLS  Arrows: run   Space: throw (at the Cone)   Escape: stop
+## CONTROLS  Arrows or WASD: run   aim with the mouse   click or Space: throw
+##           (no mouse: it throws the way you last ran)   Escape: stop
 ## RULES     a moving loose spear that hits you costs a life. Hit the Cone with the
 ##           password complete. 5 levels.
 ######################################################################################
 
 global gObjectTransforms, gSceneObjects
 global bPaused, bPlaying
+global gNoMouse        -- true while an AI tests: aim by facing, never read the mouse
 
 local sPX, sPY, sPlayer, sBoss, sRing, sRings, sSpear, sTok, sTokN, sPass, sGot
 local sLevel, sLives, sUpdate, sSpeed, sNextUpdate, sOver, sWon, sTicks, sTestKeys, sKeysWas
-local sHUDWas, sMsg, sMsgUntil, sSafe
+local sHUDWas, sMsg, sMsgUntil, sSafe, sFaceX, sFaceY, sAimX, sAimY, sAim
 
 constant kZ = 360
 constant kLeft = -380
@@ -30,6 +32,7 @@ constant kRun = 4
 constant kWords = "KEY,CODE,LOGIC,PROBES,CONEDOWN"
 
 on Game.OnStart
+   focus on nothing          -- arrow keys belong to the game, never to a menu or a field
    Engine.ResetCamera
    Scene.ClearAll
    Particles.Clear
@@ -82,6 +85,13 @@ on Probe.StartLevel
    put 0 into sPX
    put 230 into sPY
    put Entity.Spawn("Probe.Man", sPX, sPY, kZ, "#40E0FF") into sPlayer
+   -- the aim line: a dashed arrow
+   Mesh.Define "Probe.Aim", Probe.AimMesh()
+   put Entity.Spawn("Probe.Aim", sPX, sPY - 65, kZ, "#FFE060") into sAim
+   put 0 into sFaceX
+   put -1 into sFaceY
+   put 0 into sAimX
+   put -1 into sAimY
    put empty into sSpear
    put "hand" into sSpear["state"]
    put sTicks + sUpdate into sNextUpdate
@@ -89,6 +99,22 @@ on Probe.StartLevel
    Probe.Say "BREAK CUBES, COLLECT" && the number of chars of sPass && "KEYS, THEN HIT THE CONE", 4
    put empty into sHUDWas
 end Probe.StartLevel
+
+function Probe.AimMesh
+   local tM, n
+   put Mesh.New() into tM
+   repeat with n = 0 to 2
+      Mesh.AddVertex tM, -20 + n * 14, 0, 0
+      Mesh.AddVertex tM, -13 + n * 14, 0, 0
+      Mesh.AddLine tM, tM["count"] - 1, tM["count"]
+   end repeat
+   Mesh.AddVertex tM, 22, 0, 0
+   Mesh.AddVertex tM, 14, -6, 0
+   Mesh.AddVertex tM, 14, 6, 0
+   Mesh.AddLine tM, tM["count"] - 2, tM["count"] - 1
+   Mesh.AddLine tM, tM["count"] - 2, tM["count"]
+   return tM
+end Probe.AimMesh
 
 function Probe.FrameMesh
    local tM
@@ -180,10 +206,19 @@ on Game.OnUpdate
    -- run; never inside the outer ring
    put sPX into nx
    put sPY into ny
-   if 65361 is among the items of tKeys then subtract kRun from nx
-   if 65363 is among the items of tKeys then add kRun to nx
-   if 65362 is among the items of tKeys then subtract kRun from ny
-   if 65364 is among the items of tKeys then add kRun to ny
+   put 0 into dx
+   put 0 into dy
+   if 65361 is among the items of tKeys or 97 is among the items of tKeys then put -1 into dx
+   if 65363 is among the items of tKeys or 100 is among the items of tKeys then put 1 into dx
+   if 65362 is among the items of tKeys or 119 is among the items of tKeys then put -1 into dy
+   if 65364 is among the items of tKeys or 115 is among the items of tKeys then put 1 into dy
+   if dx is not 0 or dy is not 0 then
+      put sqrt(dx * dx + dy * dy) into d
+      put dx / d into sFaceX
+      put dy / d into sFaceY
+      add sFaceX * kRun to nx
+      add sFaceY * kRun to ny
+   end if
    put max(kLeft + 12, min(kRight - 12, nx)) into nx
    put max(kTop + 30, min(kBottom - 8, ny)) into ny
    if sqrt((nx - kBossX) ^ 2 + (ny - kBossY) ^ 2) > Probe.Radius(max(1, sRings)) + 26 then
@@ -191,6 +226,7 @@ on Game.OnUpdate
       put ny into sPY
    end if
    SetObjectPosition sPlayer, sPX, sPY, kZ
+   Probe.AimAt
    if 32 is among the items of tKeys and not (32 is among the items of sKeysWas) then Probe.Throw
    put tKeys into sKeysWas
    if sTicks >= sNextUpdate then
@@ -206,16 +242,52 @@ end Game.OnUpdate
 
 -------------------------------------------------------------------- the spear
 
-on Probe.Throw
-   local dx, dy, d
-   if sSpear["state"] is not "hand" then exit Probe.Throw
-   put kBossX - sPX into dx
-   put kBossY - sPY into dy
+-- the aim: toward the mouse pointer over the arena; without a mouse, the way you last ran
+on Probe.AimAt
+   local tM, tW, dx, dy, d
+   put sFaceX into dx
+   put sFaceY into dy
+   if gNoMouse is not true then
+      put the mouseLoc into tM
+      put Probe.ScreenToWorld(item 1 of tM, item 2 of tM) into tW
+      if tW is not empty then
+         put item 1 of tW - sPX into dx
+         put item 2 of tW - (sPY - 20) into dy
+      end if
+   end if
    put sqrt(dx * dx + dy * dy) into d
+   if d < 0.01 then exit Probe.AimAt
+   put dx / d into sAimX
+   put dy / d into sAimY
+   -- the aim line, in front of the runner
+   SetObjectPosition sAim, sPX + sAimX * 45, sPY - 20 + sAimY * 45, kZ
+   SetObjectRotation sAim, 0, 0, atan2(sAimY, sAimX)
+end Probe.AimAt
+
+-- a screen point on the play plane (camera at the origin looking straight ahead)
+function Probe.ScreenToWorld pX, pY
+   local a, b, kx, ky
+   put ProjectVertex(0, 0, kZ) into a
+   put ProjectVertex(100, 100, kZ) into b
+   if a is empty or b is empty then return empty
+   put (word 1 of b - word 1 of a) / 100 into kx
+   put (word 2 of b - word 2 of a) / 100 into ky
+   if kx is 0 or ky is 0 then return empty
+   return (pX - word 1 of a) / kx & comma & (pY - word 2 of a) / ky
+end Probe.ScreenToWorld
+
+on Game.OnClick pX, pY, pButton
+   if sOver then exit Game.OnClick
+   Probe.AimAt
+   Probe.Throw
+end Game.OnClick
+
+on Probe.Throw
+   if sSpear["state"] is not "hand" then exit Probe.Throw
    put sPX into sSpear["x"]
    put sPY - 20 into sSpear["y"]
-   put dx / d * sSpeed into sSpear["vx"]
-   put dy / d * sSpeed into sSpear["vy"]
+   put sAimX * sSpeed into sSpear["vx"]
+   put sAimY * sSpeed into sSpear["vy"]
    put "flying" into sSpear["state"]
    put Entity.Spawn("Probe.Spear", sSpear["x"], sSpear["y"], kZ, "#40E0FF") into sSpear["key"]
 end Probe.Throw
@@ -294,7 +366,7 @@ on Probe.MoveSpear
    -- loose: dangerous while it moves; lying still it can be picked up
    if sSpear["state"] is "loose" then
       if abs(sSpear["x"] - sPX) < 16 and abs(sSpear["y"] - (sPY - 10)) < 22 then
-         if tV < 1.2 then
+         if tV < 4 then
             Entity.Kill sSpear["key"]
             put "hand" into sSpear["state"]
             exit Probe.MoveSpear
@@ -400,3 +472,7 @@ end Probe.State
 on Game.OnStop
    HUD.Clear
 end Game.OnStop
+
+-- the arrows move you; a focused menu or field must never get them
+on arrowKey pKey
+end arrowKey

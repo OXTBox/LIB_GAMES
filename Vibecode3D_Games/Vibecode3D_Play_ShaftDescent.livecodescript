@@ -28,6 +28,7 @@ constant kPW = 16              -- the runner's half width
 constant kPH = 34              -- the runner's height
 
 on Game.OnStart
+   focus on nothing          -- arrow keys belong to the game, never to a menu or a field
    Engine.ResetCamera
    Scene.ClearAll
    Particles.Clear
@@ -293,3 +294,7 @@ on Game.OnStop
    HUD.Clear
    Engine.ResetCamera
 end Game.OnStop
+
+-- the arrows move you; a focused menu or field must never get them
+on arrowKey pKey
+end arrowKey
