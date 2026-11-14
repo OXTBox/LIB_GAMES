@@ -18,6 +18,7 @@ local sMade, sSelected, sColorN, sOrbit, sTicks, sCamX, sCamY, sCamZ, sMsgUntil,
 -- TOOLBAR_MAP: name | Unicode code point | 2007 icon | group | tooltip (iGame3D)
 constant kTools = "level|2699|console.png|editing mode|Level settings;snapshot|25D9|snapshot.png|camera tools|Snapshot of the 3D view;colors|25D0|colorball16x16.png|camera tools|Colours;light|2600|lights.png|light|Position lights;objects|263A|32x32zombie3.png|actors and effects|Access view settings (actors);particles|2733|particlesicon24x24.png|actors and effects|Particles;camera|25CE|meshView.png|camera tools|Camera / mesh view;GLController|2725|repositiontoolnew2.png|camera tools|Show/hide the GL controller;pathselect|21E2|pathSelectIcon.png|mesh tools|Path selection;path|270E|pathToolIcon.png|mesh tools|Path editing;select_mesh|25A6|tool6.png|vertex tools|Mesh editing;vertex|2022|tool2.png|vertex tools|Create vertex;line|2571|tool3.png|vertex tools|Connect vertices;disconnect|2702|tool5.png|vertex tools|Disconnect mesh line;split|22D4|tool4.png|vertex tools|Split mesh line;quad|25AD|22x22quadtool.png|primitives|Quad;cube|25A3|cube.png|primitives|Cube;dropMesh|2913|dropMeshicon.png|primitives|Drop mesh;Terrain|25B2|quad.png|primitives|Import image to terrain;Play_Game|25B6|playGameButton.png|editing mode|Play (Escape exits);sounds|266A|soundicon22x22.png|actors and effects|Sounds;cylinder|232D|cylinder.png|primitives|Cylinder;cone|25B3|cone.png|primitives|Cone;sphere|25CF|sphere.png|primitives|Sphere;WindowPickPop|2750|windows.png|windows|Open windows;bones|27DF|bone.png|mesh tools|Bones"
 
+constant kMenus = "File=Level;~New/N;~Save/S;~Reset;-;Mesh;~Save In Level;~Export;~Clear#Edit=Undo/Z;Cut/X;Copy/C;Paste/V;Select All Text/A;-;boom;boom all#Library=Emitters;Images;Levels;Materials;Models;Scripts;Sounds;Text#Mesh=Focus Mesh/0;Goto Points;Tag Vertices/T;Duplicate Vertices/D;Extrude/E;Select;~All Vertices;~Connected/g;~Invert/i;~Attached To Bone;Face;~Face In/[;~Face Out/];~Invert Faces/*;View;~Hide/h;~Hide Other/f;~Hide All;~Show All/u;Mirror;~X;~Y;~Z;~Double Side;-;Combine Overlaps;Subdivide;-;Delete Vertices#Window=Window Snapping;Mode;~Level;~Model;Layout;~top;~bottom;~main;~free;~playgame;-;Animation Editor;Console;ig3dWTFEDITOR;Inspector;Level Collect;Library;Scene Graph;Snapshot#Dev=SAVE;-;Edit F1Script;Edit SGScript;Edit RLScript;StackScript;-;Xternals;-;stopIdle;-;pointer tool/m;-;FindT3D/3;-;scriptHarvester;OpenStacks;CustomPropLengths;RevFunctions;Harvest;-;resetiGame3D;BackUp#Help=iGame3D Help/?;Referencer;Script Commands"
 constant kInk = "#7CFF7C"
 
 on Game.OnStart
@@ -38,6 +39,7 @@ on Game.OnStart
    Mesh.Define "Ig.Floor", MeshGrid(16, 16, 50)
    get Entity.Spawn("Ig.Floor", 0, 0, 0, "#0A280A")
    Ig.BuildToolbar
+   Ig.BuildMenus
    Ig.Say "iGAME3D MAIN UI, REMADE.  CLICK A TOOL.  HOVER FOR THE OLD TOOLTIP."
 end Game.OnStart
 
@@ -91,6 +93,89 @@ on Ig.BuildToolbar
    set the itemDel to comma
    unlock screen
 end Ig.BuildToolbar
+
+-- the old menu bar: File Edit Library Mesh Window Dev Help, their items as in iGame3D
+-- (kMenus: menus split by #, items by ;, ~ = a submenu item, /X = its shortcut letter)
+on Ig.BuildMenus
+   local tMenu, tName, tText, tGroup, x
+   put the short id of group "Ig3dTools" into tGroup
+   put 6 into x
+   set the itemDel to "#"
+   repeat for each item tMenu in kMenus
+      put char 1 to offset("=", tMenu) - 1 of tMenu into tName
+      put char offset("=", tMenu) + 1 to -1 of tMenu into tText
+      replace ";" with cr in tText
+      replace "~" with tab in tText
+      if there is not a button ("menu_" & tName) of group id tGroup then
+         reset the templateButton
+         create button ("menu_" & tName) in group id tGroup
+      end if
+      set the style of button ("menu_" & tName) of group id tGroup to "menu"
+      set the menuMode of button ("menu_" & tName) of group id tGroup to "pulldown"
+      set the label of button ("menu_" & tName) of group id tGroup to tName
+      set the text of button ("menu_" & tName) of group id tGroup to tText
+      set the textColor of button ("menu_" & tName) of group id tGroup to kInk
+      set the rect of button ("menu_" & tName) of group id tGroup to x, 144, x + 62, 162
+      set the script of button ("menu_" & tName) of group id tGroup to "on menuPick pItem" & cr & "   Ig.Menu the label of me, pItem" & cr & "end menuPick"
+      add 64 to x
+   end repeat
+   set the itemDel to comma
+end Ig.BuildMenus
+
+on Ig.Menu pMenu, pItem
+   local tKey
+   if char -2 of pItem is "/" then delete char -2 to -1 of pItem      -- "Focus Mesh/0": the shortcut letter
+   set the itemDel to "|"
+   put pMenu & "/" & item -1 of pItem into tKey
+   set the itemDel to comma
+   switch tKey
+      case "File/New"
+      case "File/Reset"
+      case "File/Clear"
+         repeat for each line tKey in sMade
+            Entity.Kill tKey
+         end repeat
+         put empty into sMade
+         put empty into sSelected
+         Ig.Say "LEVEL CLEARED"
+         break
+      case "Edit/Undo"
+         if sMade is not empty then
+            Entity.Kill line -1 of sMade
+            delete line -1 of sMade
+            put line -1 of sMade into sSelected
+            Ig.Say "UNDONE"
+         end if
+         break
+      case "Edit/boom"
+         if sSelected is not empty then
+            FX.Sparks GetObjectPosition(sSelected, "x"), GetObjectPosition(sSelected, "y"), GetObjectPosition(sSelected, "z"), 30, "#FFB000"
+            Ig.Menu "Edit", "Undo"
+            Ig.Say "BOOM"
+         end if
+         break
+      case "Edit/boom all"
+         repeat for each line tKey in sMade
+            FX.Sparks GetObjectPosition(tKey, "x"), GetObjectPosition(tKey, "y"), GetObjectPosition(tKey, "z"), 20, "#FFB000"
+            Entity.Kill tKey
+         end repeat
+         put empty into sMade
+         put empty into sSelected
+         Ig.Say "BOOM ALL"
+         break
+      case "Mesh/Focus Mesh"
+         if sSelected is not empty then
+            put GetObjectPosition(sSelected, "x") into sCamX
+            put GetObjectPosition(sSelected, "z") - 260 into sCamZ
+            put -120 into sCamY
+            put false into sOrbit
+            Ig.Say "FOCUSED ON THE LAST OBJECT"
+         end if
+         break
+      default
+         Ig.Say "NOT WIRED YET:" && toUpper(pMenu) && ">" && toUpper(pItem) && "(AN iGAME3D MENU ITEM)"
+   end switch
+end Ig.Menu
 
 function Ig.ToolList
    local t
