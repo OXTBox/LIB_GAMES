@@ -13,7 +13,7 @@ global gObjectTransforms, gSceneObjects
 global gCameraYaw, gCameraPitch
 global bPaused, bPlaying
 
-local sMade, sSelected, sColorN, sOrbit, sTicks, sCamX, sCamY, sCamZ, sMsgUntil, sLight
+local sLib, sLibRoot, sLibList, sMade, sSelected, sColorN, sOrbit, sTicks, sCamX, sCamY, sCamZ, sMsgUntil, sLight
 
 -- TOOLBAR_MAP: name | Unicode code point | 2007 icon | group | tooltip (iGame3D)
 constant kTools = "level|2699|console.png|editing mode|Level settings;snapshot|25D9|snapshot.png|camera tools|Snapshot of the 3D view;colors|25D0|colorball16x16.png|camera tools|Colours;light|2600|lights.png|light|Position lights;objects|263A|32x32zombie3.png|actors and effects|Access view settings (actors);particles|2733|particlesicon24x24.png|actors and effects|Particles;camera|25CE|meshView.png|camera tools|Camera / mesh view;GLController|2725|repositiontoolnew2.png|camera tools|Show/hide the GL controller;pathselect|21E2|pathSelectIcon.png|mesh tools|Path selection;path|270E|pathToolIcon.png|mesh tools|Path editing;select_mesh|25A6|tool6.png|vertex tools|Mesh editing;vertex|2022|tool2.png|vertex tools|Create vertex;line|2571|tool3.png|vertex tools|Connect vertices;disconnect|2702|tool5.png|vertex tools|Disconnect mesh line;split|22D4|tool4.png|vertex tools|Split mesh line;quad|25AD|22x22quadtool.png|primitives|Quad;cube|25A3|cube.png|primitives|Cube;dropMesh|2913|dropMeshicon.png|primitives|Drop mesh;Terrain|25B2|quad.png|primitives|Import image to terrain;Play_Game|25B6|playGameButton.png|editing mode|Play (Escape exits);sounds|266A|soundicon22x22.png|actors and effects|Sounds;cylinder|232D|cylinder.png|primitives|Cylinder;cone|25B3|cone.png|primitives|Cone;sphere|25CF|sphere.png|primitives|Sphere;WindowPickPop|2750|windows.png|windows|Open windows;bones|27DF|bone.png|mesh tools|Bones"
@@ -163,6 +163,16 @@ on Ig.Menu pMenu, pItem
          put empty into sSelected
          Ig.Say "BOOM ALL"
          break
+      case "Library/Models"
+      case "Library/Levels"
+      case "Library/Emitters"
+      case "Library/Scripts"
+      case "Library/Images"
+      case "Library/Sounds"
+      case "Library/Materials"
+      case "Library/Text"
+         Ig.Library char offset("/", tKey) + 1 to -1 of tKey
+         break
       case "Mesh/Focus Mesh"
          if sSelected is not empty then
             put GetObjectPosition(sSelected, "x") into sCamX
@@ -176,6 +186,161 @@ on Ig.Menu pMenu, pItem
          Ig.Say "NOT WIRED YET:" && toUpper(pMenu) && ">" && toUpper(pItem) && "(AN iGAME3D MENU ITEM)"
    end switch
 end Ig.Menu
+
+-------------------------------------------------------------------- the library (filesLibrary, remade)
+
+-- the 2008 iGame3D Data folder (LIB_GAMES/igame3D_2008_Texts), found above this stack or in WSL
+function Ig.DataRoot
+   local tPath, tTry
+   if sLibRoot is not empty then return sLibRoot
+   put the effective filename of this stack into tPath
+   replace "\" with "/" in tPath
+   set the itemDel to "/"
+   repeat 8 times
+      delete item -1 of tPath
+      if tPath is empty then exit repeat
+      put tPath & "/LIB_GAMES/igame3D_2008_Texts" into tTry
+      if there is a folder tTry then
+         put tTry into sLibRoot
+         return tTry
+      end if
+   end repeat
+   put "//wsl$/Ubuntu/home/igame3d/projects/LIB_GAMES/igame3D_2008_Texts" into tTry
+   if there is a folder tTry then put tTry into sLibRoot
+   return sLibRoot
+end Ig.DataRoot
+
+-- Library > Models / Levels / Emitters / Scripts: the files in a list on the right
+on Ig.Library pWhat
+   local tRoot, tFolder, tSuffix, tList, tGroup
+   put Ig.DataRoot() into tRoot
+   if tRoot is empty then
+      Ig.Say "NO iGAME3D DATA FOLDER FOUND (LIB_GAMES/igame3D_2008_Texts)"
+      exit Ig.Library
+   end if
+   switch pWhat
+      case "Models"
+         put "WTF" into tFolder
+         put ".wtf" into tSuffix
+         break
+      case "Levels"
+         put "Levels" into tFolder
+         put ".txt,.lua" into tSuffix
+         break
+      case "Emitters"
+         put "Emitters" into tFolder
+         put ".emt" into tSuffix
+         break
+      case "Scripts"
+         put "Scripts" into tFolder
+         put ".lua" into tSuffix
+         break
+      default
+         Ig.Say "LIBRARY >" && toUpper(pWhat) & ": NOT IN THE 2008 DATA (IMAGES AND SOUNDS ARE LEFT OUT)"
+         exit Ig.Library
+   end switch
+   put Ig.ListFiles(tRoot & "/" & tFolder, empty, tSuffix) into sLibList
+   put the short id of group "Ig3dTools" into tGroup
+   if there is not a field "Ig3dLibrary" of group id tGroup then
+      reset the templateField
+      create field "Ig3dLibrary" in group id tGroup
+      set the listBehavior of field "Ig3dLibrary" of group id tGroup to true
+      set the lockText of field "Ig3dLibrary" of group id tGroup to true
+      set the vScrollbar of field "Ig3dLibrary" of group id tGroup to true
+      set the textSize of field "Ig3dLibrary" of group id tGroup to 11
+      set the backgroundColor of field "Ig3dLibrary" of group id tGroup to "#061006"
+      set the textColor of field "Ig3dLibrary" of group id tGroup to kInk
+      set the script of field "Ig3dLibrary" of group id tGroup to "on mouseUp" & cr & "   Ig.LibraryPick the hilitedLine of me" & cr & "end mouseUp"
+   end if
+   set the rect of field "Ig3dLibrary" of group id tGroup to 548, 168, 762, 640
+   set the visible of field "Ig3dLibrary" of group id tGroup to true
+   put sLibList into field "Ig3dLibrary" of group id tGroup
+   Ig.Say "LIBRARY >" && toUpper(pWhat) & ":" && the number of lines of sLibList && "FILES.  CLICK ONE" & (" (A MODEL LOADS AS A WIREFRAME)")
+   put tFolder into sLib["folder"]
+end Ig.Library
+
+function Ig.ListFiles pFolder, pRel, pSuffix
+   local tOut, tF, tSub, tSuf
+   repeat for each line tF in files(pFolder)
+      repeat for each item tSuf in pSuffix
+         if char -(the number of chars of tSuf) to -1 of tF is tSuf then
+            put pRel & tF & cr after tOut
+            exit repeat
+         end if
+      end repeat
+   end repeat
+   repeat for each line tSub in folders(pFolder)
+      if tSub is "." or tSub is ".." or tSub begins with "_" then next repeat
+      put Ig.ListFiles(pFolder & "/" & tSub, pRel & tSub & "/", pSuffix) after tOut
+   end repeat
+   return tOut
+end Ig.ListFiles
+
+on Ig.LibraryPick pLine
+   local tRel, tPath, tName
+   if pLine is not a number then exit Ig.LibraryPick
+   put line pLine of sLibList into tRel
+   put Ig.DataRoot() & "/" & sLib["folder"] & "/" & tRel into tPath
+   if char -4 to -1 of tRel is ".wtf" then
+      put "Ig.WTF" & pLine into tName
+      Mesh.Define tName, Ig.WTFMesh(tPath)
+      if sSelected is not empty and gObjectTransforms[sSelected]["mesh"] begins with "Ig.WTF" then Entity.Kill sSelected
+      put Entity.Spawn(tName, 0, -90, 0, Ig.NextColor()) into sSelected
+      put sSelected & cr after sMade
+      Ig.Say "MODEL:" && toUpper(tRel) && "(" & sLib["v"] && "VERTICES," && sLib["e"] && "EDGES)"
+   else
+      Ig.Say toUpper(tRel) && "(" & the number of lines of URL ("file:" & tPath) && "LINES; OPENING THESE IS NEXT)"
+   end if
+end Ig.LibraryPick
+
+-- an iGame3D .wtf model -> a wire mesh: its #Vertices (x,y,z,bone) and #Edges (a,b, from 0),
+-- centred and scaled to about 180 units; iGame3D's y is up, Vibecode3D's is down
+function Ig.WTFMesh pPath
+   local tText, n, tCount, i, tV, tM, minX, maxX, minY, maxY, minZ, maxZ, k, cx, cy, cz, tLine
+   put URL ("file:" & pPath) into tText
+   replace numToChar(13) with empty in tText
+   put Mesh.New() into tM
+   put lineOffset("#Vertices:", tText) into n
+   if n is 0 then return tM
+   put line n + 1 of tText into tCount
+   put 1e9 into minX
+   put -1e9 into maxX
+   put 1e9 into minY
+   put -1e9 into maxY
+   put 1e9 into minZ
+   put -1e9 into maxZ
+   repeat with i = 1 to tCount
+      put line n + 1 + i of tText into tLine
+      put item 1 of tLine into tV[i]["x"]
+      put item 2 of tLine into tV[i]["y"]
+      put item 3 of tLine into tV[i]["z"]
+      put min(minX, tV[i]["x"]) into minX
+      put max(maxX, tV[i]["x"]) into maxX
+      put min(minY, tV[i]["y"]) into minY
+      put max(maxY, tV[i]["y"]) into maxY
+      put min(minZ, tV[i]["z"]) into minZ
+      put max(maxZ, tV[i]["z"]) into maxZ
+   end repeat
+   put 180 / max(0.001, max(maxX - minX, max(maxY - minY, maxZ - minZ))) into k
+   put (minX + maxX) / 2 into cx
+   put (minY + maxY) / 2 into cy
+   put (minZ + maxZ) / 2 into cz
+   repeat with i = 1 to tCount
+      Mesh.AddVertex tM, (tV[i]["x"] - cx) * k, -(tV[i]["y"] - cy) * k, (tV[i]["z"] - cz) * k
+   end repeat
+   put tCount into sLib["v"]
+   put lineOffset("#Edges:", tText) into n
+   put 0 into sLib["e"]
+   if n > 0 then
+      put line n + 1 of tText into tCount
+      put tCount into sLib["e"]
+      repeat with i = 1 to tCount
+         put line n + 1 + i of tText into tLine
+         Mesh.AddLine tM, item 1 of tLine + 1, item 2 of tLine + 1
+      end repeat
+   end if
+   return tM
+end Ig.WTFMesh
 
 function Ig.ToolList
    local t
