@@ -23,7 +23,7 @@ global gNoMouse        -- true while an AI tests: aim by facing, never read the 
 
 local sPX, sPY, sPlayer, sBoss, sRing, sRings, sSpear, sTok, sTokN, sPass, sGot
 local sLevel, sLives, sUpdate, sSpeed, sNextUpdate, sOver, sWon, sTicks, sTestKeys, sKeysWas
-local sOrb, sOrbN, sBump, sAimAng, sAimMode, sMouseWas, sRay
+local sArm, sHeld, sOrb, sOrbN, sBump, sAimAng, sAimMode, sMouseWas, sRay
 local sHUDWas, sMsg, sMsgUntil, sSafe, sFaceX, sFaceY, sAimX, sAimY, sAim
 
 constant kZ = 360
@@ -90,7 +90,11 @@ on Probe.StartLevel
    put 0 into sPX
    put 230 into sPY
    put Entity.Spawn("Probe.Man", sPX, sPY, kZ, "#40E0FF") into sPlayer
-   -- the aim line: a dashed arrow
+   -- the throwing arm and the spear in its hand follow the aim
+   Mesh.Define "Probe.Arm", Probe.ArmMesh()
+   Mesh.Define "Probe.Held", Probe.HeldMesh()
+   put Entity.Spawn("Probe.Arm", sPX, sPY - 20, kZ, "#40E0FF") into sArm
+   put Entity.Spawn("Probe.Held", sPX, sPY - 20, kZ, "#40E0FF") into sHeld
    Mesh.Define "Probe.Aim", Probe.AimMesh()
    put Entity.Spawn("Probe.Aim", sPX, sPY - 65, kZ, "#FFE060") into sAim
    put 0 into sFaceX
@@ -153,15 +157,39 @@ function Probe.ManMesh
    Mesh.AddVertex tM, -7, 6, 0
    Mesh.AddVertex tM, 7, 6, 0
    Mesh.AddVertex tM, -9, -12, 0
-   Mesh.AddVertex tM, 9, -24, 0
    Mesh.AddLine tM, 1, 2
    Mesh.AddLine tM, 2, 3
    Mesh.AddLine tM, 3, 4
    Mesh.AddLine tM, 3, 5
    Mesh.AddLine tM, 2, 6
-   Mesh.AddLine tM, 2, 7
    return tM
 end Probe.ManMesh
+
+-- the throwing arm: shoulder at 0,0, upper arm and forearm reaching along +x
+function Probe.ArmMesh
+   local tM
+   put Mesh.New() into tM
+   Mesh.AddVertex tM, 0, 0, 0
+   Mesh.AddVertex tM, 8, 3, 0
+   Mesh.AddVertex tM, 16, 0, 0
+   Mesh.AddLine tM, 1, 2
+   Mesh.AddLine tM, 2, 3
+   return tM
+end Probe.ArmMesh
+
+-- the spear in the hand: from behind the hand to well in front of it
+function Probe.HeldMesh
+   local tM
+   put Mesh.New() into tM
+   Mesh.AddVertex tM, 4, 0, 0
+   Mesh.AddVertex tM, 40, 0, 0
+   Mesh.AddVertex tM, 34, -3, 0
+   Mesh.AddVertex tM, 34, 3, 0
+   Mesh.AddLine tM, 1, 2
+   Mesh.AddLine tM, 2, 3
+   Mesh.AddLine tM, 2, 4
+   return tM
+end Probe.HeldMesh
 
 function Probe.Radius k
    return 55 + 42 * k
@@ -289,8 +317,17 @@ on Probe.AimAt
    put sin(sAimAng) into sAimY
    if sTicks mod 2 is 0 then Probe.DrawRay
    -- the aim line, in front of the runner
-   SetObjectPosition sAim, sPX + sAimX * 45, sPY - 20 + sAimY * 45, kZ
-   SetObjectRotation sAim, 0, 0, atan2(sAimY, sAimX)
+   SetObjectPosition sAim, sPX + sAimX * 62, sPY - 20 + sAimY * 62, kZ
+   SetObjectRotation sAim, 0, 0, sAimAng
+   SetObjectPosition sArm, sPX, sPY - 20, kZ
+   SetObjectRotation sArm, 0, 0, sAimAng
+   -- the spear rides in the hand while it's there; otherwise it's parked out of sight
+   if sSpear["state"] is "hand" then
+      SetObjectPosition sHeld, sPX, sPY - 20, kZ
+   else
+      SetObjectPosition sHeld, 0, -5000, kZ
+   end if
+   SetObjectRotation sHeld, 0, 0, sAimAng
 end Probe.AimAt
 
 -- the dotted preview: straight to the first wall or bumper, then the first ricochet
