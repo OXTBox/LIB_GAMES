@@ -45,6 +45,7 @@ on Game.OnStart
    Collision.ClearRules
    put 1 into sLevel
    put 5 into sLives
+   put empty into sAimMode          -- mouse aim unless an AI test switched the mouse off
    put false into sOver
    put false into sWon
    put 0 into sTicks
