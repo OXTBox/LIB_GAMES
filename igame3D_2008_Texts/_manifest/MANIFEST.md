@@ -164,6 +164,44 @@ against source: function lists complete and descriptions accurate.
   (`handle_object_eyes/ears`, `sort_perceived_objects_by_priority`, `do_task`). This is
   a ready model for agents that *detect* before they act.
 
+**Review 3 (2026-11-12, 17:30, 120 drafts, during the Scripts run).** The 13 new RTS drafts
+read well against source (RTS_Weapons checked line by line: every function right). Two new
+faults, both fixed in prompt v3 + runner (v2 kept as `spark/.prompt_v2_2026-11-12.md`; they apply
+when run_spark.sh starts its next python process, i.e. the "everything else" phase):
+- **Self-talk** in 7 drafts: Spark argued with the PART rules inside its answer ("Wait, the
+  instructions say... Let me correct") and wrote sections twice; in RTS_astar it ran out of
+  tokens doing so. Trigger: the `Top level` rule, which Spark had to judge itself, and long
+  functions cut into several parts being labelled "top-level code only". Now the runner decides
+  (`lua_toplevel`: Lua block depth) and tells Spark: HAS / has NO code outside functions, or
+  "middle of long function X: one `### X (continued)` section". `ask()` retries once on self-talk
+  and stamps `<!-- SELF-TALK -->` if it repeats. The 7 drafts moved to `superseded/prompt_v2/`
+  (kept as bad examples); the next phase redoes them because it skips only finished files.
+- **Padded Depends on** in 49 file summaries: prompt background (`Data/` 35, `dofile` 15,
+  `loadLevel` 13, `gObjects` 9) listed though the code never uses it. The FILE prompt now says
+  copy Depends on from the part notes' Uses lines; `fit()` keeps Uses lines when shrinking notes.
+  Not rerun (descriptions are fine): **glossary merge rule — ignore a Depends-on name the
+  checker marks padded.**
+- `check_drafts.py` now flags **self-talk** and **padded Depends on** (negations such as
+  "no `Data/` paths" are skipped); `--help` prints its usage instead of running.
+
+**Status 2026-11-13 00:10 and prompt v4.** 225 drafts, 179 clean; 42% of the requests done.
+The v3 fixes held: 4 self-talk answers, all fixed by the automatic retry; the 7 set-aside
+drafts were redone. New fault: folder notes ran out of tokens in the "Shared with other
+folders" list (4 notes, plus one file note). Prompt v4 (v3 kept as `spark/.prompt_v3_2026-11-13.md`)
+caps the Files, Shared and Procedure lines. Also, the owner: `.fl` FLUID files duplicate the
+`.lua` beside them in murgaLua iGame3D, so they are listed but no longer sent. That leaves 897
+requests instead of 1,413 (about 10 hours). The 5 cut-off drafts went to `superseded/prompt_v3/`
+and the run was restarted (resumable). `Scripts/Functions/_FOLDER.md`, cut off twice before,
+now comes out complete. `Fluid/Mappers` (17 .lua, all dated 2009-01-13) reviewed by Claude by function sets:
+three lines of one tool family. Dungeon draw: Dungeon3D = DungeonDraw -> DungeonDraw3D ->
+DungeonDraw3Dn ~ **DungeonDraw3D8** (final: `resestGrid` fixed, wall copy + quad mesh), side
+branch DungeonMagicDraw. Dungeon mapper: MapperB < DungoneMap < DungeonMapperNOBSD ->
+DungeonMapperworks (= the functions of `Scripts/Functions/dungeon_functions.lua`; the final tool
+is `Fluid/DungeonMapper/DungeonMapper1226830pm.lua`) and **DungeonMapperNaked** (the window
+alone, loading the library). Mapper: **Mapper** (colour cycling) -> Mapper2 < **Mapper3**
+(drag drawing); Mapper4 < **Mapper5** (button-list browser), MapperA a cut of it. Spark reads
+only the 5 in bold (`ONLY` in spark_manifest.py), about 30 requests instead of 125.
+
 ## 6. Glossary seed (Claude, to be grown from Spark's Glossary lines)
 
 - **Data root / gameroot** — folder holding `Data/`; all paths relative to it. `IG3D_ROOT` scene info.
