@@ -1,0 +1,45 @@
+# SEQUENCE  Intro  (Thrmnlra: GLRBAL THRMNLRA RWA, working title)
+# The opening, from the owner's idea (~/projects/LIB_LLMOUT/Read/LIB_GAMES/games_to_Make_input.txt):
+# a black login screen, a friend typing in a movie, a countdown full of typos, the big
+# board, the launch, the title alone, fade out. (Typing to stop missiles comes after
+# you choose targets, in Map.seq: the owner's note, 2026-11-12.)
+#
+# Read it like a cue sheet, top to bottom. One CLIP per line, five columns:
+#   when      0 / 12.5 / 1:05   seconds on the sequence clock
+#             +0.5              half a second after the beat above has ended
+#             with / with +0.9  together with the line above (same beat), or a bit later
+#             after <id> +1     tied to the clip with that id=
+#   track     a lane, as in an editor: term (typed screen), board (big centre text),
+#             world (the 3D map). Lanes are for reading and for the visual timeline later.
+#   clip      the kind of clip: Data/Clips/<Kind>.livecodescript here, or a shared one in
+#             Vibecode3D_Games/Sequencer/Clips/ (Wait Type Ask Title Fade Cue Console)
+#   settings  key=value; key=value      hold=yes: the clock waits for the player
+#   what      what the audience sees, in plain words (the director's note)
+#
+when      | track | clip      | settings                                                              | what
+0         | term  | Console   | x=0.05; y=0.18; w=0.9; rows=24; size=12; color=#7CFF7C; clear=yes      | a black terminal, phosphor green
++0        | term  | Wait      | dur=1.2                                                                 | nothing yet, the screen hums
++0        | term  | Type      | text=>> GREETINGS, WOULD YOU LIKE TO PLAY A GAME?; cps=16; typos=0.05   | typed live, like a friend texting in a movie
++0.3      | term  | Ask       | options=Y,N; var=play; blast=yes; hold=yes                              | level 1: ONE letter, Y or N; the answer is shot into bits by arcade lasers
++0.4      | term  | Type      | text=HOW ABOUT GLRBAL THRMNLRA RWA?; cps=22; typos=0.1                 | always spelled mostly wrong
++0.2      | term  | Ask       | options=OK,NO; whole=yes; var=okay; blast=yes; hold=yes; words=WHAT,HUH,WTF,HELP; goto=Trainer | level 2: TWO letters, OK or NO: no matter what, it starts. WHAT? HUH? WTF? HELP? -> boot camp
++0.3      | term  | Fade      | dur=0.25; clear=yes                                                     | cut to a clean screen
++0        | term  | Type      | text=>POSITIVE CONTACT SENDING SYSTEMS ON RED ALERT, SIGNALING DRONES FOR CONGTINGENCY SWEEP.; cps=55 | the machine talks now, fast
++0.15     | term  | Type      | text=ESTABLISHING OPTIMUM FIRS STRIKE RESPONSE.; cps=55                 |
++0.15     | term  | Type      | text=ALL UNITS ASSIGNED TO SECTOR AA]A8FA544895 GO IMMEDIATELY TO YOUR SECURED FACILITIES.; cps=60 |
++0.3      | term  | Countdown | from=42153261; lines=18; rate=14; tease=3; garble=0.22                  | YOU HRVE ... MINUTES: a tease upward, then racing to zero
++0.4      | term  | Fade      | dur=0.4; clear=yes                                                      |
++0        | world | Cue       | call=Thrm.World; mood=calm                                              | the big board: a subdued world grid, blue bases left, red right
+with      | board | Title     | items=DEFCON 4,DEPHQN 3,DEF1ON 2,DECFON 1; every=0.9; size=34; y=0.18; color=#FF4040; blink=yes; dur=1.6; keep=yes; id=defcon | DEFCON counts down, misspelled
+with defcon +0.9 | world | Cue       | call=Thrm.World; mood=alert                                             | the grid wakes up
+with defcon +2.7 | world | Cue       | call=Thrm.World; mood=red                                               | red alert: the grid pulses
++0.2      | term  | Console   | x=0.05; y=0.25; w=0.9; rows=4; size=14; clear=yes                       | the operator's line, at the top under the board (heads up: the map is the show)
++0        | term  | Type      | text=LAUNCH MISSILES? TYPE YAY OR NAY; cps=24; cursor=no                                |
++0        | term  | Ask       | options=YAY,NAY; whole=yes; var=launch; hold=yes                        | level 3: THREE letters, YAY or NAY (either launches)
++0        | term  | Type      | text=LARNCHING MIZSILES...; cps=20                                      |
+with      | world | Cue       | call=Thrm.Launch; n=8                                                   | lines arc across the map from both sides
++2.5      | term  | Wait      | dur=0.1                                                                 | let them fly
++0.4      | world | Cue       | call=Thrm.World; mood=off                                               | black screen
+with      | term  | Fade      | dur=0.1; clear=yes                                                      |
++1.0      | board | Title     | items=THRMNERLIC RAW; size=48; y=0.42; color=#E0FFE0; dur=2.6; keep=yes  | the title, alone
++0        | board | Fade      | dur=1.6; clear=yes                                                      | fade out

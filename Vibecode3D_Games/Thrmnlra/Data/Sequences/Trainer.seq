@@ -1,0 +1,43 @@
+# SEQUENCE  Trainer  (Thrmnlra)  boot camp: how to play, shouted.
+# Reached from the Intro when the player answers "HOW ABOUT GLRBAL THRMNLRA RWA?" with
+# WHAT, HUH, WTF or HELP (a trailing ? is fine). The sergeant learns your name, gets it
+# wrong, and drills you on words (AIM ARM LOCK TARGET CONFIRM, then the LAUNCH trap: Simon says) while the world map shows what every typo does:
+# the first wakes an enemy site, the second launches from it. One rule first: never type
+# LAUNCH unless given direct orders. The drill then calls LAUNCH without one: a trap.
+# Typing LAUNCH before the drill skips the tutorial (Hotword, background).
+# {name} is what the player typed; {name:garble} is the card's misspelling of it (always
+# the same one). Commas separate the items of words= and the yell lists.
+# Shots: WIDE = the map with the Sarge standing on it, fists on hips; CLOSE-UP = his angry
+# grid face (Data/Faces), cut in on his big lines and on every typo yell (Drill does that).
+# The console sits at the TOP so the player looks up at the action, not down.
+# Columns: when | track | clip | settings | what   (see Intro.seq for the words)
+when      | track | clip    | settings                                                         | what
+0         | term  | Fade    | dur=0.2; clear=yes                                               | cut to a clean screen
+with      | term  | Hotword | words=LAUNCH; goto=Map; background=yes; until=drill; clear=yes; color=#FF4040; say=LAUNCH?! NOBODY GAVE YOU ORDERS! ...FINE, HOTSHOT. GET TO YOUR STATION. | type LAUNCH any time before the drill: skip the tutorial (the Sarge is not pleased)
++0        | term  | Console | x=0.05; y=0.17; w=0.9; rows=4; size=12; color=#7CFF7C; clear=yes  | the console at the TOP: eyes up on the parade ground
+with      | world | Cue     | call=Thrm.World; mood=calm                                       | WIDE: the training ground (the world map, calm)
+with      | world | Cue     | call=Thrm.Sarge; show=yes; x=0; z=140                            | the Sarge, a giant stick figure at the back of the map, fists on hips (TRON)
+with      | board | Title   | items=BASIC TRAINING; size=34; y=0.5; color=#FFB000; dur=1.6      | a sign over the parade ground
++0.2      | cam   | Cue     | call=Thrm.CloseUp; dur=3.6                                          | CLOSE-UP: his angry grid face, shouting
+with      | term  | Type    | text=LISTEN UP! TYPE WHAT I TELL YOU TO TYPE AND MAKE NO MISTAKES.; cps=40; color=#FFB000 | the drill sergeant, bombastic
++0.1      | term  | Type    | text=THE FATE OF THE WORLD IS AT YOUR FINGERTIPS!; cps=40; color=#FFB000 |
++0.2      | term  | Type    | text=AND NO LOOKING AT THE KEYBOARD. GAZERS ARE LOSERS!*; cps=40; color=#FFB000 |
++0.4      | term  | Input   | text=WHAT IS YOUR NAME, SOLDIER?; var=name; hold=yes             | start easy: your name, then Return
++0.3      | term  | Type    | text=DID YOU SAY {name:garble}?; cps=30; color=#FFB000            | he gets it wrong
++0        | term  | Ask     | options=YES,NO; var=heard; hold=yes                              | yes or no, it makes no difference
++0.2      | cam   | Cue     | call=Thrm.CloseUp; dur=2                                            | CLOSE-UP: his angry grid face, shouting
+with      | term  | Type    | text=THAT'S WHAT I THOUGHT YOU SAID, PRIVATE {name:garble}.; cps=35; color=#FFB000 |
+with      | world | Cue     | call=Thrm.Clock; mode=keys                                       | the world moves only as you type
++0.3      | term  | Type    | text=THIS IS THE WORLD, PRIVATE. EYES ON IT, NOT ON YOUR HANDS.; cps=40; color=#FFB000 |
++0.3      | cam   | Cue     | call=Thrm.CloseUp; dur=4                                            | CLOSE-UP: his angry grid face, shouting
+with      | term  | Type    | text=NEVER, UNDER ANY CIRCUMSTANCES, ARE YOU TO TYPE LAUNCH UNLESS GIVEN DIRECT ORDERS.; cps=40; color=#FFB000 | the one rule
++0.1      | term  | Type    | text=DO I MAKE MYSELF CLEAR?; cps=30; color=#FFB000              |
++0        | term  | Ask     | options=YES,NO; var=clear; hold=yes                              | either answer will do
++0.2      | cam   | Cue     | call=Thrm.CloseUp; dur=1.8                                          | CLOSE-UP: his angry grid face, shouting
+with      | term  | Type    | text=DAMN STRAIGHT. NOW TYPE WHAT I TELL YOU TO TYPE.; cps=40; color=#FFB000 |
++0.2      | term  | Drill   | id=drill; words=AIM,ARM,LOCK,TARGET,CONFIRM,LAUNCH; say=TYPE:; trap=yes; trapwait=6; trappass=GOOD. NO ORDER - NO LAUNCH. YOU MIGHT LIVE PRIVATE {name:garble}.,DID YOU HEAR A DIRECT ORDER? NEITHER DID I. GOOD.; trapfail=DID I GIVE YOU A DIRECT ORDER?! NO I DID NOT!,WHO TOLD YOU TO LAUNCH {name:garble}? NOBODY! LOOK AT THAT MAP!; var=typos; hold=yes; alertyell=YOU SEE THAT {name:garble}? YOUR FAT FINGER JUST WOKE THEM UP!,ALERT! THEY HEARD YOU FUMBLE PRIVATE!,ONE MORE LIKE THAT AND THEY FIRE!; launchyell=AND NOW THEY ARE LAUNCHING. THAT IS ON YOU {name:garble}!,THAT TYPO JUST COST A CITY. AGAIN!,THEY FIRED BECAUSE YOU LOOKED DOWN. DID YOU LOOK DOWN?; good=GOOD.,ADEQUATE.,MY GRANDMOTHER TYPES FASTER. NEXT! | AIM ARM LOCK TARGET CONFIRM, then TYPE: LAUNCH - SIMON SAYS: no direct order, so DON'T (hold off 6 s); type it and it really launches. Every typo shows its consequence on the map
++0.3      | world | Cue     | call=Thrm.Clock; mode=time                                       | hands off: what is flying lands
+with      | term  | Type    | text=THAT WILL DO. NOW GET TO THE MISSILE SCREEN, PRIVATE {name:garble}.; cps=35; color=#FFB000 |
++1.5      | term  | Fade    | dur=0.5; clear=yes                                               | fade out
+with      | world | Cue     | call=Thrm.Sarge; show=no                                         | he is gone
+with      | world | Cue     | call=Thrm.World; mood=off                                        | on to the Map

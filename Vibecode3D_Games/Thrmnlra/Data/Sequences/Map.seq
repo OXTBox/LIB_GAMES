@@ -1,0 +1,20 @@
+# SEQUENCE  Map  (Thrmnlra)  the tactical map: choose your targets, then type to stop the war.
+# Order from the owner's notes: targets first; first strike is yours (the enemy is caught
+# off guard, the machine makes you feel it); recall by asset name before midway and they
+# never know (-> Peace.seq), after midway names detonate in the air; then the long keys
+# and change under your fingers. While you type, the world runs by keystroke (each key
+# buys 0.3 s); typos escalate: alert, then launch. Columns: when | track | clip | settings | what (see Intro.seq)
+when      | track | clip      | settings                                                         | what
+0         | world | Cue       | call=Thrm.World; mood=calm                                       | the vector world, subdued, blue against red, green life between
+with      | term  | Console   | x=0.05; y=0.17; w=0.9; rows=4; size=12; clear=yes                | a command console too small for the job, at the TOP: eyes stay up on the map
++0.5      | board | Title     | items=ATTENTION; size=34; y=0.5; color=#FF4040; blink=yes; dur=1.5 | ATTENTION, flashing over the map
++0        | term  | Type      | text=STANDBY FOR FINAL ORDERS. SYSTEM ONLINE.; cps=40             |
++0        | world | Cue       | call=Thrm.Clock; mode=keys                                       | from here the world moves only as you type: every key counts
++0.2      | term  | Targets   | pick=3; var=targets; hold=yes                                    | the bait list in two columns, and the same names on the map: type three
++0.4      | world | Cue       | call=Thrm.Launch; from=armed                                     | FIRST STRIKE: your lit batteries fire at the names you typed; the enemy does not see it coming
++0.2      | term  | Type      | text=FIRST STRIKE AWAY. THE ENEMY WAS ASLEEP.; cps=30; color=#C8C8C8 | the machine, cold: a guilt trip
++0        | term  | Outbound  | peace=Peace; var=strike; hold=yes                                | MISSILES OUTBOUND: M123 M345 MZ98: type a name to recall it (before midway, they never know) or detonate it (after: Missile Command)
++0.4      | world | Cue       | call=Thrm.World; mood=red                                        | (only if it came to war) red alert
+with      | term  | RecallKey | text=FAIL-SAFE. TYPE THE KEY TO STOP THE COUNTERSTRIKE; key=XQ7-HALT-PAX-9071; mutate=0.5; var=failsafe; hold=yes | a long key that changes halfway
++0.2      | world | Cue       | call=Thrm.Clock; mode=time                                       | hands off: whatever is still flying lands
++0.5      | term  | Ask       | text=PROTOTYPE ENDS HERE. THE TYPING WAR IS NEXT.; options=AGAIN; anykey=yes; hold=yes | any key: play the opening again
