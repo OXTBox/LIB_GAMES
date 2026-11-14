@@ -20,9 +20,9 @@ when      | track | clip      | settings                                        
 0         | term  | Console   | x=0.05; y=0.18; w=0.9; rows=24; size=12; color=#7CFF7C; clear=yes      | a black terminal, phosphor green
 +0        | term  | Wait      | dur=1.2                                                                 | nothing yet, the screen hums
 +0        | term  | Type      | text=>> GREETINGS, WOULD YOU LIKE TO PLAY A GAME?; cps=16; typos=0.05   | typed live, like a friend texting in a movie
-+0.3      | term  | Ask       | options=YES,NO; var=play; blast=yes; hold=yes                           | YES or NO: whatever you press is shot into bits by arcade lasers
++0.3      | term  | Ask       | options=Y,N; var=play; blast=yes; hold=yes                              | level 1: ONE letter, Y or N; the answer is shot into bits by arcade lasers
 +0.4      | term  | Type      | text=HOW ABOUT GLRBAL THRMNLRA RWA?; cps=22; typos=0.1                 | always spelled mostly wrong
-+0.2      | term  | Ask       | options=OKAY,QUIPT; var=okay; blast=yes; hold=yes; words=WHAT,HUH,WTF,HELP; goto=Trainer | [O]KAY / [Q]UIPT: no matter what, it starts. WHAT? HUH? WTF? HELP? -> boot camp (Trainer.seq)
++0.2      | term  | Ask       | options=OK,NO; whole=yes; var=okay; blast=yes; hold=yes; words=WHAT,HUH,WTF,HELP; goto=Trainer | level 2: TWO letters, OK or NO: no matter what, it starts. WHAT? HUH? WTF? HELP? -> boot camp
 +0.3      | term  | Fade      | dur=0.25; clear=yes                                                     | cut to a clean screen
 +0        | term  | Type      | text=>POSITIVE CONTACT SENDING SYSTEMS ON RED ALERT, SIGNALING DRONES FOR CONGTINGENCY SWEEP.; cps=55 | the machine talks now, fast
 +0.15     | term  | Type      | text=ESTABLISHING OPTIMUM FIRS STRIKE RESPONSE.; cps=55                 |
@@ -34,8 +34,8 @@ with      | board | Title     | items=DEFCON 4,DEPHQN 3,DEF1ON 2,DECFON 1; every
 with defcon +0.9 | world | Cue       | call=Thrm.World; mood=alert                                             | the grid wakes up
 with defcon +2.7 | world | Cue       | call=Thrm.World; mood=red                                               | red alert: the grid pulses
 +0.2      | term  | Console   | x=0.05; y=0.25; w=0.9; rows=4; size=14; clear=yes                       | the operator's line, at the top under the board (heads up: the map is the show)
-+0        | term  | Type      | text=LAUNCH MISSILES?; cps=24; cursor=no                                |
-+0        | term  | Ask       | options=YES,NO; anykey=yes; var=launch; hold=yes                        | TYPE YES OR NO: the first key down is enough
++0        | term  | Type      | text=LAUNCH MISSILES? TYPE YAY OR NAY; cps=24; cursor=no                                |
++0        | term  | Ask       | options=YAY,NAY; whole=yes; var=launch; hold=yes                        | level 3: THREE letters, YAY or NAY (either launches)
 +0        | term  | Type      | text=LARNCHING MIZSILES...; cps=20                                      |
 with      | world | Cue       | call=Thrm.Launch; n=8                                                   | lines arc across the map from both sides
 +2.5      | term  | Wait      | dur=0.1                                                                 | let them fly

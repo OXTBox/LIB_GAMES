@@ -98,6 +98,8 @@ end Game.OnStart
 on Game.OnUpdate
    add 1 to sTicks
    if not sReady then exit Game.OnUpdate
+   -- the keyboard belongs to the game while it plays: take it back from any field
+   if sTicks mod 15 is 1 and word 1 of the focusedObject is "field" then focus on nothing
    dispatch "Seq.Step" to group "Sequencer" with kPace * sStepMS / 1000
    Thrm.AdvanceWorld
    Thrm.MoveMissiles
@@ -162,6 +164,26 @@ on enterKey
       pass enterKey
    end if
 end enterKey
+
+-- when a field has the keyboard (the xt3d bench has fields), Return arrives as returnInField,
+-- not returnKey: without these the name prompt never finished (the owner's bug, 2026-11-13)
+on returnInField
+   if sReady and bPlaying then
+      Thrm.KeyTick
+      dispatch "Seq.Key" to group "Sequencer" with "return"
+   else
+      pass returnInField
+   end if
+end returnInField
+
+on enterInField
+   if sReady and bPlaying then
+      Thrm.KeyTick
+      dispatch "Seq.Key" to group "Sequencer" with "return"
+   else
+      pass enterInField
+   end if
+end enterInField
 
 on backspaceKey
    if sReady and bPlaying then

@@ -4,13 +4,15 @@ script "Seq_Clip_Ask"
 ##   options   YES,NO: shown as [Y]ES / [N]O; a key picks the option it starts with,
 ##             or the whole word typed + Return
 ##   anykey=yes   any key counts as the first option
+##   whole=yes    the whole option must be typed (OK, YAY): shown without [ ]; no first-letter
+##                shortcut. For answers that grow a letter per level: Y/N, OK/NO, YAY/NAY
 ##   var       the answer is kept as a scene variable (Seq.Var(name)) for later clips
 ##   blast=yes the question and the options are shot into bits by arcade lasers
 ##   color     console colour if empty
 ##   words     extra answers typed in full, "?" at the end optional (WHAT,HUH,WTF,HELP);
 ##   goto      ...and the sequence they jump to (a branch: the rest of this one is skipped)
 
-local sOptions, sVar, sBlast, sIds, sTyped, sChosen, sDoneAt, sAny, sColor, sOptId, sNow, sWords, sGoto, sBranch
+local sOptions, sVar, sBlast, sIds, sTyped, sChosen, sDoneAt, sAny, sColor, sOptId, sNow, sWords, sGoto, sBranch, sWhole
 
 on Clip.Start pSet, pWhat
    local tLine, tOpt
@@ -19,6 +21,7 @@ on Clip.Start pSet, pWhat
    put pSet["var"] into sVar
    put pSet["blast"] is "yes" into sBlast
    put pSet["anykey"] is "yes" into sAny
+   put pSet["whole"] is "yes" into sWhole
    put pSet["color"] into sColor
    put toUpper(pSet["words"]) into sWords
    put pSet["goto"] into sGoto
@@ -27,7 +30,11 @@ on Clip.Start pSet, pWhat
    if pSet["text"] is not empty then put Term.Print(pSet["text"], sColor) into sIds
    repeat for each item tOpt in sOptions
       if tLine is not empty then put " / " after tLine
-      put "[" & char 1 of tOpt & "]" & char 2 to -1 of tOpt after tLine
+      if sWhole then
+         put tOpt after tLine
+      else
+         put "[" & char 1 of tOpt & "]" & char 2 to -1 of tOpt after tLine
+      end if
    end repeat
    put Term.Print(tLine && "> _", sColor) into sOptId
    Term.Sticky sOptId
@@ -80,9 +87,19 @@ on Clip.Key pKey
       Ask.Choose Ask.Word()
       return "taken"
    end if
+   -- whole=yes: the option itself, typed in full
+   if sWhole then
+      repeat for each item tOpt in sOptions
+         if toUpper(tOpt) is sTyped then
+            Ask.Choose tOpt
+            return "taken"
+         end if
+      end repeat
+   end if
    -- not on the way to a branch word: start over from this key, so a stray letter
    -- never blocks Y / N (it used to pile up in front of them)
    if not Ask.Prefix(sTyped) then put toUpper(pKey) into sTyped
+   if sWhole then return "taken"
    if the number of chars of sTyped is 1 and not Ask.Prefix(sTyped) then
       repeat for each item tOpt in sOptions
          if char 1 of toUpper(tOpt) is toUpper(pKey) then
@@ -111,6 +128,11 @@ function Ask.Prefix pText
    repeat for each item tWord in sWords
       if char 1 to the number of chars of pText of tWord is pText then return true
    end repeat
+   if sWhole then
+      repeat for each item tWord in sOptions
+         if char 1 to the number of chars of pText of toUpper(tWord) is pText then return true
+      end repeat
+   end if
    return false
 end Ask.Prefix
 
