@@ -22,6 +22,7 @@ constant kMenus = "File=Level;~New/N;~Save/S;~Reset;-;Mesh;~Save In Level;~Expor
 constant kInk = "#7CFF7C"
 
 on Game.OnStart
+   focus on nothing          -- arrow keys belong to the game, never to a menu or a field
    Engine.ResetCamera
    Scene.ClearAll
    Particles.Clear
@@ -514,3 +515,7 @@ end Game.OnStop
 
 on Collision.Hit pA, pB
 end Collision.Hit
+
+-- the arrows move you; a focused menu or field must never get them
+on arrowKey pKey
+end arrowKey
