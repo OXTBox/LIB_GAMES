@@ -21,6 +21,8 @@ set the script of stack "HeadlessPlay" to tStub
 set the script of card 1 of stack "HeadlessPlay" to URL "file:$W/../Vibecode3D_Games/Vibecode3D_Play_$GAME.livecodescript"
 put the result into tCompile
 dispatch "$PRE.TestKeys" to card 1 of stack "HeadlessPlay" with "0"
+global gNoMouse
+put true into gNoMouse
 dispatch "Game.OnStart" to card 1 of stack "HeadlessPlay"
 dispatch function "$PRE.State" to card 1 of stack "HeadlessPlay"
 put "start: " & the result & cr into tLog

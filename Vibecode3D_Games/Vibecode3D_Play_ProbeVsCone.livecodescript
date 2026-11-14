@@ -7,9 +7,13 @@
 ## A spear that breaks a cube returns to the hand; one that misses bounces off the walls
 ## and is dangerous until it lies still and is picked up.
 ## Teaches: aiming, bouncing, a shield that repairs itself.
-## CONTROLS  Arrows or WASD: run   aim with the mouse   click or Space: throw
+## CONTROLS  Arrows or WASD: run   aim with the mouse, or Q / E to sweep the aim
+##           click or Space: throw   (the dotted line shows the first ricochet)
 ##           (no mouse: it throws the way you last ran)   Escape: stop
-## RULES     a moving loose spear that hits you costs a life. Hit the Cone with the
+## RULES     geometry foes orbit the Cone fast, swinging out at you: a touch costs a life;
+##           a spear smashes them (they come back) and ricochets. Walls and the four bumper
+##           bars bank the spear: the first three bounces keep it lively.
+##           A fast loose spear that hits you costs a life. Hit the Cone with the
 ##           password complete. 5 levels.
 ######################################################################################
 
@@ -19,6 +23,7 @@ global gNoMouse        -- true while an AI tests: aim by facing, never read the 
 
 local sPX, sPY, sPlayer, sBoss, sRing, sRings, sSpear, sTok, sTokN, sPass, sGot
 local sLevel, sLives, sUpdate, sSpeed, sNextUpdate, sOver, sWon, sTicks, sTestKeys, sKeysWas
+local sOrb, sOrbN, sBump, sAimAng, sAimMode, sMouseWas, sRay
 local sHUDWas, sMsg, sMsgUntil, sSafe, sFaceX, sFaceY, sAimX, sAimY, sAim
 
 constant kZ = 360
@@ -39,16 +44,16 @@ on Game.OnStart
    HUD.Clear
    Collision.ClearRules
    put 1 into sLevel
-   put 3 into sLives
+   put 5 into sLives
    put false into sOver
    put false into sWon
    put 0 into sTicks
    Probe.StartLevel
 end Game.OnStart
 
--- level table: shield rings | update seconds | spear speed | (lives carry)
+-- level table: shield rings | update seconds | spear speed | orbiters | orbit speed (lives carry)
 function Probe.Row pLevel
-   return line pLevel of ("1,6,9" & cr & "2,5,10" & cr & "2,4,11" & cr & "3,4,12" & cr & "3,3,13")
+   return line pLevel of ("1,6,10,2,0.035" & cr & "2,5,11,3,0.04" & cr & "2,4,12,4,0.045" & cr & "3,4,13,5,0.05" & cr & "3,3,14,6,0.056")
 end Probe.Row
 
 on Probe.StartLevel
@@ -94,6 +99,15 @@ on Probe.StartLevel
    put -1 into sAimY
    put empty into sSpear
    put "hand" into sSpear["state"]
+   Probe.MakeBumpers
+   Probe.MakeOrbiters item 4 of tRow, item 5 of tRow
+   if sAimMode is empty then
+      put "mouse" into sAimMode
+      if gNoMouse is true then put "face" into sAimMode
+   end if
+   put -pi / 2 into sAimAng
+   Mesh.Define "Probe.Ray", Mesh.New()
+   put Entity.Spawn("Probe.Ray", 0, 0, kZ, "#806020") into sRay
    put sTicks + sUpdate into sNextUpdate
    put 0 into sSafe
    Probe.Say "BREAK CUBES, COLLECT" && the number of chars of sPass && "KEYS, THEN HIT THE CONE", 4
@@ -235,6 +249,7 @@ on Game.OnUpdate
    end if
    if sSafe > 0 then subtract 1 from sSafe
    Probe.MoveSpear
+   Probe.MoveOrbiters
    Probe.Tokens
    SetObjectRotation sBoss, 0, sTicks / 30, 0
    Probe.ShowHUD
@@ -244,25 +259,178 @@ end Game.OnUpdate
 
 -- the aim: toward the mouse pointer over the arena; without a mouse, the way you last ran
 on Probe.AimAt
-   local tM, tW, dx, dy, d
-   put sFaceX into dx
-   put sFaceY into dy
+   local tM, tW, dx, dy, d, tKeys
+   put Probe.Keys() into tKeys
+   -- Q / E sweep the aim round the full circle; moving the mouse takes it back
+   if 113 is among the items of tKeys then
+      subtract 0.06 from sAimAng
+      put "keys" into sAimMode
+   end if
+   if 101 is among the items of tKeys then
+      add 0.06 to sAimAng
+      put "keys" into sAimMode
+   end if
    if gNoMouse is not true then
       put the mouseLoc into tM
+      if sMouseWas is not empty and tM is not sMouseWas then put "mouse" into sAimMode
+      put tM into sMouseWas
+   end if
+   if sAimMode is "mouse" and gNoMouse is not true then
       put Probe.ScreenToWorld(item 1 of tM, item 2 of tM) into tW
       if tW is not empty then
          put item 1 of tW - sPX into dx
          put item 2 of tW - (sPY - 20) into dy
+         if dx * dx + dy * dy > 1 then put atan2(dy, dx) into sAimAng
       end if
+   else if sAimMode is "face" and (sFaceX is not 0 or sFaceY is not 0) then
+      put atan2(sFaceY, sFaceX) into sAimAng
    end if
-   put sqrt(dx * dx + dy * dy) into d
-   if d < 0.01 then exit Probe.AimAt
-   put dx / d into sAimX
-   put dy / d into sAimY
+   put cos(sAimAng) into sAimX
+   put sin(sAimAng) into sAimY
+   if sTicks mod 2 is 0 then Probe.DrawRay
    -- the aim line, in front of the runner
    SetObjectPosition sAim, sPX + sAimX * 45, sPY - 20 + sAimY * 45, kZ
    SetObjectRotation sAim, 0, 0, atan2(sAimY, sAimX)
 end Probe.AimAt
+
+-- the dotted preview: straight to the first wall or bumper, then the first ricochet
+on Probe.DrawRay
+   local tM, x, y, vx, vy, n, tHit, tLeg, tR
+   put Mesh.New() into tM
+   if sSpear["state"] is "hand" then
+      put sPX into x
+      put sPY - 20 into y
+      put sAimX * 10 into vx
+      put sAimY * 10 into vy
+      repeat with tLeg = 1 to 2
+         repeat with n = 1 to 90
+            add vx to x
+            add vy to y
+            if tLeg is 2 and n > 14 then exit repeat
+            if n mod 3 is 0 then
+               Mesh.AddVertex tM, x, y, 0
+               Mesh.AddVertex tM, x + vx * 0.4, y + vy * 0.4, 0
+               Mesh.AddLine tM, tM["count"] - 1, tM["count"]
+            end if
+            put Probe.Reflect(x, y, vx, vy) into tR
+            if tR is not empty then
+               put item 1 of tR into vx
+               put item 2 of tR into vy
+               exit repeat
+            end if
+         end repeat
+      end repeat
+   end if
+   Mesh.Define "Probe.Ray", tM
+end Probe.DrawRay
+
+-- a ricochet off the walls or a bumper: the new "vx,vy", or empty when nothing is hit
+function Probe.Reflect x, y, vx, vy
+   local b, tAX, tAY, tBX, tBY, nx, ny, tLen, tS, tT, tDot
+   if x < kLeft and vx < 0 or x > kRight and vx > 0 then return -vx & comma & vy
+   if y < kTop and vy < 0 or y > kBottom and vy > 0 then return vx & comma & -vy
+   repeat for each key b in sBump
+      put item 1 of sBump[b] into tAX
+      put item 2 of sBump[b] into tAY
+      put item 3 of sBump[b] into tBX
+      put item 4 of sBump[b] into tBY
+      put sqrt((tBX - tAX) ^ 2 + (tBY - tAY) ^ 2) into tLen
+      put -(tBY - tAY) / tLen into nx
+      put (tBX - tAX) / tLen into ny
+      put (x - tAX) * nx + (y - tAY) * ny into tS
+      put ((x - tAX) * (tBX - tAX) + (y - tAY) * (tBY - tAY)) / tLen into tT
+      if abs(tS) < 9 and tT >= -4 and tT <= tLen + 4 then
+         put vx * nx + vy * ny into tDot
+         if tDot * tS < 0 then return (vx - 2 * tDot * nx) & comma & (vy - 2 * tDot * ny)
+      end if
+   end repeat
+   return empty
+end Probe.Reflect
+
+-- four angled bars that bank the spear
+on Probe.MakeBumpers
+   local b, tM
+   put empty into sBump
+   put "-330,-120,-250,-200" into sBump[1]
+   put "330,-120,250,-200" into sBump[2]
+   put "-330,150,-250,90" into sBump[3]
+   put "330,150,250,90" into sBump[4]
+   put Mesh.New() into tM
+   repeat for each key b in sBump
+      Mesh.AddVertex tM, item 1 of sBump[b], item 2 of sBump[b], 0
+      Mesh.AddVertex tM, item 3 of sBump[b], item 4 of sBump[b], 0
+      Mesh.AddLine tM, tM["count"] - 1, tM["count"]
+      Mesh.AddVertex tM, item 1 of sBump[b], item 2 of sBump[b], 6
+      Mesh.AddVertex tM, item 3 of sBump[b], item 4 of sBump[b], 6
+      Mesh.AddLine tM, tM["count"] - 1, tM["count"]
+   end repeat
+   Mesh.Define "Probe.Bumpers", tM
+   get Entity.Spawn("Probe.Bumpers", 0, 0, kZ, "#40E0FF")
+end Probe.MakeBumpers
+
+-------------------------------------------------------------------- the orbiters
+
+-- geometry foes circling the Cone: each swings in and out, some the other way round
+on Probe.MakeOrbiters pCount, pSpeed
+   local n, tShape
+   put empty into sOrb
+   put pCount into sOrbN
+   Mesh.Define "Probe.Tetra", MeshPyramid(3, 16, 26)
+   Mesh.Define "Probe.Octa", MeshSphere(15, 2, 4)
+   Mesh.Define "Probe.Box", MeshBox(22, 22, 22)
+   repeat with n = 1 to pCount
+      put item (n - 1) mod 3 + 1 of "Probe.Tetra,Probe.Octa,Probe.Box" into sOrb[n]["mesh"]
+      put n * 2 * pi / pCount into sOrb[n]["a"]
+      put pSpeed * (1 + (n mod 3) * 0.25) into sOrb[n]["w"]
+      if n mod 2 is 0 then put -sOrb[n]["w"] into sOrb[n]["w"]
+      put Probe.Radius(max(1, sRings)) + 50 + (n mod 2) * 25 into sOrb[n]["r"]
+      put 50 + (n mod 3) * 15 into sOrb[n]["swing"]
+      put n * 1.7 into sOrb[n]["phase"]
+      put 0 into sOrb[n]["deadUntil"]
+      Probe.OrbSpawn n
+   end repeat
+end Probe.MakeOrbiters
+
+on Probe.OrbSpawn n
+   put Entity.Spawn(sOrb[n]["mesh"], 0, 0, kZ - 3, item (n - 1) mod 3 + 1 of "#FF5050,#FFB000,#FF60D0") into sOrb[n]["key"]
+end Probe.OrbSpawn
+
+on Probe.MoveOrbiters
+   local n, r, dx, dy, d, tN
+   repeat with n = 1 to sOrbN
+      if sOrb[n]["key"] is empty then
+         if sTicks >= sOrb[n]["deadUntil"] then Probe.OrbSpawn n
+         next repeat
+      end if
+      add sOrb[n]["w"] to sOrb[n]["a"]
+      put sOrb[n]["r"] + sOrb[n]["swing"] * sin(sTicks / 40 + sOrb[n]["phase"]) into r
+      put kBossX + r * cos(sOrb[n]["a"]) into sOrb[n]["x"]
+      put kBossY + r * sin(sOrb[n]["a"]) into sOrb[n]["y"]
+      SetObjectPosition sOrb[n]["key"], sOrb[n]["x"], sOrb[n]["y"], kZ - 3
+      SetObjectRotation sOrb[n]["key"], sTicks / 6, sTicks / 9, 0
+      -- the spear smashes it and ricochets off
+      if sSpear["state"] is "flying" or sSpear["state"] is "loose" then
+         put sSpear["x"] - sOrb[n]["x"] into dx
+         put sSpear["y"] - sOrb[n]["y"] into dy
+         put sqrt(dx * dx + dy * dy) into d
+         if d < 20 and d > 0.01 then
+            FX.Sparks sOrb[n]["x"], sOrb[n]["y"], kZ, 16, "#FF5050"
+            Entity.Kill sOrb[n]["key"]
+            put empty into sOrb[n]["key"]
+            put sTicks + 180 into sOrb[n]["deadUntil"]
+            put (sSpear["vx"] * dx + sSpear["vy"] * dy) / d into tN
+            if tN < 0 then
+               subtract 2 * tN * dx / d from sSpear["vx"]
+               subtract 2 * tN * dy / d from sSpear["vy"]
+            end if
+            Probe.Say "SMASHED", 1
+            next repeat
+         end if
+      end if
+      -- a touch costs a life
+      if sSafe <= 0 and abs(sOrb[n]["x"] - sPX) < 20 and abs(sOrb[n]["y"] - (sPY - 12)) < 24 then Probe.LoseLife
+   end repeat
+end Probe.MoveOrbiters
 
 -- a screen point on the play plane (camera at the origin looking straight ahead)
 function Probe.ScreenToWorld pX, pY
@@ -289,6 +457,7 @@ on Probe.Throw
    put sAimX * sSpeed into sSpear["vx"]
    put sAimY * sSpeed into sSpear["vy"]
    put "flying" into sSpear["state"]
+   put 0 into sSpear["bounces"]
    put Entity.Spawn("Probe.Spear", sSpear["x"], sSpear["y"], kZ, "#40E0FF") into sSpear["key"]
 end Probe.Throw
 
@@ -312,16 +481,20 @@ on Probe.MoveSpear
    end if
    add sSpear["vx"] to sSpear["x"]
    add sSpear["vy"] to sSpear["y"]
-   -- walls: bounce, slower each time
-   if sSpear["x"] < kLeft or sSpear["x"] > kRight then
-      put -sSpear["vx"] * 0.8 into sSpear["vx"]
+   -- ricochets off walls and bumpers: the first three keep the spear lively
+   get Probe.Reflect(sSpear["x"], sSpear["y"], sSpear["vx"], sSpear["vy"])
+   if it is not empty then
+      put item 1 of it into sSpear["vx"]
+      put item 2 of it into sSpear["vy"]
       put max(kLeft, min(kRight, sSpear["x"])) into sSpear["x"]
-      put "loose" into sSpear["state"]
-   end if
-   if sSpear["y"] < kTop or sSpear["y"] > kBottom then
-      put -sSpear["vy"] * 0.8 into sSpear["vy"]
       put max(kTop, min(kBottom, sSpear["y"])) into sSpear["y"]
-      put "loose" into sSpear["state"]
+      add 1 to sSpear["bounces"]
+      FX.Sparks sSpear["x"], sSpear["y"], kZ, 4, "#40E0FF"
+      if sSpear["bounces"] > 3 then
+         put sSpear["vx"] * 0.75 into sSpear["vx"]
+         put sSpear["vy"] * 0.75 into sSpear["vy"]
+         put "loose" into sSpear["state"]
+      end if
    end if
    if sSpear["state"] is "loose" then
       put sSpear["vx"] * 0.985 into sSpear["vx"]

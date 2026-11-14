@@ -121,3 +121,15 @@ end SetObjectRotationSpeed
 
 on SetObjectVelocity
 end SetObjectVelocity
+
+-- the play plane seen straight on (camera at the origin): 1 unit = 1 pixel at z 400
+function ProjectVertex pX, pY, pZ
+   if pZ <= 0 then return empty
+   return (400 + pX * 400 / pZ) && (360 + pY * 400 / pZ)
+end ProjectVertex
+
+-- headless runs never read or move a mouse
+global gNoMouse
+on Stub.NoMouse
+   put true into gNoMouse
+end Stub.NoMouse
