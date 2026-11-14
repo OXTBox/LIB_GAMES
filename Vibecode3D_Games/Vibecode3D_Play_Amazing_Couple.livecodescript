@@ -61,7 +61,7 @@ on Game.OnStart
    Couple.LoadLibraries
    if sError is empty then Couple.LoadClips
    if sError is not empty then
-      HUD.Set "Couple.Err", sError, gViewLeft + 20, gViewTop + 20, 14
+      HUD.Set "Couple.Err", sError, gViewLeft + 20, gViewTop + 120, 14
       exit Game.OnStart
    end if
    Couple.NewMaze
