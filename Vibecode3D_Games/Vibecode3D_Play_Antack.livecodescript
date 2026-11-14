@@ -48,6 +48,7 @@ local sKeyWas, sNextAI, sNextRegen, sHover, sMenu, sEndAt
 -------------------------------------------------------------------- engine hooks
 
 on Game.OnStart
+   focus on nothing          -- arrow keys belong to the game, never to a menu or a field
    put Engine.Info("stepMS") into sStepMS
    if sStepMS is not a number then put 33 into sStepMS
    put 0 into sTicks
@@ -743,3 +744,7 @@ on Antack.MoveShots pNow
       Antack.Turn tShot, atan2(dx, dz), atan2(-dy, sqrt(dx * dx + dz * dz)) - pi / 2
    end repeat
 end Antack.MoveShots
+
+-- the arrows move you; a focused menu or field must never get them
+on arrowKey pKey
+end arrowKey
