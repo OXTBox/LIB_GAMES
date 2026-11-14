@@ -165,7 +165,7 @@ on Cross.ShowHUD
    put sLevel & "|" & sLives & "|" & sScore & "|" & sHome & "|" & sTime div 30 & "|" & sOver into tWords
    if tWords is sHUDWas then exit Cross.ShowHUD
    put tWords into sHUDWas
-   HUD.Set "Cross.Score", "SCORE" && sScore && "  LIVES" && sLives && "  LEVEL" && sLevel && "  HOME" && sHome & "/3" && "  TIME" && sTime div 30, 20, 20, 14
+   HUD.Set "Cross.Score", "SCORE" && sScore && "  LIVES" && sLives && "  LEVEL" && sLevel && "  HOME" && sHome & "/3" && "  TIME" && sTime div 30, 20, 120, 14
    HUD.Remove "Cross.Msg"
    if sOver and sLives > 0 then
       HUD.Set "Cross.Msg", "EVERY ROAD CROSSED.  SPACE TO PLAY AGAIN", 200, 300, 16

@@ -153,7 +153,7 @@ on Land.ShowHUD
    put sLevel & "|" & sLives & "|" & sScore & "|" & sFuel div 20 & "|" & sState into tWords
    if tWords is sHUDWas then exit Land.ShowHUD
    put tWords into sHUDWas
-   HUD.Set "Land.Score", "SCORE" && sScore && "  LANDERS" && sLives && "  LEVEL" && sLevel && "  FUEL" && max(0, sFuel), 20, 20, 14
+   HUD.Set "Land.Score", "SCORE" && sScore && "  LANDERS" && sLives && "  LEVEL" && sLevel && "  FUEL" && max(0, sFuel), 20, 120, 14
    HUD.Remove "Land.Msg"
    if sState is "landed" and sLevel >= 5 then
       HUD.Set "Land.Msg", "FIVE SOFT LANDINGS.  SPACE TO PLAY AGAIN", 200, 200, 16

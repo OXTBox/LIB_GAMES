@@ -187,7 +187,7 @@ on Worm.ShowHUD
    put sLevel & "|" & sLives & "|" & sEaten & "|" & sOver into tWords
    if tWords is sHUDWas then exit Worm.ShowHUD
    put tWords into sHUDWas
-   HUD.Set "Worm.Score", "FOOD" && sEaten & "/" & sNeed && "  LIVES" && sLives && "  LEVEL" && sLevel, 20, 20, 14
+   HUD.Set "Worm.Score", "FOOD" && sEaten & "/" & sNeed && "  LIVES" && sLives && "  LEVEL" && sLevel, 20, 120, 14
    HUD.Remove "Worm.Msg"
    if sOver and sLives > 0 then
       HUD.Set "Worm.Msg", "THE WORM IS FULL.  SPACE TO PLAY AGAIN", 200, 300, 16

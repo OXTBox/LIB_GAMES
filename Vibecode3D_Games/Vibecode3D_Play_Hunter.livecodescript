@@ -800,7 +800,7 @@ end Hunter.CheckLevel
 on Hunter.ShowHUD
    put "GEMS" && sGems && " $" & sValue into tGems
    if tGems is not sHudGems then
-      HUD.Set "gems",tGems,16,12,16
+      HUD.Set "gems",tGems,16,112,16
       put tGems into sHudGems
    end if
    put empty into tLives
@@ -809,7 +809,7 @@ on Hunter.ShowHUD
    end repeat
    put "SHIELD" && sShield && " " & tLives into tShield
    if tShield is not sHudShield then
-      HUD.Set "shield",tShield,16,36,14
+      HUD.Set "shield",tShield,16,136,14
       put tShield into sHudShield
    end if
    if sReloadTicks > 0 then

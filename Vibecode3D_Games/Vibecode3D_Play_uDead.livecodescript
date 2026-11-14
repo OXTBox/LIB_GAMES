@@ -93,7 +93,7 @@ on Game.OnStart
    put false into sMouseReady
    if sLegacy is true and sData is empty then uDead.LoadData
    if sError is not empty then
-      HUD.Set "uDead.Err", sError, gViewLeft + 20, gViewTop + 20, 14
+      HUD.Set "uDead.Err", sError, gViewLeft + 20, gViewTop + 120, 14
       exit Game.OnStart
    end if
    uDead.MakeMeshes
@@ -2307,12 +2307,12 @@ on uDead.ShowHUD
    HUD.Clear
    if sHideHUD is true and sState is "play" then exit uDead.ShowHUD
    HUD.Set "uDead.Cross", "+", CenterX - 5, CenterY - 8, 14
-   HUD.Set "uDead.Title", "UDEAD  " & toUpper(sName) & "  LEVEL " & sLevel, gViewLeft + 20, gViewTop + 20, 12
-   HUD.Set "uDead.Count", "DEAD " & sCountZ & "   LIVING " & sCountH, gViewLeft + 20, gViewTop + 42, 16
+   HUD.Set "uDead.Title", "UDEAD  " & toUpper(sName) & "  LEVEL " & sLevel, gViewLeft + 20, gViewTop + 120, 12
+   HUD.Set "uDead.Count", "DEAD " & sCountZ & "   LIVING " & sCountH, gViewLeft + 20, gViewTop + 142, 16
    if sSpeed < 1 then
-      HUD.Set "uDead.Mode", "ORDERS " & sMode & "   ZOMBIE TIME", gViewLeft + 20, gViewTop + 68, 12
+      HUD.Set "uDead.Mode", "ORDERS " & sMode & "   ZOMBIE TIME", gViewLeft + 20, gViewTop + 168, 12
    else
-      HUD.Set "uDead.Mode", "ORDERS " & sMode, gViewLeft + 20, gViewTop + 68, 12
+      HUD.Set "uDead.Mode", "ORDERS " & sMode, gViewLeft + 20, gViewTop + 168, 12
    end if
    if sState is "won" then
       HUD.Set "uDead.End1", sWinText, gViewLeft + 20, CenterY - 70, 16

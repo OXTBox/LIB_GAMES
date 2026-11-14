@@ -155,7 +155,7 @@ on Duel.ShowHUD
    put sLevel & "|" & sYou & "|" & sCpu & "|" & sServe & "|" & sOver into tWords
    if tWords is sHUDWas then exit Duel.ShowHUD
    put tWords into sHUDWas
-   HUD.Set "Duel.Score", "YOU" && sYou && "  COMPUTER" && sCpu && "  LEVEL" && sLevel && "  FIRST TO" && sToWin, 20, 20, 14
+   HUD.Set "Duel.Score", "YOU" && sYou && "  COMPUTER" && sCpu && "  LEVEL" && sLevel && "  FIRST TO" && sToWin, 20, 120, 14
    HUD.Remove "Duel.Msg"
    if sOver then
       HUD.Set "Duel.Msg", "YOU WON ALL FIVE.  SPACE TO PLAY AGAIN", 200, 260, 16

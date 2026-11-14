@@ -224,7 +224,7 @@ on Raid.ShowHUD
    put sLevel & "|" & sLives & "|" & sScore & "|" & sOver into tWords
    if tWords is sHUDWas then exit Raid.ShowHUD
    put tWords into sHUDWas
-   HUD.Set "Raid.Score", "SCORE" && sScore && "  LIVES" && sLives && "  LEVEL" && sLevel, 20, 20, 14
+   HUD.Set "Raid.Score", "SCORE" && sScore && "  LIVES" && sLives && "  LEVEL" && sLevel, 20, 120, 14
    HUD.Remove "Raid.Msg"
    if sOver and sLives > 0 then
       HUD.Set "Raid.Msg", "THE SKY IS CLEAR.  SPACE TO PLAY AGAIN", 200, 300, 16

@@ -235,7 +235,7 @@ on Stack.ShowHUD
    put sLevel & "|" & sRows & "|" & sScore & "|" & sOver into tWords
    if tWords is sHUDWas then exit Stack.ShowHUD
    put tWords into sHUDWas
-   HUD.Set "Stack.Score", "SCORE" && sScore && "  ROWS" && sRows & "/" & sNeed && "  LEVEL" && sLevel, 20, 20, 14
+   HUD.Set "Stack.Score", "SCORE" && sScore && "  ROWS" && sRows & "/" & sNeed && "  LEVEL" && sLevel, 20, 120, 14
    HUD.Remove "Stack.Msg"
    if sOver and sWon then
       HUD.Set "Stack.Msg", "THE WELL IS BEATEN.  SPACE TO PLAY AGAIN", 200, 300, 16

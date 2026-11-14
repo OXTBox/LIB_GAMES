@@ -31,8 +31,8 @@ on Game.OnStart
    put Entity.Spawn("Cube.Floor", 0, kCubeSize, kCubeDist, "#2E6F8E") into sFloorKey
    put Entity.Spawn("Cube.Box", 0, 0, kCubeDist, "cyan") into sCubeKey
    Cube.Spin
-   HUD.Set "Cube.Title", "SPINNING CUBE", 20, 20, 14
-   HUD.Set "Cube.Help", "CLICK TO REVERSE", 20, 44, 10
+   HUD.Set "Cube.Title", "SPINNING CUBE", 20, 120, 14
+   HUD.Set "Cube.Help", "CLICK TO REVERSE", 20, 144, 10
 end Game.OnStart
 
 on Game.OnUpdate

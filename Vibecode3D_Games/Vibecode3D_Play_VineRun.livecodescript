@@ -247,7 +247,7 @@ on Vine.ShowHUD
    put sLevel & "|" & sScreen & "|" & sLives & "|" & sScore & "|" & sOver into tWords
    if tWords is sHUDWas then exit Vine.ShowHUD
    put tWords into sHUDWas
-   HUD.Set "Vine.Score", "SCORE" && sScore && "  LIVES" && sLives && "  LEVEL" && sLevel && "  SCREEN" && sScreen & "/" & sScreens, 20, 20, 14
+   HUD.Set "Vine.Score", "SCORE" && sScore && "  LIVES" && sLives && "  LEVEL" && sLevel && "  SCREEN" && sScreen & "/" & sScreens, 20, 120, 14
    HUD.Remove "Vine.Msg"
    if sOver and sLives > 0 then
       HUD.Set "Vine.Msg", "OUT OF THE JUNGLE.  SPACE TO PLAY AGAIN", 200, 300, 16

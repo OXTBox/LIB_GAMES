@@ -219,7 +219,7 @@ on Maze.ShowHUD
    put sLevel & "|" & sLives & "|" & sScore & "|" & sOver into tWords
    if tWords is sHUDWas then exit Maze.ShowHUD
    put tWords into sHUDWas
-   HUD.Set "Maze.Score", "SCORE" && sScore && "  LIVES" && sLives && "  LEVEL" && sLevel && "  DOTS" && sDots, 20, 20, 14
+   HUD.Set "Maze.Score", "SCORE" && sScore && "  LIVES" && sLives && "  LEVEL" && sLevel && "  DOTS" && sDots, 20, 120, 14
    HUD.Remove "Maze.Msg"
    if sOver and sLives > 0 then
       HUD.Set "Maze.Msg", "EVERY DOT IS YOURS.  SPACE TO PLAY AGAIN", 200, 300, 16

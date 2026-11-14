@@ -160,7 +160,7 @@ on Dive.ShowHUD
    put sLevel & "|" & sLives & "|" & sScore & "|" & sPearls & "|" & sAir div 30 & "|" & sOver into tWords
    if tWords is sHUDWas then exit Dive.ShowHUD
    put tWords into sHUDWas
-   HUD.Set "Dive.Score", "SCORE" && sScore && "  LIVES" && sLives && "  LEVEL" && sLevel && "  PEARLS LEFT" && sPearls && "  AIR" && max(0, sAir div 30), 20, 20, 14
+   HUD.Set "Dive.Score", "SCORE" && sScore && "  LIVES" && sLives && "  LEVEL" && sLevel && "  PEARLS LEFT" && sPearls && "  AIR" && max(0, sAir div 30), 20, 120, 14
    HUD.Remove "Dive.Msg"
    if sOver and sLives > 0 then
       HUD.Set "Dive.Msg", "EVERY PEARL IS UP.  SPACE TO PLAY AGAIN", 210, 300, 16

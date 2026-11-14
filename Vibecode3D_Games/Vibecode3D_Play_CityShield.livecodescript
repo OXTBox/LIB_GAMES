@@ -199,7 +199,7 @@ on City.ShowHUD
    put sLevel & "|" & sScore & "|" & sBursts & "|" & sToCome & "|" & sOver into tWords
    if tWords is sHUDWas then exit City.ShowHUD
    put tWords into sHUDWas
-   HUD.Set "City.Score", "SCORE" && sScore && "  BURSTS" && sBursts && "  STREAKS TO COME" && sToCome && "  LEVEL" && sLevel, 20, 20, 14
+   HUD.Set "City.Score", "SCORE" && sScore && "  BURSTS" && sBursts && "  STREAKS TO COME" && sToCome && "  LEVEL" && sLevel, 20, 120, 14
    HUD.Remove "City.Msg"
    if sOver and sWon then
       HUD.Set "City.Msg", "THE CITY STANDS.  SPACE TO PLAY AGAIN", 210, 200, 16

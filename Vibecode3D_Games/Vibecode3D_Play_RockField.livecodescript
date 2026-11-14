@@ -211,7 +211,7 @@ on Rock.ShowHUD
    put sLevel & "|" & sLives & "|" & sScore & "|" & sOver into tWords
    if tWords is sHUDWas then exit Rock.ShowHUD
    put tWords into sHUDWas
-   HUD.Set "Rock.Score", "SCORE" && sScore && "  LIVES" && sLives && "  LEVEL" && sLevel, 20, 20, 14
+   HUD.Set "Rock.Score", "SCORE" && sScore && "  LIVES" && sLives && "  LEVEL" && sLevel, 20, 120, 14
    HUD.Remove "Rock.Msg"
    if sOver and sLives > 0 then
       HUD.Set "Rock.Msg", "THE FIELD IS CLEAR.  SPACE TO PLAY AGAIN", 200, 300, 16

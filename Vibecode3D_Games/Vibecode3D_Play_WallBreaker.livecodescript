@@ -174,7 +174,7 @@ on Wall.ShowHUD
    put sLevel & "|" & sLives & "|" & sScore & "|" & sStuck & "|" & sOver into tWords
    if tWords is sHUDWas then exit Wall.ShowHUD
    put tWords into sHUDWas
-   HUD.Set "Wall.Score", "SCORE" && sScore && "  LIVES" && sLives && "  LEVEL" && sLevel, 20, 20, 14
+   HUD.Set "Wall.Score", "SCORE" && sScore && "  LIVES" && sLives && "  LEVEL" && sLevel, 20, 120, 14
    HUD.Remove "Wall.Msg"
    if sOver and sLives > 0 then
       HUD.Set "Wall.Msg", "EVERY WALL IS DOWN.  SPACE TO PLAY AGAIN", 200, 300, 16
