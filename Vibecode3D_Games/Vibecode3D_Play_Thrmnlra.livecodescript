@@ -67,6 +67,7 @@ local sClose         -- [until|panel|face|n]: an angry close-up is on screen
 -------------------------------------------------------------------- engine hooks
 
 on Game.OnStart
+   focus on nothing          -- typing belongs to the game, never to a menu button or a field
    Engine.ResetCamera
    put Engine.Info("stepMS") into sStepMS
    if sStepMS is not a number then put 33 into sStepMS
@@ -99,7 +100,7 @@ on Game.OnUpdate
    add 1 to sTicks
    if not sReady then exit Game.OnUpdate
    -- the keyboard belongs to the game while it plays: take it back from any field
-   if sTicks mod 15 is 1 and word 1 of the focusedObject is "field" then focus on nothing
+   if sTicks mod 15 is 1 and word 1 of the focusedObject is among the words of "field button" then focus on nothing   -- typing belongs to the game (a focused menu button swallowed Return)
    dispatch "Seq.Step" to group "Sequencer" with kPace * sStepMS / 1000
    Thrm.AdvanceWorld
    Thrm.MoveMissiles
