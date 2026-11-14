@@ -33,13 +33,13 @@ on Game.OnStart
    put 0 into sTicks
    put Face.MakeMeshes() into tErr
    if tErr is not empty then
-      HUD.Set "Face.Msg", tErr, 20, 60, 12
+      HUD.Set "Face.Msg", tErr, 20, 160, 12
       exit Game.OnStart
    end if
    put Entity.Spawn("Face.Panel", 0, 0, kFaceDist, "30,95,105") into sPanelKey
    put Entity.Spawn("Face.Bits", 0, 0, kFaceDist, "130,250,250") into sFaceKey
    Face.Turn
-   HUD.Set "Face.Title", "CLAUDE", 20, 20, 16
+   HUD.Set "Face.Title", "CLAUDE", 20, 120, 16
 end Game.OnStart
 
 on Game.OnUpdate

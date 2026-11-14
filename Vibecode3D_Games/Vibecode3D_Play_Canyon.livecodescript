@@ -527,7 +527,7 @@ end Canyon.AddScore
 
 ## Score top-left, lives as triangles beside it (like Defensive).
 on Canyon.ShowHUD
-   HUD.Set "score",format("%06d", sScore),16,12,22
+   HUD.Set "score",format("%06d", sScore),16,112,22
    put empty into tLives
    repeat max(0, sLives) times
       put "^ " after tLives
