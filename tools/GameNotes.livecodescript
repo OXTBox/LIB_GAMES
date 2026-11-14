@@ -9,7 +9,8 @@ script "GameNotes"
 ## Every note is one line appended to LIB_LLMIN/LIB_GAMES/GAME_NOTES.txt (the inbox, where
 ## Claude reads it): date time | game card | level/state if the game says | the note.
 ## Works for every game: install with
-##   insert script of stack "GameNotes" into front     (LIB_TEST/install_all_games_vibecode3d.sh does it)
+##   insert script of stack "GameNotes" into front     (LIB_TEST/install_all_games_vibecode3d.sh does it;
+##   the xt3d games bench loads it itself when a game starts)
 ######################################################################################
 
 global bPaused
@@ -21,7 +22,7 @@ on rawKeyDown pKey
       exit rawKeyDown
    end if
    if sOpen is not true and (pKey is 96 or pKey is 65471) then
-      if the short name of Notes.Card() begins with "Play." or the short name of Notes.Card() is "Developer" then
+      if Notes.InGame() then
          Notes.Open
          exit rawKeyDown
       end if
@@ -51,6 +52,7 @@ end enterInField
 
 -- the note box: across the top of the window, where important text goes
 on Notes.Open
+   local tArea
    put Notes.Card() into sCard
    put bPaused into sWasPaused
    put true into bPaused
@@ -77,9 +79,10 @@ on Notes.Open
       set the textColor of field "GameNoteTip" of sCard to "#FFE060"
       set the textSize of field "GameNoteTip" of sCard to 12
    end if
-   set the rect of field "GameNoteTip" of sCard to 10, 112, the width of sCard - 10, 132
+   put Notes.Area() into tArea
+   set the rect of field "GameNoteTip" of sCard to item 1 of tArea, item 2 of tArea, item 3 of tArea, item 2 of tArea + 20
    set the text of field "GameNoteTip" of sCard to "NOTE ABOUT" && toUpper(Notes.Game()) & ":  type, Return saves, Escape cancels  (game paused)"
-   set the rect of field "GameNote" of sCard to 10, 134, the width of sCard - 10, 164
+   set the rect of field "GameNote" of sCard to item 1 of tArea, item 2 of tArea + 22, item 3 of tArea, item 2 of tArea + 52
    put empty into field "GameNote" of sCard
    set the visible of field "GameNoteTip" of sCard to true
    set the visible of field "GameNote" of sCard to true
@@ -123,11 +126,38 @@ function Notes.Card
    return the long id of this card of stack (the short name of the defaultStack)
 end Notes.Card
 
--- the game: the card's name without "Play."
+-- is a game on screen? A Vibecode3D Play card, its Developer card, or any card running a
+-- game script (the xt3d games bench puts the game's script on its own card)
+function Notes.InGame
+   local tCard
+   put Notes.Card() into tCard
+   if the short name of tCard begins with "Play." or the short name of tCard is "Developer" then return true
+   return "on Game.OnUpdate" is in the script of tCard
+end Notes.InGame
+
+-- where the box goes: over the xt3d bench's 3D view, else across the top under the status bars
+function Notes.Area
+   local tCard, tR
+   put Notes.Card() into tCard
+   if there is an image "view" of tCard then
+      put the rect of image "view" of tCard into tR
+      return item 1 of tR + 10 & comma & item 2 of tR + 10 & comma & item 3 of tR - 10
+   end if
+   return "10,112," & the width of tCard - 10
+end Notes.Area
+
+-- the game: the card's name without "Play.", or (in the bench) the CARD SCRIPT header's name
 function Notes.Game
-   local tName
+   local tName, tLine, tAt
    put the short name of Notes.Card() into tName
-   if tName begins with "Play." then delete char 1 to 5 of tName
+   if tName begins with "Play." then return char 6 to -1 of tName
+   repeat for each line tLine in line 1 to 6 of the script of Notes.Card()
+      put offset(quote & "Play.", tLine) into tAt
+      if tAt > 0 then
+         put char tAt + 6 to -1 of tLine into tName
+         return char 1 to offset(quote, tName) - 1 of tName
+      end if
+   end repeat
    return tName
 end Notes.Game
 
