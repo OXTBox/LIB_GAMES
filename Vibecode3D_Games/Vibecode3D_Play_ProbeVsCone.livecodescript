@@ -442,6 +442,7 @@ on Probe.MoveOrbiters
       end if
       add sOrb[n]["w"] to sOrb[n]["a"]
       put sOrb[n]["r"] + sOrb[n]["swing"] * sin(sTicks / 40 + sOrb[n]["phase"]) into r
+      put min(r, kBossY - kTop - 18) into r          -- never out past the top of the arena
       put kBossX + r * cos(sOrb[n]["a"]) into sOrb[n]["x"]
       put kBossY + r * sin(sOrb[n]["a"]) into sOrb[n]["y"]
       SetObjectPosition sOrb[n]["key"], sOrb[n]["x"], sOrb[n]["y"], kZ - 3
