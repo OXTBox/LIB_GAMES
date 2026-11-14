@@ -46,6 +46,7 @@ local sCamX, sCamY, sCamZ, sBeacon, sExitCell, sNextMazeAt, sMsgUntil
 -------------------------------------------------------------------- engine hooks
 
 on Game.OnStart
+   focus on nothing          -- arrow keys belong to the game, never to a menu or a field
    Engine.ResetCamera
    put Engine.Info("stepMS") into sStepMS
    if sStepMS is not a number then put 33 into sStepMS
@@ -60,7 +61,7 @@ on Game.OnStart
    Couple.LoadLibraries
    if sError is empty then Couple.LoadClips
    if sError is not empty then
-      HUD.Set "Couple.Err", sError, gViewLeft + 20, gViewTop + 20, 14
+      HUD.Set "Couple.Err", sError, gViewLeft + 20, gViewTop + 120, 14
       exit Game.OnStart
    end if
    Couple.NewMaze
@@ -620,3 +621,7 @@ function Couple.FindFile pRelPath
    if there is a file tTry then return tTry
    return empty
 end Couple.FindFile
+
+-- the arrows move you; a focused menu or field must never get them
+on arrowKey pKey
+end arrowKey
