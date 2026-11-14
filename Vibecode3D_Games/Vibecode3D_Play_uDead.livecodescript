@@ -28,6 +28,7 @@ global gCameraYaw, gCameraPitch
 global CenterX, CenterY
 global gViewLeft, gViewTop, gViewRight, gViewBottom
 global bPaused, bPlaying
+global gNoMouse        -- true while an AI tests: never grab or move the owner's mouse
 
 constant kM = 30               -- engine units a metre
 constant kCellM = 0.5          -- metres a grid cell (as in the data file)
@@ -59,6 +60,10 @@ constant kNoiseCrowd = 4       -- this many of the dead within kNoiseNear make n
 constant kNoiseNear = 1.6
 constant kNoiseHeard = 8       -- metres the noise wakes the living
 constant kBloodMax = 70        -- blood marks kept on the ground
+constant kReload = 2.2         -- seconds a reload takes; the shooter stands still
+constant kMags = 2             -- spare magazines a shooter carries
+constant kCrates = 3           -- ammo crates a level
+constant kCrateRefills = 3     -- refills a crate holds
 
 local sStepMS = 33, sTicks = 0, sError
 local sData, sLevelNames, sLevel = 1, sName, sNext, sHard, sWinText, sLoseText, sLegacy
@@ -69,7 +74,7 @@ local sE, sIds, sNextId, sZ, sH             -- everyone; ids of the walking dead
 local sPX, sPZ, sMouseReady, sTestKeys, sKeyWas
 local sState, sNow, sSpeed, sMode, sHideHUD, sHelp, sTip, sTipAt
 local sField, sJob, sJobName, sJobD, sJobQ, sJobHead, sJobTail, sJobDoors
-local sFx, sFxN, sBlood, sStrobeAt, sStrobeOn, sNoiseAt, sEase
+local sAmmo, sAmmoN, sFx, sFxN, sBlood, sStrobeAt, sStrobeOn, sNoiseAt, sEase
 local sNades, sNextCheck, sCountZ, sCountH, sHUDWas, sMsg, sMsgUntil, sNextLevelAt
 
 -------------------------------------------------------------------- engine hooks
@@ -94,7 +99,7 @@ on Game.OnStart
    if sLevel is not a number or sLevel < 1 then put 1 into sLevel
    if sLegacy is true and sLevel > the number of lines of sLevelNames then put 1 into sLevel
    uDead.StartLevel sLevel
-   set the lockCursor to true
+   if gNoMouse is not true then set the lockCursor to true
 end Game.OnStart
 
 on Game.OnUpdate
@@ -144,7 +149,7 @@ on Game.OnPause
 end Game.OnPause
 
 on Game.OnResume
-   set the lockCursor to true
+   if gNoMouse is not true then set the lockCursor to true
    put false into sMouseReady
 end Game.OnResume
 
@@ -236,6 +241,7 @@ on uDead.StartLevel pIndex
    uDead.BuildWalls sGenWalls
    uDead.BuildBarriers sGenBars
    uDead.BuildCast sGenCast, sGenArms
+   uDead.PlaceCrates
    put 0 into sNow
    put 1 into sSpeed
    put "HOLD" into sMode
@@ -249,6 +255,9 @@ on uDead.StartLevel pIndex
    put 0 into sJob["Z"]["at"]
    put 1.0 into sJob["P"]["every"]
    put 0 into sJob["P"]["at"]
+   -- A = to the nearest ammo crate (made once, again when a crate runs dry)
+   put 0 into sJob["A"]["every"]
+   put 0 into sJob["A"]["at"]
    uDead.Lists
    uDead.Count
    uDead.Camera
@@ -917,6 +926,67 @@ function uDead.BloodMesh
    return tM
 end uDead.BloodMesh
 
+-------------------------------------------------------------------- ammo (the owner, 11 13 2026)
+
+on uDead.PlaceCrates
+   local n, tSpot
+   put empty into sAmmo
+   put 0 into sAmmoN
+   if sLegacy is true then exit uDead.PlaceCrates      -- the 2009 maps: no crates
+   Mesh.Define "uDead.Crate", MeshBox(0.6 * kM, 0.45 * kM, 0.4 * kM)
+   repeat with n = 1 to kCrates
+      put uDead.GenSpot(12, 400) into tSpot
+      if tSpot is empty then next repeat
+      add 1 to sAmmoN
+      put item 1 of tSpot into sAmmo[sAmmoN]["x"]
+      put item 2 of tSpot into sAmmo[sAmmoN]["z"]
+      put kCrateRefills into sAmmo[sAmmoN]["left"]
+      put Entity.Spawn("uDead.Crate", sAmmo[sAmmoN]["x"] * kM, -0.23 * kM, sAmmo[sAmmoN]["z"] * kM, "#E0C040") into sAmmo[sAmmoN]["key"]
+   end repeat
+end uDead.PlaceCrates
+
+-- out of ammo: walk to the nearest crate; nothing left anywhere = drop the gun
+on uDead.FetchAmmo pId, pDT
+   local tC, tHow, tMoved
+   put false into tMoved
+   repeat for each key tC in sAmmo
+      if sAmmo[tC]["left"] <= 0 then next repeat
+      if sqrt((sAmmo[tC]["x"] - sE[pId]["x"]) ^ 2 + (sAmmo[tC]["z"] - sE[pId]["z"]) ^ 2) < 0.9 then
+         subtract 1 from sAmmo[tC]["left"]
+         put kMags into sE[pId]["mags"]
+         put 0 into sE[pId]["shots"]
+         put false into sE[pId]["noAmmo"]
+         put sNow + 0.5 into sE[pId]["next"]
+         uDead.Ring sAmmo[tC]["x"], sAmmo[tC]["z"], "#FFE040", 0.8
+         if sAmmo[tC]["left"] <= 0 then
+            Entity.Kill sAmmo[tC]["key"]
+            put Entity.Spawn("uDead.Crate", sAmmo[tC]["x"] * kM, -0.23 * kM, sAmmo[tC]["z"] * kM, "#4A4A4A") into sAmmo[tC]["key"]
+            put 0 into sJob["A"]["at"]
+         end if
+         uDead.Place pId, false
+         exit uDead.FetchAmmo
+      end if
+   end repeat
+   if sField["A"] is not an array then
+      -- no crates (yet): the gun is useless now
+      if sJob["A"]["at"] > sTicks * sStepMS / 1000 + 1000 or sAmmoN = 0 then
+         put empty into sE[pId]["gun"]
+         put false into sE[pId]["noAmmo"]
+         uDead.Dress pId
+      end if
+      exit uDead.FetchAmmo
+   end if
+   put uDead.FieldStep(pId, "A", kSeekSpeed + 0.5, pDT, true, false) into tHow
+   if tHow is empty then
+      -- no way to a crate from here
+      put empty into sE[pId]["gun"]
+      put false into sE[pId]["noAmmo"]
+      uDead.Dress pId
+      exit uDead.FetchAmmo
+   end if
+   uDead.Place pId, (tHow is "moved")
+end uDead.FetchAmmo
+
 -------------------------------------------------------------------- effects (the owner, 11 13 2026: show, don't tell)
 
 -- a ring that spreads across the ground: pColor, from where, over pSeconds
@@ -1123,9 +1193,11 @@ on uDead.BuildCast pCast, pArms
          subtract 1 from tRifles
          put "rifle" into sE[tId]["gun"]
          put 32 into sE[tId]["shots"]
+         put kMags into sE[tId]["mags"]
       else
          put "pistol" into sE[tId]["gun"]
          put 8 into sE[tId]["shots"]
+         put kMags into sE[tId]["mags"]
       end if
       if sE[tId]["role"] is "soldier" then put 2 into sE[tId]["nades"]
    end repeat
@@ -1326,6 +1398,12 @@ on uDead.FieldBegin pName
          break
       case "P"
          put uDead.CellOf(sPX, sPZ) into tSources
+         break
+      case "A"
+         put false into sJobDoors
+         repeat for each key tId in sAmmo
+            if sAmmo[tId]["left"] > 0 then put uDead.CellOf(sAmmo[tId]["x"], sAmmo[tId]["z"]) & cr after tSources
+         end repeat
          break
       case "O"
          put char 2 to -1 of pName into tId
@@ -1659,6 +1737,14 @@ on uDead.Humans pDT
          end if
       end if
       if sE[tId]["awake"] is not true then next repeat
+      if sE[tId]["reloadUntil"] > sNow then
+         uDead.Place tId, false
+         next repeat
+      end if
+      if sE[tId]["noAmmo"] is true then
+         uDead.FetchAmmo tId, pDT
+         next repeat
+      end if
       put sE[tId]["foe"] into tFoe
       if tFoe is empty then next repeat
       if sE[tFoe]["state"] is not "alive" then next repeat
@@ -1714,13 +1800,20 @@ on uDead.Shoot pId, pFoe, pD
       exit uDead.Shoot
    end if
    if sE[pId]["shots"] <= 0 then
-      -- reload
+      -- out: reload from a spare magazine (standing still), or go and find ammo
+      if tGun is not "sniper" and sE[pId]["mags"] <= 0 then
+         put true into sE[pId]["noAmmo"]
+         exit uDead.Shoot
+      end if
+      subtract 1 from sE[pId]["mags"]
       if tGun is "rifle" then
          put 16 + random(16) into sE[pId]["shots"]
       else
          put 4 + random(4) into sE[pId]["shots"]
       end if
-      put sNow + 2.2 into sE[pId]["next"]
+      put sNow + kReload into sE[pId]["next"]
+      put sNow + kReload into sE[pId]["reloadUntil"]
+      uDead.Ring sE[pId]["x"], sE[pId]["z"], "#FFE040", kReload
       exit uDead.Shoot
    end if
    subtract 1 from sE[pId]["shots"]
@@ -1915,7 +2008,7 @@ on uDead.Look
    if uDead.Held(65363, tKeys) then add kTurn to gCameraYaw
    if uDead.Held(65362, tKeys) then put min(1.35, gCameraPitch + kTurn / 2) into gCameraPitch
    if uDead.Held(65364, tKeys) then put max(-1.35, gCameraPitch - kTurn / 2) into gCameraPitch
-   if sTestKeys is not empty then exit uDead.Look
+   if sTestKeys is not empty or gNoMouse is true then exit uDead.Look
    if the short name of the topStack is not the short name of this stack then
       put false into sMouseReady
       exit uDead.Look
@@ -1989,6 +2082,32 @@ on uDead.TestLevel pNumber
    put pNumber into sLevel
    put sTicks + 1 into sNextLevelAt
 end uDead.TestLevel
+
+-- test: every shooter (id gun shots mags reloading noAmmo) and the crates' refills left
+-- test: empty every shooter's gun and magazines
+on uDead.TestDry
+   local tId
+   repeat for each line tId in sH
+      if sE[tId]["gun"] is not empty and sE[tId]["gun"] is not "sniper" then
+         put 0 into sE[tId]["shots"]
+         put 0 into sE[tId]["mags"]
+         put true into sE[tId]["noAmmo"]
+         put true into sE[tId]["awake"]
+      end if
+   end repeat
+end uDead.TestDry
+
+function uDead.AmmoState
+   local tId, tOut, tC
+   repeat for each line tId in sH
+      if sE[tId]["gun"] is empty or sE[tId]["state"] is not "alive" then next repeat
+      put tId && sE[tId]["gun"] && sE[tId]["shots"] && sE[tId]["mags"] && (sE[tId]["reloadUntil"] > sNow) && sE[tId]["noAmmo"] & cr after tOut
+   end repeat
+   repeat for each key tC in sAmmo
+      put "crate" && tC && sAmmo[tC]["left"] & cr after tOut
+   end repeat
+   return tOut
+end uDead.AmmoState
 
 function uDead.State
    local tId, tOut
