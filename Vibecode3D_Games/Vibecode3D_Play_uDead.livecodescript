@@ -55,6 +55,10 @@ constant kShotHeard = 12
 constant kGunRange = 14
 constant kSniperRange = 30
 constant kBlast = 2.0          -- grenade radius, metres
+constant kNoiseCrowd = 4       -- this many of the dead within kNoiseNear make noise
+constant kNoiseNear = 1.6
+constant kNoiseHeard = 8       -- metres the noise wakes the living
+constant kBloodMax = 70        -- blood marks kept on the ground
 
 local sStepMS = 33, sTicks = 0, sError
 local sData, sLevelNames, sLevel = 1, sName, sNext, sHard, sWinText, sLoseText, sLegacy
@@ -65,6 +69,7 @@ local sE, sIds, sNextId, sZ, sH             -- everyone; ids of the walking dead
 local sPX, sPZ, sMouseReady, sTestKeys, sKeyWas
 local sState, sNow, sSpeed, sMode, sHideHUD, sHelp, sTip, sTipAt
 local sField, sJob, sJobName, sJobD, sJobQ, sJobHead, sJobTail, sJobDoors
+local sFx, sFxN, sBlood, sStrobeAt, sStrobeOn, sNoiseAt, sEase
 local sNades, sNextCheck, sCountZ, sCountH, sHUDWas, sMsg, sMsgUntil, sNextLevelAt
 
 -------------------------------------------------------------------- engine hooks
@@ -114,6 +119,8 @@ on Game.OnUpdate
       uDead.Humans tDT
       uDead.Grenades
       uDead.Risers
+      uDead.FxStep
+      uDead.Signals
       if sNow >= sNextCheck then
          put sNow + 2.5 into sNextCheck
          uDead.CheckEnd
@@ -209,6 +216,12 @@ on uDead.StartLevel pIndex
    put empty into sJob
    put empty into sJobName
    put empty into sNades
+   put empty into sFx
+   put empty into sBlood
+   put 0 into sStrobeAt
+   put 0 into sNoiseAt
+   -- the first level is a cake walk, the second easier than before (the owner, 11 13 2026)
+   put item min(pIndex, 3) of "0.35,0.65,1" into sEase
    put empty into sChunkKey
    put empty into sMsg
    put empty into sGenWalls
@@ -557,30 +570,32 @@ end uDead.GenSpot
 -- the office, trucks on the lot. The dead come up from the highway.
 on uDead.GenHotel
    local tN, tC, tR
-   uDead.GNew 96, 64
+   -- bigger than 2009's (the owner, 11 13 2026): rooms 7 m wide, doors 1.5 m,
+   -- front windows twice the door and about 80% of the wall high
+   uDead.GNew 128, 84
    repeat with tN = 0 to 7
-      put 4 + tN * 11 into tC
-      uDead.GRoom tC, 3, tC + 10, 14
-      uDead.GDoor tC + 2, 14, 2, true, "door"
-      uDead.GDoor tC + 6, 14, 2, true, "window"
+      put 4 + tN * 15 into tC
+      uDead.GRoom tC, 3, tC + 14, 18
+      uDead.GDoor tC + 2, 18, 3, true, "door"
+      uDead.GDoor tC + 7, 18, 6, true, "window"
    end repeat
    -- the office
-   uDead.GRoom 70, 36, 90, 52
-   uDead.GDoor 70, 43, 2, false, "door"
-   uDead.GDoor 78, 36, 3, true, "window"
-   uDead.GBlock 80, 44, 86, 45
+   uDead.GRoom 94, 46, 120, 66
+   uDead.GDoor 94, 55, 3, false, "door"
+   uDead.GDoor 103, 46, 6, true, "window"
+   uDead.GBlock 106, 56, 114, 57
    -- trucks and cars on the lot
-   repeat with tN = 1 to 5
-      put 8 + random(52) into tC
-      put 20 + random(14) into tR
+   repeat with tN = 1 to 6
+      put 8 + random(76) into tC
+      put 24 + random(16) into tR
       if random(2) = 1 then
          uDead.GBlock tC, tR, tC + 3, tR + 8
       else
          uDead.GBlock tC, tR, tC + 7, tR + 3
       end if
    end repeat
-   put "10,57,0" into sGenStart
-   uDead.GBlock 6, 53, 16, 61, true
+   put "10,77,0" into sGenStart
+   uDead.GBlock 6, 73, 16, 81, true
 end uDead.GenHotel
 
 -- 2. the warehouse: one big hall of shelving and crates, three offices down one side
@@ -855,7 +870,7 @@ function uDead.DoorMesh pHalf, pAlong, pKind
       put pHalf into tZ
    end if
    put 0 into tLow
-   if pKind is "window" then put 0.8 into tLow
+   if pKind is "window" then put 0.4 into tLow
    uDead.Line tM, tIdx, -tX, tLow, -tZ, tX, tLow, tZ
    uDead.Line tM, tIdx, -tX, 1.9, -tZ, tX, 1.9, tZ
    uDead.Line tM, tIdx, -tX, tLow, -tZ, -tX, 1.9, -tZ
@@ -875,7 +890,124 @@ on uDead.MakeMeshes
    Mesh.Define "uDead.Z2", uDead.Figure(-0.14, true, false)
    Mesh.Define "uDead.Body", uDead.BodyMesh()
    Mesh.Define "uDead.Nade", MeshBox(5, 5, 5)
+   -- show, don't tell: rings on the ground (shots, noise) in six sizes, and a blood mark
+   local tR
+   repeat with tR = 1 to 6
+      Mesh.Define "uDead.Ring" & tR, uDead.RingMesh(tR * 0.6)
+   end repeat
+   Mesh.Define "uDead.Blood", uDead.BloodMesh()
 end uDead.MakeMeshes
+
+function uDead.RingMesh pR
+   local tM, tIdx, n, a1, a2
+   put Mesh.New() into tM
+   repeat with n = 0 to 15
+      put n * 2 * pi / 16 into a1
+      put (n + 1) * 2 * pi / 16 into a2
+      uDead.Line tM, tIdx, pR * sin(a1), 0.03, pR * cos(a1), pR * sin(a2), 0.03, pR * cos(a2)
+   end repeat
+   return tM
+end uDead.RingMesh
+
+function uDead.BloodMesh
+   local tM, tIdx
+   put Mesh.New() into tM
+   uDead.Line tM, tIdx, -0.12, 0.02, -0.05, 0.12, 0.02, 0.05
+   uDead.Line tM, tIdx, -0.04, 0.02, 0.1, 0.05, 0.02, -0.1
+   return tM
+end uDead.BloodMesh
+
+-------------------------------------------------------------------- effects (the owner, 11 13 2026: show, don't tell)
+
+-- a ring that spreads across the ground: pColor, from where, over pSeconds
+on uDead.Ring pX, pZ, pColor, pSeconds
+   add 1 to sFxN
+   put Entity.Spawn("uDead.Ring1", pX * kM, 0, pZ * kM, pColor) into sFx[sFxN]["key"]
+   put sNow into sFx[sFxN]["born"]
+   put pSeconds into sFx[sFxN]["life"]
+end uDead.Ring
+
+on uDead.FxStep
+   local tK, tAge
+   repeat for each key tK in sFx
+      put (sNow - sFx[tK]["born"]) / sFx[tK]["life"] into tAge
+      if tAge >= 1 or tAge < 0 then
+         Entity.Kill sFx[tK]["key"]
+         delete variable sFx[tK]
+      else
+         uDead.SetMesh sFx[tK]["key"], "uDead.Ring" & (trunc(tAge * 6) + 1)
+      end if
+   end repeat
+end uDead.FxStep
+
+-- the injured leave a trail
+on uDead.Bleed pId
+   local tKey
+   if sE[pId]["hurt"] is not true or sE[pId]["state"] is not "alive" then exit uDead.Bleed
+   if sNow < sE[pId]["bleedAt"] then exit uDead.Bleed
+   put sNow + 0.45 into sE[pId]["bleedAt"]
+   put Entity.Spawn("uDead.Blood", sE[pId]["x"] * kM, 0, sE[pId]["z"] * kM, "#B01010") into tKey
+   SetObjectRotation tKey, 0, random(314) / 100, 0
+   put tKey & cr after sBlood
+   if the number of lines of sBlood > kBloodMax then
+      Entity.Kill line 1 of sBlood
+      delete line 1 of sBlood
+   end if
+end uDead.Bleed
+
+-- the targeted living strobe dark red to blood red; crowds of the dead make noise
+on uDead.Signals
+   local tId, tT, tTargets, tNear, tN, tOther, tCX, tCZ, tDone
+   if sNow >= sStrobeAt then
+      put sNow + 0.5 into sStrobeAt
+      put not sStrobeOn into sStrobeOn
+      repeat for each line tId in sZ
+         if sE[tId]["state"] is not "alive" then next repeat
+         if sE[tId]["order"] is "attack" then put true into tTargets[sE[tId]["target"]]
+         if sE[tId]["beh"] is "RUSH" then
+            put uDead.Nearest(tId, sH) into tNear
+            if tNear is not empty and item 2 of tNear < 8 then put true into tTargets[item 1 of tNear]
+         end if
+      end repeat
+      repeat for each line tId in sH
+         if sE[tId]["state"] is not "alive" then next repeat
+         if tTargets[tId] then
+            put "#5A0000" into sE[tId]["tint"]
+            if sStrobeOn then put "#E01818" into sE[tId]["tint"]
+            uDead.Dress tId
+         else if sE[tId]["tint"] is not empty then
+            put empty into sE[tId]["tint"]
+            uDead.Dress tId
+         end if
+      end repeat
+   end if
+   if sNow >= sNoiseAt then
+      put sNow + 1.2 into sNoiseAt
+      repeat for each line tId in sZ
+         if sE[tId]["state"] is not "alive" or tDone[tId] then next repeat
+         put 0 into tN
+         put 0 into tCX
+         put 0 into tCZ
+         repeat for each line tOther in sZ
+            if sE[tOther]["state"] is not "alive" then next repeat
+            if uDead.Dist(tId, tOther) <= kNoiseNear then
+               add 1 to tN
+               add sE[tOther]["x"] to tCX
+               add sE[tOther]["z"] to tCZ
+               put true into tDone[tOther]
+            end if
+         end repeat
+         if tN >= kNoiseCrowd then
+            put tCX / tN into tCX
+            put tCZ / tN into tCZ
+            uDead.Ring tCX, tCZ, "#FFFFFF", 1.0
+            repeat for each line tOther in sH
+               if sqrt((sE[tOther]["x"] - tCX) ^ 2 + (sE[tOther]["z"] - tCZ) ^ 2) <= kNoiseHeard then put true into sE[tOther]["awake"]
+            end repeat
+         end if
+      end repeat
+   end if
+end uDead.Signals
 
 -- pStride: how far the left foot is forward (metres); the figure faces +Z
 function uDead.Figure pStride, pDead, pGun
@@ -1044,6 +1176,7 @@ on uDead.Dress pId
          put "uDead.Body" into tMesh
          put "#4A4A4A" into tColor
    end switch
+   if sE[pId]["tint"] is not empty and sE[pId]["state"] is "alive" then put sE[pId]["tint"] into tColor
    put tMesh into sE[pId]["mesh"]
    put Entity.Spawn(tMesh, sE[pId]["x"] * kM, 0, sE[pId]["z"] * kM, tColor) into sE[pId]["key"]
    put uDead.Euler(sE[pId]["yaw"]) into tE
@@ -1072,6 +1205,7 @@ end uDead.SetMesh
 -- put a figure where its record says, walking frame and all
 on uDead.Place pId, pMoved
    local tE, tBase
+   if pMoved and sE[pId]["kind"] is "z" then uDead.Bleed pId
    SetObjectPosition sE[pId]["key"], sE[pId]["x"] * kM, 0, sE[pId]["z"] * kM
    put uDead.Euler(sE[pId]["yaw"]) into tE
    SetObjectRotation sE[pId]["key"], item 1 of tE, item 2 of tE, item 3 of tE
@@ -1449,7 +1583,8 @@ end uDead.KillHuman
 on uDead.HurtZombie pId, pDamage, pFinal
    if sE[pId]["state"] is not "alive" then exit uDead.HurtZombie
    subtract pDamage from sE[pId]["hp"]
-   FX.Sparks sE[pId]["x"] * kM, -1.2 * kM, sE[pId]["z"] * kM, 4, "#9FE060"
+   FX.Sparks sE[pId]["x"] * kM, -1.2 * kM, sE[pId]["z"] * kM, 8, "#D01010"
+   put true into sE[pId]["hurt"]
    if sE[pId]["hp"] > 0 then exit uDead.HurtZombie
    subtract 1 from sE[pId]["lives"]
    if pFinal then put 0 into sE[pId]["lives"]
@@ -1551,7 +1686,7 @@ on uDead.Humans pDT
             put atan2(sE[tFoe]["x"] - sE[tId]["x"], sE[tFoe]["z"] - sE[tId]["z"]) into sE[tId]["yaw"]
             if sNow >= sE[tId]["next"] then
                put sNow + 0.9 into sE[tId]["next"]
-               uDead.HurtZombie tFoe, 160 + random(120), false
+               uDead.HurtZombie tFoe, round((160 + random(120)) * sEase), false
             end if
          else if tD < 10 then
             put (uDead.FieldStep(tId, "Z", kSeekSpeed + 0.3, pDT, true, false) is "moved") into tMoved
@@ -1599,16 +1734,21 @@ on uDead.Shoot pId, pFoe, pD
       default
          put sNow + 0.4 + random(40) / 100 into sE[pId]["next"]
    end switch
-   FX.Sparks (sE[pId]["x"] + sin(sE[pId]["yaw"]) * 0.8) * kM, -1.38 * kM, (sE[pId]["z"] + cos(sE[pId]["yaw"]) * 0.8) * kM, 2, "#FFF080"
+   -- slower on the easy levels
+   put sNow + (sE[pId]["next"] - sNow) / sEase into sE[pId]["next"]
+   -- the muzzle flash, and a ring across the ground so you see where shots come from
+   FX.Sparks (sE[pId]["x"] + sin(sE[pId]["yaw"]) * 0.8) * kM, -1.38 * kM, (sE[pId]["z"] + cos(sE[pId]["yaw"]) * 0.8) * kM, 10, "#FFF080"
+   uDead.Ring sE[pId]["x"], sE[pId]["z"], "#FF9040", 0.6
    put max(0.25, 0.95 - pD * 0.04) into tChance
    if tGun is "sniper" then put 0.55 into tChance
+   put tChance * sEase into tChance
    if random(1000) <= tChance * 1000 then
       if tGun is "rifle" then
-         uDead.HurtZombie pFoe, 95, (random(100) <= 4)
+         uDead.HurtZombie pFoe, round(95 * sEase), (random(100) <= 4 * sEase)
       else if tGun is "sniper" then
-         uDead.HurtZombie pFoe, 450, (random(100) <= 25)
+         uDead.HurtZombie pFoe, round(450 * sEase), (random(100) <= 25 * sEase)
       else
-         uDead.HurtZombie pFoe, 185, (random(100) <= 8)
+         uDead.HurtZombie pFoe, round(185 * sEase), (random(100) <= 8 * sEase)
       end if
    end if
    -- a shot wakes the neighbours
