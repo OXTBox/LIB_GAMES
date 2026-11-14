@@ -1,0 +1,36 @@
+<!-- Spark folder manifest of Data/Emitters/oldEmitters/More Emitters (model spark-x2.6-4b, 2026-11-12 18:29). DRAFT. -->
+
+# Data/Emitters/oldEmitters/More Emitters
+- **Role:** This folder holds particle emitter settings for the game's Emitters directory, providing configuration data for several `.emt` particle emitter files and the emitter settings for `truecomet.emt`. It contains no executable logic, only settings used to define particle behavior for the game's particle systems.
+- **Entry point:** none
+- **Files:**
+  - asuperSpark.emt - particle emitter settings file with key-value parameters for particle behavior
+  - blasttestFire.emt - particle emitter settings file with key-value parameters for particle behavior
+  - cometFire.emt - particle emitter settings file with key-value parameters for particle behavior
+  - cracklingfire.emt - particle emitter settings file with key-value parameters for particle behavior
+  - floatBulb.emt - particle emitter settings file with key-value parameters for particle behavior
+  - harshpark.emt - particle emitter settings file with key-value parameters for particle behavior
+  - hottrail.emt - particle emitter settings file with key-value parameters for particle behavior
+  - lightex.emt - particle emitter settings file with key-value parameters for particle behavior
+  - lightex2.emt - particle emitter settings file with key-value parameters for particle behavior
+  - planar.emt - particle emitter settings file with key-value parameters for particle behavior
+  - puslar.emt - particle emitter settings file with key-value parameters for particle behavior
+  - saveasfire.emt - particle emitter settings file with key-value parameters for particle behavior
+  - superFogifier.emt - particle emitter settings file with key-value parameters for particle behavior
+  - superWhatTheHell.emt - particle emitter settings file with key-value parameters for particle behavior
+  - tightsparkle.emt - particle emitter settings file with key-value parameters for particle behavior
+  - tripSpark.emt - particle emitter settings file with key-value parameters for particle behavior
+  - tripSpark3.emt - particle emitter settings file with key-value parameters for particle behavior
+  - truecomet.emt - particle emitter settings file with key-value parameters for particle behavior
+- **Shared with other folders:** Needs `images/blast0.png`, `images/lights.png`, and `animations/fire-animated.gif` texture paths from other folders. Others use the `.emt` emitter settings files in this folder for particle behavior configuration.
+- **Procedure candidates:** none
+- **Glossary:**
+  - `.emt` - particle emitter settings file containing key-value pairs for particle behavior
+  - `emission rate` - particle emission rate setting for an emitter
+  - `life` - particle lifetime setting for an emitter
+  - `explode` - flag setting for emitter particle explosion behavior
+  - `move` - flag setting for emitter particle movement behavior
+  - `scale` - flag setting for emitter particle scaling behavior
+  - `rotate` - flag setting for emitter particle rotation behavior
+  - `anim` - flag setting for emitter particle animation behavior
+- **Verdict:** keep - serves as a reference for emitter configuration parameters for reuse in new engines.

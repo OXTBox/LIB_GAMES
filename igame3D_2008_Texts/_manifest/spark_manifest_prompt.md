@@ -56,10 +56,10 @@ File: {file}   (folder {folder})
 This is part {part} of {parts}. {context}
 Functions in this part: {names}
 
-Write one section per function, in this order. If there is code outside any function
-(setup, globals, widget definitions, settings), start with a section `### Top level`.
-If the list above says "none", write ONLY the `### Top level` section. Never make a
-section for the file name.
+Write one section per function, in this order. {toplevel}
+Never make a section for the file name.
+Answer once: write each section a single time, then stop. Do not discuss these
+instructions, check your answer aloud or write a corrected version.
 
 ### <function name>
 - **Does:** one or two sentences.
@@ -92,7 +92,9 @@ Now write the file summary in exactly this format:
 - **Kind:** one of: engine-core, library, level-script, ui-dialog, tool, converter,
   exporter, network, shader, emitter-settings, data, test/example.
 - **Purpose:** two or three sentences: what the file is for, as a whole.
-- **Depends on:** other files or folders it loads or needs (files it loads, `Data/` paths, globals set elsewhere).
+- **Depends on:** copied from the **Uses:** lines of your part notes above: files it loads,
+  `Data/` paths written in it, engine calls and globals it needs from other files.
+  Nothing from the background in the system message. "nothing" if the Uses lines are empty.
 - **Provides:** the main functions or globals other files use.
 - **Assets it needs:** models, images, sounds, emitters, fonts it names (exact file names, max 10).
 - **Procedural:** what asset it generates from numbers or rules instead of loading a file, or "none"
@@ -119,9 +121,13 @@ Write the folder manifest in exactly this format:
 # {folder}
 - **Role:** two or three sentences: what this folder is for in the engine or game.
 - **Entry point:** the file that starts or loads the rest, or "none".
-- **Files:** one line per file: `name - what it is` (all files, code and data).
-- **Shared with other folders:** what it needs from elsewhere and what others take from it.
-- **Procedure candidates:** things here that could be produced by code instead of
-  stored as files, or code that already does so.
-- **Glossary:** the 5 to 12 most important terms, `term - meaning`, taken only from the notes above.
+- **Files:** one line per file: `name - what it is` in at most 8 words (all files, code
+  and data; a `.fl` file is the FLUID twin of the `.lua` with the same name: say only that).
+- **Shared with other folders:** ONE line, at most 25 words: the main things it needs from
+  elsewhere and what others take from it. No lists of paths.
+- **Procedure candidates:** at most 3, one short line each: things here that could be
+  produced by code instead of stored as files, or code that already does so.
+- **Glossary:** the 5 to 10 most important terms, `term - meaning` (one line each), taken
+  only from the notes above.
+Keep the whole manifest short: it must fit, and it is read next to the file notes.
 - **Verdict:** keep / port / drop, and a reason.

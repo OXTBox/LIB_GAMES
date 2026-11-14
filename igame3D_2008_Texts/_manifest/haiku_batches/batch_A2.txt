@@ -1,0 +1,16 @@
+FOLDER Fluid/ZGS_Maker | write _FOLDER.md | files to draft: ZGS_Maker.lua
+FOLDER Fluid/animation_browser | write _FOLDER.md | files to draft: animation_browser.lua
+FOLDER Fluid/animation_editor | write _FOLDER.md | files to draft: animation_editor.lua
+FOLDER Fluid/askLevel | write _FOLDER.md | files to draft: askLevel.lua
+FOLDER Fluid/console | write _FOLDER.md | files to draft: console.lua
+FOLDER Fluid/cubemap | write _FOLDER.md | files to draft: cubemap.lua
+FOLDER Fluid/gravitygame | write _FOLDER.md | files to draft: gravitygamet.lua
+FOLDER Fluid/keyboard_editor | write _FOLDER.md | files to draft: (none)
+FOLDER Fluid/mesh_editor | write _FOLDER.md | files to draft: mesh_editor.lua
+FOLDER Fluid/murgacompiler | write _FOLDER.md | files to draft: amurgacompiler.lua, lala.lua, murgacompiler.lua
+FOLDER Fluid/saveLevelAs | write _FOLDER.md | files to draft: saveLevelAs.lua
+FOLDER Fluid/script_editor | write _FOLDER.md | files to draft: script_editor.lua
+FOLDER Fluid/shader_test | write _FOLDER.md | files to draft: shader_test.lua
+FOLDER Fluid/telnetclient | write _FOLDER.md | files to draft: load script.lua
+FOLDER Fluid/telnetserver | write _FOLDER.md | files to draft: telnetserver.lua
+FOLDER Fluid/wifbrowser | write _FOLDER.md | files to draft: wifbrowser.lua

@@ -1,22 +1,19 @@
-<!-- Spark first-look of Data/Scripts/Functions/main_tool_functions.lua (model spark-x2.6-4b, 2026-11-12 06:58). DRAFT for Claude to review. -->
+<!-- Spark first-look of Data/Scripts/Functions/main_tool_functions.lua (model spark-x2.6-4b, 2026-11-12 20:46). DRAFT for Claude to review. -->
 
 ## main_tool_functions.lua
 - **Kind:** tool
-- **Purpose:** This file provides the main tools UI logic for iGame3D, handling button clicks for the main tools interface, building the main tools window with its icon groups, menu bar, and associated callbacks, and defining the global tables used to manage the tools UI state.
-- **Depends on:** Other Scripts files (edit functions, UI helper functions), globals set elsewhere (buttonID, oldButton, UIMainTools, iconFiles, toolButton, imageFile), Data folder paths (Data/Fluid, Data/Icons/MainTools), and engine calls (dofile, fltk UI calls).
-- **Provides:** Global tables `iconFiles` and `toolButton` (with empty `button` and `file` sub-tables), the `MainToolsClick` function for routing main tools button clicks, and the `UI_MAINTOOLS_WINDOW` function for building the main tools UI window.
-- **Assets it needs:** Images from Data/Icons/MainTools/ (exact file names not specified in provided code).
-- **Procedural:** none
+- **Purpose:** This file provides main tools click handling and the setup routines for the main tools UI window. It manages button clicks in the main tools window, toggles UI windows and editing modes, opens FLTK UI files, and builds the main tools window with its icon buttons, menu bar, and icon fixer.
+- **Depends on:** Globals `getSceneInfo`, `IG3D_ROOT`; `Data/` paths for `Fluid/Lights/Lights.fl`, `Fluid/Colors/Colors.fl`, `Fluid/console/console.fl`, `Fluid/WTFbrowser/WTFbrowser.fl`, `Fluid/mesh_editor/mesh_editor.fl`, `Fluid/UDG_Options/UDG_Options.fl`, `Fluid/ParticleBrowser/ParticleBrowser.fl`, `Fluid/TextboxBrowser/TextboxBrowser.fl`, and `Data/Icons/` via `iconPath`; engine calls `w:label()`, `Fl:event_key()`, `w:value()`, `dofile()`, `fltk:Fl_Double_Window`, `fltk:Fl_Group`, `fltk:Fl_Button`, `fltk:Fl_Menu_Bar`, `fltk.fl_register_images`, `Fl_Shared_Image.get`, `Fl_Group:current`, `UIMainTools`, `UIMainToolsCB`, `main_menu_callback`, `Fl:scheme`, `UIMainTools:make_current`, `fixIcons`, `FillMenuBar`; globals `oldButton`, `ModelsBrowser`, `lightswindow`, `colorswindow`, `console`, `WTFBrowserNew`, `mesheditor`, `ZGS_Maker`, `ParticleBrowser`, `TextboxBrowser`, `editingModeSwitch()`, `OPEN_UI_WINDOWS()`, `openfile()`, `lookbutton()`, `toggleQuadView()`, `EmitBrowserValueCatch()`, `listTextBoxes()`, `fltk_update()`; `lfs.dir`, `string.sub`, `string.len`, `string.gsub`; `Data/Icons/MainTools/` path.
+- **Provides:** `MainToolsClick`, `UI_MAINTOOLS_WINDOW`, `UIMainToolsCB`, `fixIcons`, `FillMenuBar`, `main_menu_callback`, `editingModeSwitch()`, `OPEN_UI_WINDOWS()`, `openfile()`, `lookbutton()`, `toggleQuadView()`, `EmitBrowserValueCatch()`, `listTextBoxes()`, `fltk_update()`.
+- **Assets it needs:** none named (only `Data/Icons/` and `Data/Icons/MainTools/` paths are referenced, no specific model, image, sound, emitter or font file names are listed).
+- **Procedural:** yes (creates FLTK UI window, icon button group, menu bar, and icon fixer objects from code rules and `lfs.dir` listing).
 - **Glossary:**
-  - `ig3d_object` - Engine object kind used as the first argument of make/get calls to reference objects.
-  - `IG3D_...` - Engine property constants naming the property read or set in object/scene/camera/light/material calls.
-  - `dofile` - Engine call that loads a Lua file from a path.
-  - `loadLevel` - Engine call that switches the active game or demo level.
-  - `fltk:` - User interface module used for building FLTK UI elements.
-  - `Data/` - Folder where all game assets and code live, referenced in path strings.
-  - `toolButton` - Global table used to manage state of main tools UI buttons.
-  - `iconFiles` - Global table used to manage icon file references for the main tools UI.
-- **Keep / port / drop:** keep (core UI logic for main tools interface, reusable reference for new engine tool UI implementation)
+  - FLTK UI file - FLUID designer text file (`Fl_Window`, `Fl_Button` etc.) used to build FLTK windows.
+  - `IG3D_ROOT` - engine global used to build `Data/` paths for loading files.
+  - `dofile` - engine call that loads a Lua file from a path.
+  - `loadLevel` - engine call that switches the active level folder (background, not in this file's code; omit).
+  - `fltk_update` - engine call used to refresh FLTK UI state.
+- **Keep / port / drop:** keep - core tools UI setup and click handling reference for building new engine tools.
 
 ---
 
@@ -25,45 +22,26 @@
 ## Part 1 of 2
 
 ### Top level
-- **Does:** Defines the global `iconFiles` and `toolButton` tables used by the main tools UI, containing empty `button`, `file` sub-tables.
-- **Uses:** nothing
-- **Reusable:** yes
-
-### MainToolsClick
-- **Does:** Handles clicks on the main tools buttons by reading the button label, toggling button state, and routing to the corresponding edit functions or UI windows based on the button ID.
-- **Uses:** Engine calls (`w:label()`, `w:value()`, `dofile(...)`), globals (`buttonID`, `oldButton`, `ModelsBrowser`, `lightswindow`, `colorswindow`, `console`, `WTFBrowserNew`, `mesheditor`, `ZGS_Maker`, `ParticleBrowser`, `TextboxBrowser`, `gameroot`), file paths (`Data/Fluid/...`), and UI helpers (`lookbutton()`, `toggleQuadView()`, `editingModeSwitch()`, `OPEN_UI_WINDOWS()`, `openfile()`, `fltk_update()`).
+- **Does:** Contains the file-level setup code outside functions, including the `iconFiles={}` initialization and the `iconPath`/`toolButton` variable definitions.
+- **Uses:** Globals `getSceneInfo`, `IG3D_ROOT`, and `Data/` path construction via string concatenation.
 - **Reusable:** no
 
-Wait, the instructions say if there is code outside any function, start with `### Top level`. The code after the function ends has `iconFiles={}` etc. which is outside the function, so that goes in Top level. But the Top level section should describe only what the code shows. Let me correct:
-
-### Top level
-- **Does:** Defines global tables `iconFiles` and `toolButton` (with empty `button` and `file` sub-tables) used for the main tools UI.
-- **Uses:** nothing
-- **Reusable:** yes
-
 ### MainToolsClick
-- **Does:** Handles clicks on the main tools buttons by reading the button label, toggling button state, and routing to the corresponding edit functions or UI windows based on the button ID.
-- **Uses:** Engine calls (`w:label()`, `w:value()`, `dofile(...)`), globals (`buttonID`, `oldButton`, `ModelsBrowser`, `lightswindow`, `colorswindow`, `console`, `WTFBrowserNew`, `mesheditor`, `ZGS_Maker`, `ParticleBrowser`, `TextboxBrowser`, `gameroot`), file paths (`Data/Fluid/...`), and UI helpers (`lookbutton()`, `toggleQuadView()`, `editingModeSwitch()`, `OPEN_UI_WINDOWS()`, `openfile()`, `fltk_update()`).
+- **Does:** Handles button clicks in the main tools window, toggling UI windows, switching editing modes, and opening FLTK UI files based on the clicked button label.
+- **Uses:** Engine calls `w:label()`, `Fl:event_key()`, `w:value()`, `dofile()`, `getSceneInfo()`, `IG3D_ROOT`; globals `oldButton`, `ModelsBrowser`, `lightswindow`, `colorswindow`, `console`, `WTFBrowserNew`, `mesheditor`, `ZGS_Maker`, `ParticleBrowser`, `TextboxBrowser`, `editingModeSwitch()`, `OPEN_UI_WINDOWS()`, `openfile()`, `lookbutton()`, `toggleQuadView()`, `EmitBrowserValueCatch()`, `listTextBoxes()`, `fltk_update()`; `Data/` paths for `Fluid/Lights/Lights.fl`, `Fluid/Colors/Colors.fl`, `Fluid/console/console.fl`, `Fluid/WTFbrowser/WTFbrowser.fl`, `Fluid/mesh_editor/mesh_editor.fl`, `Fluid/UDG_Options/UDG_Options.fl`, `Fluid/ParticleBrowser/ParticleBrowser.fl`, `Fluid/TextboxBrowser/TextboxBrowser.fl`, and `Data/Icons/` via `iconPath`.
 - **Reusable:** no
-
-Wait, the rules say "Mention a call, global or path only if it appears in the code you were given." All those do appear. But let's make it shorter as per "short, exact notes". Also, the Top level code is outside the function, so that's correct.
-
-Wait, the file says "Functions in this part: MainToolsClick" and "This part is the start of the file." So the Top level code is part of this part, so it should be included.
-
-Let me adjust to be more concise:
-
-### Top level
-- **Does:** Defines global tables `iconFiles` and `toolButton` (
+- **Procedural:** no
 
 ## Part 2 of 2
 
-### Top level
-- **Does:** Contains the `UI_MAINTOOLS_WINDOW` function, which sets up the main tools window and its associated UI elements.
-- **Uses:** Engine UI calls (`fltk:Fl_Double_Window`, `fltk:Fl_Group`, `fltk:Fl_Button`, `fltk:Fl_Menu_Bar`, `fltk:Fl_Shared_Image.get`, `fltk.fl_register_images`), globals (`UIMainTools`, `toolButton`, `iconFiles`, `imageFile`), file paths (`Data/Icons/MainTools/`), and UI helper functions (`fixIcons`, `FillMenuBar`, `main_menu_callback`, `MainToolsClick`, `UIMainToolsCB`).
-- **Reusable:** no
-
 ### UI_MAINTOOLS_WINDOW
-- **Does:** Builds and configures the UI main tools window, creates a group for icon buttons from the MainTools icon folder, adds a menu bar, and finalizes the window setup including icon fixing and menu bar population.
-- **Uses:** Engine UI calls (`fltk:Fl_Double_Window`, `fltk:Fl_Group`, `fltk:Fl_Button`, `fltk:Fl_Menu_Bar`, `fltk:Fl_Shared_Image.get`, `fltk.fl_register_images`), globals (`UIMainTools`, `toolButton`, `iconFiles`, `imageFile`), file paths (`Data/Icons/MainTools/`), and UI helper functions (`fixIcons`, `FillMenuBar`, `main_menu_callback`, `MainToolsClick`, `UIMainToolsCB`).
+- **Does:** Sets up the main tools window, its icon button group, menu bar, and icon fixer, then shows the window and activates it.
+- **Uses:** `getSceneInfo`, `IG3D_ROOT`, `fltk:Fl_Double_Window`, `fltk:Fl_Group`, `fltk:Fl_Button`, `fltk:Fl_Menu_Bar`, `lfs.dir`, `string.sub`, `string.len`, `string.gsub`, `fltk.FL_THIN_UP_BOX`, `fltk.FL_BORDER_BOX`, `fltk.fl_register_images`, `Fl_Shared_Image.get`, `Fl_Group:current`, `UIMainTools`, `UIMainToolsCB`, `main_menu_callback`, `Fl:scheme`, `UIMainTools:make_current`, `fixIcons`, `FillMenuBar`, `Data/Icons/MainTools/` path
 - **Reusable:** no
-- **Procedural:** no
+- **Procedural:** yes
+
+### UIMainToolsCB
+- **Does:** Drives the main tools window setup sequence, including icon collection, button creation, menu bar configuration, and final window activation.
+- **Uses:** `fltk:Fl_Double_Window`, `fltk:Fl_Group`, `fltk:Fl_Button`, `fltk:Fl_Menu_Bar`, `lfs.dir`, `string.sub`, `string.len`, `string.gsub`, `fltk.FL_THIN_UP_BOX`, `fltk.FL_BORDER_BOX`, `fltk.fl_register_images`, `Fl_Shared_Image.get`, `Fl_Group:current`, `UIMainTools`, `UIMainToolsCB`, `main_menu_callback`, `Fl:scheme`, `UIMainTools:make_current`, `fixIcons`, `FillMenuBar`, `Data/Icons/MainTools/` path
+- **Reusable:** no
+- **Procedural:** yes

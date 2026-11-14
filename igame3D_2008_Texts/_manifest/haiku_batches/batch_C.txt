@@ -1,0 +1,51 @@
+FOLDER (Data root) | write _FOLDER.md | files to draft: game script.lua
+FOLDER Emitters | write _FOLDER.md | files to draft: _emitters
+FOLDER Exporters | write _FOLDER.md | files to draft: C3D2WTF_exporter.js, WTF_Export.py
+FOLDER Help | write _FOLDER.md | files to draft: (none)
+FOLDER Help/faq | write _FOLDER.md | files to draft: (none)
+FOLDER OBJ | write _FOLDER.md | files to draft: (none)
+FOLDER Shaders | write _FOLDER.md | files to draft: (none)
+FOLDER Shaders/bump | write _FOLDER.md | files to draft: FragmentProgram, FragmentProgram_ATI, VertexProgram
+FOLDER Shaders/bumppass | write _FOLDER.md | files to draft: FragmentProgram, FragmentProgram_ATI, VertexProgram
+FOLDER Shaders/flashlight | write _FOLDER.md | files to draft: FragmentProgram, FragmentProgram_ATI, VertexProgram
+FOLDER Shaders/light | write _FOLDER.md | files to draft: FragmentProgram, FragmentProgram_ATI, VertexProgram
+FOLDER Shaders/light_radius | write _FOLDER.md | files to draft: FragmentProgram, FragmentProgram_ATI, VertexProgram
+FOLDER Shaders/newbump | write _FOLDER.md | files to draft: newbump.fs, newbump.vs
+FOLDER Shaders/pass | write _FOLDER.md | files to draft: FragmentProgram, FragmentProgram_ATI
+FOLDER Shaders/per_pixel_lighting | write _FOLDER.md | files to draft: per_pixel_lighting.fs, per_pixel_lighting.vs
+FOLDER Shaders/radius | write _FOLDER.md | files to draft: VertexProgram
+FOLDER Shaders/spotlight | write _FOLDER.md | files to draft: FragmentProgram, VertexProgram
+FOLDER Shaders/tomdrin | write _FOLDER.md | files to draft: tomdrin.fs, tomdrin.vs
+FOLDER WTF | write _FOLDER.md | files to draft: (none)
+FOLDER WTF/Animals | write _FOLDER.md | files to draft: (none)
+FOLDER WTF/AquaChar | write _FOLDER.md | files to draft: (none)
+FOLDER WTF/Armor | write _FOLDER.md | files to draft: (none)
+FOLDER WTF/Billboards | write _FOLDER.md | files to draft: (none)
+FOLDER WTF/Building_parts | write _FOLDER.md | files to draft: (none)
+FOLDER WTF/Buildings | write _FOLDER.md | files to draft: (none)
+FOLDER WTF/Bump_mesh | write _FOLDER.md | files to draft: (none)
+FOLDER WTF/Characters | write _FOLDER.md | files to draft: (none)
+FOLDER WTF/Clothing | write _FOLDER.md | files to draft: (none)
+FOLDER WTF/Containers | write _FOLDER.md | files to draft: (none)
+FOLDER WTF/Cubes | write _FOLDER.md | files to draft: (none)
+FOLDER WTF/DeadDays | write _FOLDER.md | files to draft: (none)
+FOLDER WTF/DungeonPack | write _FOLDER.md | files to draft: (none)
+FOLDER WTF/Equipment | write _FOLDER.md | files to draft: (none)
+FOLDER WTF/Floors | write _FOLDER.md | files to draft: (none)
+FOLDER WTF/Foliage | write _FOLDER.md | files to draft: (none)
+FOLDER WTF/Furniture | write _FOLDER.md | files to draft: (none)
+FOLDER WTF/Houses | write _FOLDER.md | files to draft: (none)
+FOLDER WTF/Locations | write _FOLDER.md | files to draft: (none)
+FOLDER WTF/Misc | write _FOLDER.md | files to draft: (none)
+FOLDER WTF/PathSources | write _FOLDER.md | files to draft: (none)
+FOLDER WTF/Powerups | write _FOLDER.md | files to draft: (none)
+FOLDER WTF/Reticule | write _FOLDER.md | files to draft: (none)
+FOLDER WTF/Shapes | write _FOLDER.md | files to draft: (none)
+FOLDER WTF/Skybox | write _FOLDER.md | files to draft: (none)
+FOLDER WTF/Spheres | write _FOLDER.md | files to draft: (none)
+FOLDER WTF/Street | write _FOLDER.md | files to draft: (none)
+FOLDER WTF/Tools | write _FOLDER.md | files to draft: (none)
+FOLDER WTF/Vehicles_air | write _FOLDER.md | files to draft: (none)
+FOLDER WTF/Vehicles_land | write _FOLDER.md | files to draft: (none)
+FOLDER WTF/Walls | write _FOLDER.md | files to draft: (none)
+FOLDER WTF/Weapons | write _FOLDER.md | files to draft: (none)

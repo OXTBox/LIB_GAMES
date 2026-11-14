@@ -1,0 +1,28 @@
+FOLDER Levels | write _FOLDER.md | files to draft: (none)
+FOLDER Levels/AntackFight1 | write _FOLDER.md | files to draft: HUDInit.txt, cache.txt, level models.txt, load script.txt, person.txt, starting.txt, tex.txt, tint.txt
+FOLDER Levels/AntackFight2 | write _FOLDER.md | files to draft: level models.txt, load script.txt, person.txt, starting.txt
+FOLDER Levels/AntackFight3 | write _FOLDER.md | files to draft: HUDInit.txt, level models.txt, load script.txt, person.txt, starting.txt, tint.txt
+FOLDER Levels/AntackFight4 | write _FOLDER.md | files to draft: level models.txt, load script.txt, person.txt, starting.txt
+FOLDER Levels/AntackGUI0 | write _FOLDER.md | files to draft: easy.txt, hard.txt, load script.txt, medium.txt, mouseover.txt, person.txt, quit.txt, starting.txt, tex.txt, texsetter.txt, tint.txt, trainer.txt
+FOLDER Levels/AntackGUI1 | write _FOLDER.md | files to draft: load script.txt, person.txt, startfade.txt, starting.txt
+FOLDER Levels/AntackGUI2 | write _FOLDER.md | files to draft: load script.txt, person.txt
+FOLDER Levels/AntackTrainer | write _FOLDER.md | files to draft: HUDInit.txt, cache.txt, level models.txt, load script.txt, person.txt, starting.txt, tex.txt, tint.txt
+FOLDER Levels/Bike | write _FOLDER.md | files to draft: load script.lua
+FOLDER Levels/BobetteSoccer | write _FOLDER.md | files to draft: load script.lua
+FOLDER Levels/BrickFun | write _FOLDER.md | files to draft: load script.lua
+FOLDER Levels/Car | write _FOLDER.md | files to draft: load script.lua
+FOLDER Levels/Colltests | write _FOLDER.md | files to draft: load script.lua
+FOLDER Levels/FPS | write _FOLDER.md | files to draft: load script.lua
+FOLDER Levels/NXTpbLuaSim | write _FOLDER.md | files to draft: load script.lua, pbLuaAPI.lua, robot.lua, robotAPI.lua, robotDefaults.lua
+FOLDER Levels/RPG | write _FOLDER.md | files to draft: load script.lua
+FOLDER Levels/Recognizer | write _FOLDER.md | files to draft: load script.lua
+FOLDER Levels/SquigLand | write _FOLDER.md | files to draft: load script.lua
+FOLDER Levels/Tank | write _FOLDER.md | files to draft: load script.lua
+FOLDER Levels/Tronish | write _FOLDER.md | files to draft: load script.lua
+FOLDER Levels/UFO | write _FOLDER.md | files to draft: load script.lua
+FOLDER Levels/Warhammer | write _FOLDER.md | files to draft: einheit.lua, hauptmenue.lua, load script.lua, matrix.lua, mitspielen.lua, nk2.lua, spielparameter.lua, tools.lua, warhammer.lua, wartenaufmitspieler.lua, xmlladen.lua
+FOLDER Levels/aquatext | write _FOLDER.md | files to draft: load script.lua
+FOLDER Levels/cubmaptest | write _FOLDER.md | files to draft: load script.lua
+FOLDER Levels/default | write _FOLDER.md | files to draft: default_Globals.lua, load script.lua
+FOLDER Levels/iFly | write _FOLDER.md | files to draft: iFly_controls.txt, iFly_name.txt, iFly_options.txt, load script.lua
+FOLDER Levels/ufotest | write _FOLDER.md | files to draft: load script.lua

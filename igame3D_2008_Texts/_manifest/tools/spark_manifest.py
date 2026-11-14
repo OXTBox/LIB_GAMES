@@ -25,9 +25,16 @@ NOTES = os.path.join(MAN, 'spark')
 PROMPT = os.path.join(MAN, 'spark_manifest_prompt.md')
 URL = 'http://127.0.0.1:1234/v1/chat/completions'
 SKIP_DIRS = {'.svn', '_manifest'}
-CODE_EXT = ('.lua', '.fl', '.py', '.js', '.vs', '.fs')
+# .fl (FLUID) files are not sent: in murgaLua iGame3D the .lua beside each one carries the same
+# UI code (the owner, 2026-11-13). They are still listed in the folder manifests.
+CODE_EXT = ('.lua', '.py', '.js', '.vs', '.fs')
 SHADER_NAMES = ('VertexProgram', 'FragmentProgram', 'FragmentProgram_ATI')
-NOT_SENT = ('Help/', 'Scripts/LuaSocket')     # reference docs (Claude reads them for the glossary); third-party LuaSocket
+NOT_SENT = ('Help/', 'Scripts/LuaSocket')
+# folders the owner looks at first: Spark skips them entirely (no file or folder notes)
+HOLD = ()
+# folders of iteration copies: Spark reads only the final version of each line (Claude's
+# review, MANIFEST.md); the folder note still lists every file
+ONLY = {'Fluid/Mappers': ('DungeonDraw3D8.lua', 'DungeonMapperNaked.lua', 'Mapper.lua', 'Mapper3.lua', 'Mapper5.lua')}     # reference docs (Claude reads them for the glossary); third-party LuaSocket
 START = re.compile(r'^\s*(?:code\s*\{\s*)?(?:local\s+)?function\s+([\w.:]+)'
                    r'|^\s*([\w.]+)\s*=\s*function\b'
                    r'|^\s*Function\s*\{\s*(\w+)'
@@ -96,14 +103,59 @@ def kind_of(rel):
 
 
 def fit(text, limit):
-    """Shrink notes to about limit chars (Spark's context is 8k tokens): first keep only the
-    headings and Does lines, then cut."""
+    """Shrink notes to about limit chars (Spark's context is 8k tokens): keep the headings, Uses
+    and Does lines (the file summary's Depends on is copied from Uses), then drop Does, then cut."""
     if len(text) <= limit:
         return text
-    keep = [l for l in text.split('\n') if l.startswith('#') or '**Does:**' in l or '**Purpose:**' in l
-            or '**Kind:**' in l or '**Procedural:**' in l]
-    text = '\n'.join(keep)
-    return text if len(text) <= limit else text[:limit] + '\n... (notes cut to fit)'
+    for fields in (('**Does:**', '**Uses:**', '**Purpose:**', '**Kind:**', '**Procedural:**', '**Depends on:**'),
+                   ('**Uses:**', '**Purpose:**', '**Kind:**', '**Depends on:**')):
+        keep = '\n'.join(l for l in text.split('\n') if l.startswith('#') or any(f in l for f in fields))
+        if len(keep) <= limit:
+            return keep
+    return keep[:limit] + '\n... (notes cut to fit)'
+
+
+# Spark arguing with the prompt inside its answer ("Wait, the instructions say ... Let me correct")
+SELF_TALK = re.compile(r"^(?:Wait[,.]|Hmm|Let me |Let's |But the (?:instruction|rule)|The (?:instructions|rules) say)", re.M)
+OPENERS = re.compile(r'\b(function|do|if|repeat)\b')
+CLOSERS = re.compile(r'\b(end|until)\b')
+
+
+def lua_toplevel(lines):
+    """For each line: True if it is Lua code outside any function (depth 0, not a function start).
+    Counts blocks the Lua way: function/do/if/repeat open, end/until close (for/while open with do)."""
+    flags, depth, long_comment = [], 0, False
+    for line in lines:
+        code = line
+        if long_comment:
+            if ']]' not in code:
+                flags.append(False)
+                continue
+            code, long_comment = code.split(']]', 1)[1], False
+        if '--[[' in code and ']]' not in code.split('--[[', 1)[1]:
+            code, long_comment = code.split('--[[', 1)[0], True
+        code = re.sub(r'--.*', '', re.sub(r'"(?:\\.|[^"\\])*"|\'(?:\\.|[^\'\\])*\'|\[\[.*?\]\]', '""', code))
+        flags.append(depth == 0 and bool(code.strip()) and not name_of(line))
+        depth = max(0, depth + len(OPENERS.findall(code)) - len(CLOSERS.findall(code)))
+    return flags
+
+
+def toplevel_note(name, part, flags, here, inside=None):
+    """The PART prompt's Top-level instruction, decided here instead of by Spark (it argued with the rule).
+    inside = the function this part continues, when a long function was cut into several parts."""
+    outside = [l.strip() for l, f in zip(part, flags) if f] if flags is not None else None
+    if not here and inside and not outside:
+        return ('This part is the middle or end of the long function `%s` (started in an earlier part): '
+                'write ONLY one section `### %s (continued)` about what this piece does.' % (inside, inside))
+    if not here:
+        return 'This part has no functions: write ONLY a `### Top level` section.'
+    if flags is None:      # not Lua: let Spark judge
+        return ('If there is code outside any function (setup, globals, widget definitions, settings), '
+                'start with a section `### Top level`.')
+    if outside:
+        return ('This part HAS code outside functions (%d lines, e.g. `%s`): start with a `### Top level` section.'
+                % (len(outside), outside[0][:60]))
+    return 'This part has NO code outside functions: do not write a `### Top level` section.'
 
 
 def chat(model, system, user, max_tokens, effort):
@@ -121,6 +173,18 @@ def chat(model, system, user, max_tokens, effort):
     out = re.sub(r'<think>.*?</think>', '', out, flags=re.S).strip()
     if d['choices'][0].get('finish_reason') == 'length':
         out += '\n\n<!-- CUT OFF: reached max_tokens (%d); delete this file and rerun -->' % max_tokens
+    return out
+
+
+def ask(model, system, user, max_tokens, effort):
+    """chat, but one retry when Spark argues with the prompt in its answer; marked if it still does."""
+    out = chat(model, system, user, max_tokens, effort)
+    if SELF_TALK.search(out):
+        print('    (self-talk in the answer; asking again)', flush=True)
+        out = chat(model, system, user + '\n\nWrite the notes once, exactly in the format. No remarks about the '
+                   'instructions.', max_tokens, effort)
+        if SELF_TALK.search(out):
+            out += '\n\n<!-- SELF-TALK: Spark argued with the prompt twice; review by hand -->'
     return out
 
 
@@ -150,6 +214,8 @@ def jobs_for(rel, files):
     """[(name, kind, lines)] to send for one folder."""
     jobs, emt = [], []
     for f in files:
+        if rel in ONLY and f not in ONLY[rel]:
+            continue
         frel = (rel + '/' + f).lstrip('/')
         path = os.path.join(ROOT, frel)
         if f.lower().endswith(('.emt', '.emt kopie')):
@@ -199,24 +265,32 @@ def do_file(rel, name, kind, lines, a, p):
     breathe(a)
     parts = split(lines, a.max_lines)
     names = [n for n in map(name_of, lines) if n]
+    flags = lua_toplevel(lines) if name.endswith('.lua') else None
+    at = 0
     print('%s/%s: %d lines, %d functions, %d parts' % (rel, name, len(lines), len(names), len(parts)), flush=True)
     os.makedirs(outdir, exist_ok=True)
     notes = []
     for i, part in enumerate(parts, 1):
         here = [n for n in map(name_of, part) if n]
         ctx = 'This part is the start of the file.' if i == 1 else 'It continues from earlier parts.'
+        while at < len(lines) and lines[at:at + len(part)] != part:   # parts of blank lines only were dropped
+            at += 1
+        pflags = flags[at:at + len(part)] if flags is not None else None
+        inside = next((n for n in map(name_of, reversed(lines[:at])) if n), None) if pflags and not any(pflags) else None
+        at += len(part)
         user = fill(p['PART'], file=name, folder=rel or 'Data', part=i, parts=len(parts), context=ctx,
-                    names=', '.join(here) or '(none: top-level code only)', code='\n'.join(part))
+                    names=', '.join(here) or ('(none: continues %s)' % inside if inside else '(none: top-level code only)'),
+                    code='\n'.join(part), toplevel=toplevel_note(name, part, pflags, here, inside))
         print('  part %d/%d ...' % (i, len(parts)), flush=True)
         budget = min(a.max_tokens, 400 + 300 * max(1, len(here)))
-        notes.append('## Part %d of %d\n\n%s' % (i, len(parts), chat(a.model, p['SYSTEM'], user, budget, a.effort)))
+        notes.append('## Part %d of %d\n\n%s' % (i, len(parts), ask(a.model, p['SYSTEM'], user, budget, a.effort)))
         with open(out + '.partial', 'w', encoding='utf-8') as f:
             f.write('\n\n'.join(notes))
         time.sleep(a.pause)
     user = fill(p['FILE'], file=name, folder=rel or 'Data', lines=len(lines), kind=kind,
                 header=header_of(lines), notes=fit('\n\n'.join(notes), a.fit_chars))
     print('  file summary ...', flush=True)
-    summary = chat(a.model, p['SYSTEM'], user, 1500, a.effort)
+    summary = ask(a.model, p['SYSTEM'], user, 1500, a.effort)
     with open(out, 'w', encoding='utf-8') as f:
         f.write('<!-- Spark first-look of Data/%s/%s (model %s, %s). DRAFT for Claude to review. -->\n\n'
                 % (rel, name, a.model, time.strftime('%Y-%m-%d %H:%M')))
@@ -239,7 +313,7 @@ def do_folder(rel, files, subs, a, p):
     print('%s: folder manifest ...' % (rel or 'Data'), flush=True)
     os.makedirs(os.path.dirname(out), exist_ok=True)
     # big folders need room: ~80 tokens per file line plus the other sections (2000 was cut off at 47 files)
-    text = chat(a.model, p['SYSTEM'], user, max(2000, min(a.max_tokens, 1000 + 80 * len(files))), a.effort)
+    text = ask(a.model, p['SYSTEM'], user, max(2000, min(a.max_tokens, 1000 + 80 * len(files))), a.effort)
     with open(out, 'w', encoding='utf-8') as f:
         f.write('<!-- Spark folder manifest of Data/%s (model %s, %s). DRAFT. -->\n\n'
                 % (rel, a.model, time.strftime('%Y-%m-%d %H:%M')) + text + '\n')
@@ -266,6 +340,7 @@ def main():
     want = [r for r in tree if a.folder is None or r == a.folder.strip('/') or r.startswith(a.folder.strip('/') + '/')]
     if not want:
         sys.exit('no such folder: %s' % a.folder)
+    want = [r for r in want if not any(r == h or r.startswith(h + '/') for h in HOLD)]
     # deepest folders first, so a parent's manifest can mention finished children
     want.sort(key=lambda r: (-r.count('/'), r))
     if a.plan:
