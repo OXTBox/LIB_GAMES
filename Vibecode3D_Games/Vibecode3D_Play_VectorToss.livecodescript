@@ -2,7 +2,7 @@
 ## CARD SCRIPT: "Play.VectorToss"   VECTOR TOSS  (Opus 15 Nov 2026)  PHASE 1: CORE
 ## PROMPT (cyan) and GLAZE (magenta) face each other across a deep arena, one in each half,
 ## and toss a ball of vectors back and forth. You play one; the other is your companion.
-## First it is only play: gentle bounces, nothing to lose. (Walls, breaking floor tiles
+## First it is only play: high slow arcs (up, apex, down), nothing to lose. (Walls, breaking floor tiles
 ## and hang time come in the next phases: LIB_ig3d/GDD_OUTLINE_A88.md.)
 ## CONTROLS  arrows / W A S D   run around your half      C  swap to the companion
 ##           hold SPACE          power swings up and down; while held W S aim sideways,
@@ -29,21 +29,21 @@ constant kTop = 300           -- the ceiling (top bound) height
 constant kTile = 52           -- floor tiles (phase 3 breaks them)
 constant kMid = 22            -- heroes keep this far from the centre line
 constant kHeroR = 12          -- a hero's body, for the bounds
-constant kRunSpeed = 4.2      -- units a step
+constant kRunSpeed = 5.2      -- units a step
 constant kBallR = 8
-constant kGrav = 0.32         -- units a step a step
+constant kGrav = 0.16         -- units a step a step (owner: slower ball, high arcs)
 constant kBounce = 0.62       -- floor bounce keeps this much of the fall
 constant kFloorDrag = 0.86    -- each floor bounce keeps this much of the run
 constant kRollDrag = 0.95     -- rolling, a step
 constant kBackLoss = 0.85     -- the back bounds
-constant kRollV = 1.2         -- slower falls than this stop bouncing and roll
+constant kRollV = 0.8         -- slower falls than this stop bouncing and roll
 constant kCatchR = 22         -- catch reach around a hero, across the floor
 constant kReach = 78          -- and up
 constant kHandH = 44          -- the ball sits here while held
 constant kLobH = 140          -- a peak above this is a lob: +1
-constant kMinV = 5            -- throw speed at no power
-constant kMaxV = 14.5         -- at full power
-constant kDots = 22           -- the aim preview
+constant kMinV = 5            -- throw speed at no power (a short lob)
+constant kMaxV = 11           -- at full power (lands near the far back bound)
+constant kDots = 26           -- the aim preview, a dot every 4 steps
 constant kAIWait = 40         -- the companion holds the ball this many steps
 constant kCamUp = 230         -- camera height
 constant kCamBack = 170       -- behind the front bound
@@ -413,7 +413,7 @@ on VT.Controls
          put 1 into sPowerDir
       end if
       put max(-0.75, min(0.75, sAimZ + tDZ * 0.022)) into sAimZ
-      put max(0.04, min(1.15, sArc + tDX * 0.02)) into sArc
+      put max(0.7, min(1.45, sArc + tDX * 0.02)) into sArc
       VT.Move tName, 0, 0
    else
       if sCharging and tHolds then
@@ -463,7 +463,7 @@ on VT.GiveBall pName
    put sHero[pName]["z"] into sBall["z"]
    -- aim straight at the partner, a gentle arc
    put atan2(sHero[VT.Other(pName)]["z"] - sHero[pName]["z"], abs(sHero[VT.Other(pName)]["x"] - sHero[pName]["x"])) into sAimZ
-   put 0.35 into sArc
+   put 1.1 into sArc      -- owner: go high, hit the apex, come down
    put false into sCharging
    put sTicks + kAIWait into sHoldUntil
    put empty into sPlan
@@ -479,7 +479,7 @@ end VT.Velocity
 
 on VT.Throw pName, pPower, pArc, pAimZ, pEasy
    VT.Launch pName, VT.Velocity(pName, pPower, pArc, pAimZ), pEasy
-   if pArc > 0.55 then
+   if pArc > 1.2 then
       VT.Act pName, "lob"
    else
       VT.Act pName, "throw"
@@ -515,7 +515,7 @@ end VT.Launch
 on VT.EasyOne pName
    local tOther, tT, tVX, tVH, tVZ
    put VT.Other(pName) into tOther
-   put 44 into tT
+   put 70 into tT
    put (VT.HandX(tOther) - VT.HandX(pName)) / tT into tVX
    put (sHero[tOther]["z"] - sHero[pName]["z"]) / tT into tVZ
    put (kHandH - kHandH + kGrav * tT * (tT + 1) / 2) / tT into tVH
@@ -744,7 +744,7 @@ on VT.Plan pName, pSpeed
    put (sBall["touched"] is not empty) into tDown
    put -1 into tBestScore
    put tB["floors"] into tFloors
-   repeat with i = 1 to 140
+   repeat with i = 1 to 200
       if i > 1 then VT.Advance tB
       if tB["x"] * sHero[pName]["side"] <= 0 then next repeat
       if not tDown and tB["floors"] > tFloors then
@@ -778,7 +778,7 @@ on VT.Plan pName, pSpeed
 end VT.Plan
 
 -- the companion's throw: its own style, tried out first so the partner can catch it.
--- PROMPT throws hard and low and likes the sides; GLAZE lobs. After two drops in a row by
+-- PROMPT throws lower and harder and likes the sides; GLAZE lobs sky high. After two drops in a row by
 -- the player, an easy one (no points, all heart).
 on VT.AIThrow pName
    local tTry, tPower, tArc, tAim, tVel, tGot, tFirst, tWantBank
@@ -790,10 +790,10 @@ on VT.AIThrow pName
    put random(100) <= 60 into tWantBank
    repeat with tTry = 1 to 24
       if pName is "PROMPT" then
-         put 0.12 + random(30) / 100 into tArc
-         put 0.45 + random(40) / 100 into tPower
+         put 0.8 + random(25) / 100 into tArc
+         put 0.35 + random(50) / 100 into tPower
       else
-         put 0.45 + random(45) / 100 into tArc
+         put 1.05 + random(30) / 100 into tArc
          put 0.3 + random(40) / 100 into tPower
       end if
       if tWantBank then
@@ -836,7 +836,7 @@ function VT.Catchable pName, pVel
    put 0 into tB["tops"]
    put 0 into tB["floors"]
    put kHandH into tB["peak"]
-   repeat with i = 1 to 150
+   repeat with i = 1 to 200
       VT.Advance tB
       if tB["floors"] > 0 then return empty
       if tB["x"] * sHero[tOther]["side"] > kMid and tB["h"] <= kReach - 14 and tB["h"] > 12 then
@@ -866,13 +866,13 @@ on VT.Preview
       put true into tB["air"]
       put 0 into tB["floors"]
       put kHandH into tB["peak"]
-      repeat with i = 1 to kDots * 3
+      repeat with i = 1 to kDots * 4
          VT.Advance tB
          if tB["floors"] > 0 then
             put tB["x"] & comma & tB["z"] into tLand
             exit repeat
          end if
-         if i mod 3 is 0 then
+         if i mod 4 is 0 then
             add 1 to tShown
             SetObjectPosition sDot[tShown], tB["x"], -tB["h"], tB["z"]
          end if
