@@ -21,7 +21,7 @@ Units: T3D world units x 10, with y turned over (Vibecode3D's +Y is down). A T3D
 vertex is model units x scale% / 100 / 1000 in world units, so the hills and bases of a
 level line up as they did in T3D; each hill base is set on the ground under it. Everything else (hills, ants, shots) is procedural.
 """
-import os, re
+import os, re, sys
 
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = os.path.join(HERE, 'T3D_Texts')
@@ -124,4 +124,7 @@ def main():
 
 
 if __name__ == '__main__':
+    if any(a in ('-h', '--help') for a in sys.argv[1:]):   # A-50: every tool answers --help
+        print(__doc__)
+        sys.exit(0)
     main()
