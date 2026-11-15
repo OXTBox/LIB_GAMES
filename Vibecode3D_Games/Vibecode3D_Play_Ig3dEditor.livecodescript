@@ -4,6 +4,13 @@
 ## in the Vibecode3D engine: every tool in its old left-to-right order, a Unicode symbol in
 ## place of each missing PNG icon (chosen from the icon's name), the old tooltip kept.
 ## Wired now: the primitives, camera, colours, light, play, GL controller (orbit).
+## EDITOR TOOLS (Opus 15 Nov 2026, the owner's accepted A-84 / A-86 / A-87):
+##   Window > Inspector          one page per object kind; Animation = BVH clip preview + In/Out
+##                               clipper + the game's Animation List (LIB_ig3d/livecode/v3d_inspector)
+##   Edit > Replace With Model... a game's placeholder meshes -> models, saved as a Skin
+##                               (LIB_ig3d/livecode/v3d_skins; the Game Player plays it)
+##   Library > Models            click: load at the centre; DRAG a name onto the 3D view: it lands
+##                               on the floor where you let go (a preview follows the mouse)
 ## Every other tool says what it did in iGame3D (a list to judge: keep / adapt / junk).
 ## CONTROLS  click a tool    hover: the old tooltip    W A S D / arrows: move the camera
 ## NEEDS     nothing outside the engine. Map: LIB_ig3d/MAIN_UI_REUSE.md, TOOLBAR_MAP below.
@@ -18,7 +25,7 @@ local sLib, sLibRoot, sLibList, sMade, sSelected, sColorN, sOrbit, sTicks, sCamX
 -- TOOLBAR_MAP: name | Unicode code point | 2007 icon | group | tooltip (iGame3D)
 constant kTools = "level|2699|console.png|editing mode|Level settings;snapshot|25D9|snapshot.png|camera tools|Snapshot of the 3D view;colors|25D0|colorball16x16.png|camera tools|Colours;light|2600|lights.png|light|Position lights;objects|263A|32x32zombie3.png|actors and effects|Access view settings (actors);particles|2733|particlesicon24x24.png|actors and effects|Particles;camera|25CE|meshView.png|camera tools|Camera / mesh view;GLController|2725|repositiontoolnew2.png|camera tools|Show/hide the GL controller;pathselect|21E2|pathSelectIcon.png|mesh tools|Path selection;path|270E|pathToolIcon.png|mesh tools|Path editing;select_mesh|25A6|tool6.png|vertex tools|Mesh editing;vertex|2022|tool2.png|vertex tools|Create vertex;line|2571|tool3.png|vertex tools|Connect vertices;disconnect|2702|tool5.png|vertex tools|Disconnect mesh line;split|22D4|tool4.png|vertex tools|Split mesh line;quad|25AD|22x22quadtool.png|primitives|Quad;cube|25A3|cube.png|primitives|Cube;dropMesh|2913|dropMeshicon.png|primitives|Drop mesh;Terrain|25B2|quad.png|primitives|Import image to terrain;Play_Game|25B6|playGameButton.png|editing mode|Play (Escape exits);sounds|266A|soundicon22x22.png|actors and effects|Sounds;cylinder|232D|cylinder.png|primitives|Cylinder;cone|25B3|cone.png|primitives|Cone;sphere|25CF|sphere.png|primitives|Sphere;WindowPickPop|2750|windows.png|windows|Open windows;bones|27DF|bone.png|mesh tools|Bones"
 
-constant kMenus = "File=Level;~New/N;~Save/S;~Reset;-;Mesh;~Save In Level;~Export;~Clear#Edit=Undo/Z;Cut/X;Copy/C;Paste/V;Select All Text/A;-;boom;boom all#Library=Emitters;Images;Levels;Materials;Models;Scripts;Sounds;Text#Mesh=Focus Mesh/0;Goto Points;Tag Vertices/T;Duplicate Vertices/D;Extrude/E;Select;~All Vertices;~Connected/g;~Invert/i;~Attached To Bone;Face;~Face In/[;~Face Out/];~Invert Faces/*;View;~Hide/h;~Hide Other/f;~Hide All;~Show All/u;Mirror;~X;~Y;~Z;~Double Side;-;Combine Overlaps;Subdivide;-;Delete Vertices#Window=Window Snapping;Mode;~Level;~Model;Layout;~top;~bottom;~main;~free;~playgame;-;Animation Editor;Console;ig3dWTFEDITOR;Inspector;Level Collect;Library;Scene Graph;Snapshot#Dev=SAVE;-;Edit F1Script;Edit SGScript;Edit RLScript;StackScript;-;Xternals;-;stopIdle;-;pointer tool/m;-;FindT3D/3;-;scriptHarvester;OpenStacks;CustomPropLengths;RevFunctions;Harvest;-;resetiGame3D;BackUp#Help=iGame3D Help/?;Referencer;Script Commands"
+constant kMenus = "File=Level;~New/N;~Save/S;~Reset;-;Mesh;~Save In Level;~Export;~Clear#Edit=Undo/Z;Cut/X;Copy/C;Paste/V;Select All Text/A;-;boom;boom all;-;Replace With Model...#Library=Emitters;Images;Levels;Materials;Models;Scripts;Sounds;Text#Mesh=Focus Mesh/0;Goto Points;Tag Vertices/T;Duplicate Vertices/D;Extrude/E;Select;~All Vertices;~Connected/g;~Invert/i;~Attached To Bone;Face;~Face In/[;~Face Out/];~Invert Faces/*;View;~Hide/h;~Hide Other/f;~Hide All;~Show All/u;Mirror;~X;~Y;~Z;~Double Side;-;Combine Overlaps;Subdivide;-;Delete Vertices#Window=Window Snapping;Mode;~Level;~Model;Layout;~top;~bottom;~main;~free;~playgame;-;Animation Editor;Console;ig3dWTFEDITOR;Inspector;Level Collect;Library;Scene Graph;Snapshot#Dev=SAVE;-;Edit F1Script;Edit SGScript;Edit RLScript;StackScript;-;Xternals;-;stopIdle;-;pointer tool/m;-;FindT3D/3;-;scriptHarvester;OpenStacks;CustomPropLengths;RevFunctions;Harvest;-;resetiGame3D;BackUp#Help=iGame3D Help/?;Referencer;Script Commands"
 constant kInk = "#7CFF7C"
 
 on Game.OnStart
@@ -174,6 +181,12 @@ on Ig.Menu pMenu, pItem
       case "Library/Text"
          Ig.Library char offset("/", tKey) + 1 to -1 of tKey
          break
+      case "Window/Inspector"
+         Ig.OpenTool "V3D_Inspector", "v3d_inspector.livecodescript", "Insp.Build"
+         break
+      case "Edit/Replace With Model..."
+         Ig.OpenTool "V3D_Skins", "v3d_skins.livecodescript", "Skins.Build"
+         break
       case "Mesh/Focus Mesh"
          if sSelected is not empty then
             put GetObjectPosition(sSelected, "x") into sCamX
@@ -251,7 +264,8 @@ on Ig.Library pWhat
       set the textSize of field "Ig3dLibrary" of group id tGroup to 11
       set the backgroundColor of field "Ig3dLibrary" of group id tGroup to "#061006"
       set the textColor of field "Ig3dLibrary" of group id tGroup to kInk
-      set the script of field "Ig3dLibrary" of group id tGroup to "on mouseUp" & cr & "   Ig.LibraryPick the hilitedLine of me" & cr & "end mouseUp"
+      set the script of field "Ig3dLibrary" of group id tGroup to "on mouseUp" & cr & "   Ig.LibraryPick the hilitedLine of me" & cr & "end mouseUp" & cr & \
+            "on mouseDown" & cr & "   Ig.LibraryDrag word 2 of the clickLine" & cr & "end mouseDown"
    end if
    set the rect of field "Ig3dLibrary" of group id tGroup to 548, 168, 762, 640
    set the visible of field "Ig3dLibrary" of group id tGroup to true
@@ -277,22 +291,129 @@ function Ig.ListFiles pFolder, pRel, pSuffix
    return tOut
 end Ig.ListFiles
 
+-------------------------------------------------------------------- editor tools (A-84, A-86, A-87)
+
+-- the projects folder (the 2008 Data folder is projects/LIB_GAMES/igame3D_2008_Texts)
+function Ig.Projects
+   local tRoot
+   put Ig.DataRoot() into tRoot
+   if tRoot is empty then return "//wsl$/Ubuntu/home/igame3d/projects"
+   set the itemDel to "/"
+   return item 1 to -3 of tRoot
+end Ig.Projects
+
+-- a tool window built by code on a brand-new stack each time (its script: LIB_ig3d/livecode/<pFile>)
+on Ig.OpenTool pStack, pFile, pBuild
+   local tFile
+   if there is a stack pStack then
+      go stack pStack
+      exit Ig.OpenTool
+   end if
+   put Ig.Projects() & "/LIB_ig3d/livecode/" & pFile into tFile
+   if there is not a file tFile then
+      Ig.Say "NOT FOUND:" && tFile
+      exit Ig.OpenTool
+   end if
+   lock messages
+   create invisible stack pStack
+   unlock messages
+   set the script of stack pStack to textDecode(URL ("binfile:" & tFile), "UTF-8")
+   if the result is not empty then
+      Ig.Say "THE TOOL'S SCRIPT DOES NOT COMPILE:" && line 1 of the result
+      delete stack pStack
+      exit Ig.OpenTool
+   end if
+   send pBuild && quote & Ig.Projects() & quote to stack pStack
+end Ig.OpenTool
+
+-- A-87: press on a model in the Library and drag: a small window with the model's wire follows the
+-- mouse; let go over the 3D view and the model lands on the floor there. A plain click still loads it.
+on Ig.LibraryDrag pLine
+   local tStart, tMoved, tPrev, tPath, tWhere, tX, tY, tXZ
+   if pLine is not a number or sLib["folder"] is not "WTF" then exit Ig.LibraryDrag
+   put Ig.DataRoot() & "/WTF/" & line pLine of sLibList into tPath
+   put the screenMouseLoc into tStart
+   put false into tMoved
+   put "V3D_DragPreview" into tPrev
+   repeat while the mouse is down
+      if not tMoved and abs(item 1 of the screenMouseLoc - item 1 of tStart) + abs(item 2 of the screenMouseLoc - item 2 of tStart) > 8 then
+         put true into tMoved
+         Ig.MakeDragPreview tPrev, tPath
+      end if
+      if tMoved and there is a stack tPrev then set the topLeft of stack tPrev to (item 1 of the screenMouseLoc + 14) & comma & (item 2 of the screenMouseLoc + 14)
+      wait 15 milliseconds with messages
+   end repeat
+   if not tMoved then exit Ig.LibraryDrag
+   if there is a stack tPrev then delete stack tPrev
+   -- where it was let go, in this card's coordinates
+   put item 1 of the screenMouseLoc - the left of this stack into tX
+   put item 2 of the screenMouseLoc - the top of this stack into tY
+   if tX < 0 or tY < 0 or tX > the width of this stack or tY > the height of this stack then
+      Ig.Say "DROPPED OUTSIDE THE 3D VIEW: NOTHING ADDED"
+      exit Ig.LibraryDrag
+   end if
+   if (tX & comma & tY) is within the rect of field "Ig3dLibrary" of group "Ig3dTools" then exit Ig.LibraryDrag
+   try
+      put Engine.ScreenToFloor(tX, tY, 0) into tXZ
+   catch tWhere
+      put empty into tXZ      -- an engine without the editor hooks: the centre
+   end try
+   if tXZ is empty then put "0 0" into tXZ
+   Ig.SpawnModel pLine, word 1 of tXZ, word 2 of tXZ, false
+end Ig.LibraryDrag
+
+-- the drag preview: a small borderless window with the model's wire (LIB_ig3d v3d_models)
+on Ig.MakeDragPreview pStack, pPath
+   local tLib
+   put Ig.Projects() & "/LIB_ig3d/livecode/v3d_models.livecodescript" into tLib
+   if not ("v3d_models" is among the lines of the stacksInUse) and there is a file tLib then start using stack tLib
+   lock messages
+   create invisible stack pStack
+   set the decorations of stack pStack to empty
+   set the width of stack pStack to 110
+   set the height of stack pStack to 110
+   set the backgroundColor of stack pStack to "#061006"
+   set the blendLevel of stack pStack to 15
+   set the defaultStack to pStack
+   create graphic "Wire"
+   set the style of graphic "Wire" to "line"
+   set the foregroundColor of graphic "Wire" to kInk
+   try
+      set the points of graphic "Wire" to Model.PreviewPoints(pPath, 0, 0, 110)
+   catch tLib
+      -- no preview library: an empty window still shows where the drop goes
+   end try
+   set the defaultStack to the short name of this stack
+   unlock messages
+   set the topLeft of stack pStack to (item 1 of the screenMouseLoc + 14) & comma & (item 2 of the screenMouseLoc + 14)
+   show stack pStack
+end Ig.MakeDragPreview
+
 on Ig.LibraryPick pLine
    local tRel, tPath, tName
    if pLine is not a number then exit Ig.LibraryPick
    put line pLine of sLibList into tRel
    put Ig.DataRoot() & "/" & sLib["folder"] & "/" & tRel into tPath
    if char -4 to -1 of tRel is ".wtf" then
-      put "Ig.WTF" & pLine into tName
-      Mesh.Define tName, Ig.WTFMesh(tPath)
-      if sSelected is not empty and gObjectTransforms[sSelected]["mesh"] begins with "Ig.WTF" then Entity.Kill sSelected
-      put Entity.Spawn(tName, 0, -90, 0, Ig.NextColor()) into sSelected
-      put sSelected & cr after sMade
-      Ig.Say "MODEL:" && toUpper(tRel) && "(" & sLib["v"] && "VERTICES," && sLib["e"] && "EDGES)"
+      Ig.SpawnModel pLine, 0, 0, true
    else
       Ig.Say toUpper(tRel) && "(" & the number of lines of URL ("file:" & tPath) && "LINES; OPENING THESE IS NEXT)"
    end if
 end Ig.LibraryPick
+
+-- a Library model into the scene, standing on the floor at x, z; pReplace: a click swaps the last
+-- loaded model, a drop adds one more
+on Ig.SpawnModel pLine, pX, pZ, pReplace
+   local tRel, tPath, tName
+   put line pLine of sLibList into tRel
+   put Ig.DataRoot() & "/" & sLib["folder"] & "/" & tRel into tPath
+   put "Ig.WTF" & pLine into tName
+   Mesh.Define tName, Ig.WTFMesh(tPath)
+   if pReplace and sSelected is not empty and gObjectTransforms[sSelected]["mesh"] begins with "Ig.WTF" then Entity.Kill sSelected
+   put Entity.Spawn(tName, pX, -90, pZ, Ig.NextColor()) into sSelected
+   put sSelected & cr after sMade
+   Ig.Say "MODEL:" && toUpper(tRel) && "(" & sLib["v"] && "VERTICES," && sLib["e"] && "EDGES)" && "AT" && round(pX) && round(pZ)
+end Ig.SpawnModel
 
 -- an iGame3D .wtf model -> a wire mesh: its #Vertices (x,y,z,bone) and #Edges (a,b, from 0),
 -- centred and scaled to about 180 units; iGame3D's y is up, Vibecode3D's is down
@@ -479,6 +600,8 @@ end Ig.Say
 
 on Game.OnUpdate
    local tKeys
+   global gV3DSelected
+   put sSelected into gV3DSelected     -- the Inspector's Object page shows it
    add 1 to sTicks
    put the keysDown into tKeys
    if 119 is among the items of tKeys or 65362 is among the items of tKeys then add 8 to sCamZ
