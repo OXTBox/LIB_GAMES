@@ -5,6 +5,7 @@ random bugs every build").
 
   python3 -I tools/couple_mazes.py [count]     writes LIB_BIT/editor/maps/amazing_couple_mazes/
                                                maze_01.cellmap ... and CHECK.txt
+  python3 -I tools/couple_mazes.py --help      this text
 
 Each maze is the same one the game used to build at run time (Bit.Maze(6, 6, seed), ported as
 cellmap.maze), so maze_01 is the first maze the owner has walked. Walls: tag '#', floor 100
@@ -142,7 +143,14 @@ def check(m, grid, seed):
 
 
 def main():
-    count = int(sys.argv[1]) if len(sys.argv) > 1 else 12
+    if any(a in ('-h', '--help') for a in sys.argv[1:]):   # A-50: every tool answers --help
+        print(__doc__)
+        return 0
+    try:
+        count = int(sys.argv[1]) if len(sys.argv) > 1 else 12
+    except ValueError:
+        print('couple_mazes.py: count must be a whole number (try --help)')
+        return 2
     os.makedirs(OUT, exist_ok=True)
     report, bad = [], 0
     for seed in range(1, count + 1):
