@@ -1,0 +1,1238 @@
+######################################################################################
+## CARD SCRIPT: "Play.VectorToss"   VECTOR TOSS  (Opus 15 Nov 2026)  PHASE 1: CORE
+## PROMPT (cyan) and GLAZE (magenta) face each other across a deep arena, one in each half,
+## and toss a ball of vectors back and forth. You play one; the other is your companion.
+## First it is only play: gentle bounces, nothing to lose. (Walls, breaking floor tiles
+## and hang time come in the next phases: LIB_ig3d/GDD_OUTLINE_A88.md.)
+## CONTROLS  arrows / W A S D   run around your half      C  swap to the companion
+##           hold SPACE          power swings up and down; while held W S aim sideways,
+##                               A D lower / raise the arc. Let go: throw.
+##           E                   an easy one: a slow lob right into your partner's hands
+## SCORING   a catch is worth one point for every bounce off the side bounds and the
+##           ceiling, plus one for a high lob. A flat straight throw scores ZERO (the first
+##           lesson). A ball that touches your floor first is a drop, not a catch.
+## BANTER    the heroes talk: VectorToss/banter.txt (event, who, then "P line | G line").
+## MOVES     Animations/VectorToss.anims.txt (throw, lob, catch), cut from LIB_MOCAP clips
+##           with the editor's Window > Inspector > Animation page.
+## NEEDS     ../LIB_MOCAP/library (clips) and ../LIB_MOCAP/livecode/anim_list.livecodescript
+######################################################################################
+
+global gObjectTransforms, gSceneObjects
+global gCameraYaw, gCameraPitch
+global gViewLeft, gViewTop, gViewRight, gViewBottom
+global bPaused, bPlaying
+
+constant kM = 30              -- engine units a metre: the heroes are about 52 tall
+constant kHalfW = 260         -- the arena runs x -260..260 (PROMPT's half is x < 0)
+constant kHalfD = 130         -- and z -130..130 (deep: room to run)
+constant kTop = 300           -- the ceiling (top bound) height
+constant kTile = 52           -- floor tiles (phase 3 breaks them)
+constant kMid = 22            -- heroes keep this far from the centre line
+constant kHeroR = 12          -- a hero's body, for the bounds
+constant kRunSpeed = 4.2      -- units a step
+constant kBallR = 8
+constant kGrav = 0.32         -- units a step a step
+constant kBounce = 0.62       -- floor bounce keeps this much of the fall
+constant kFloorDrag = 0.86    -- each floor bounce keeps this much of the run
+constant kRollDrag = 0.95     -- rolling, a step
+constant kBackLoss = 0.85     -- the back bounds
+constant kRollV = 1.2         -- slower falls than this stop bouncing and roll
+constant kCatchR = 22         -- catch reach around a hero, across the floor
+constant kReach = 78          -- and up
+constant kHandH = 44          -- the ball sits here while held
+constant kLobH = 140          -- a peak above this is a lob: +1
+constant kMinV = 5            -- throw speed at no power
+constant kMaxV = 14.5         -- at full power
+constant kDots = 22           -- the aim preview
+constant kAIWait = 40         -- the companion holds the ball this many steps
+constant kCamUp = 230         -- camera height
+constant kCamBack = 170       -- behind the front bound
+constant kPromptColor = "#40E0FF"
+constant kGlazeColor = "#FF60D0"
+constant kBallColor = "#FFFFFF"
+-- LIB_MOCAP clips (library/<name>/<name>_stick.txt); the throw, lob and catch come from the
+-- game's animation list
+constant kPromptIdle = "Animazoo_hands_on_hips"
+constant kGlazeIdle = "Animazoo_talking_gesturing"
+constant kRun = "Animazoo_Running_-_Jog"
+constant kMaxIdleFrames = 300
+constant kActs = "throw,lob,catch"
+
+local sStepMS = 33, sTicks = 0, sError
+local sClip          -- [key][frames|fps|travel]; meshes "VT.<key>.<n>"; keys idleP idleG run throw lob catch
+local sHero          -- [PROMPT|GLAZE][key|x|z|yaw|speed|mdx|mdz|anim|frame|act|side|idle|score|catches|color]
+local sActive        -- the hero you play
+local sBall          -- [key|shadow|state (held|loose)|by|x|h|z|vx|vh|vz|air|age|thrower|crossed|banks|tops|backs|floors|peak|touched|easy|hit]
+local sCharging, sPower, sPowerDir, sAimZ, sArc
+local sKeyWas, sTestKeys, sTestAuto
+local sRally, sBestRally, sPlayerDrops, sHoldUntil
+local sPlan          -- the companion's plan: [name][at|x|z]
+local sDot, sMark
+local sMsg, sMsgUntil
+local sBanter, sLastEx, sTalk, sTalkNext, sTalkClearAt, sLastTalk, sSaid
+
+-------------------------------------------------------------------- engine hooks
+
+on Game.OnStart
+   focus on nothing          -- arrow keys belong to the game, never to a menu or a field
+   Engine.ResetCamera
+   put Engine.Info("stepMS") into sStepMS
+   if sStepMS is not a number then put 33 into sStepMS
+   Scene.ClearAll
+   Particles.Clear
+   HUD.Clear
+   Collision.ClearRules
+   put 0 into sTicks
+   put empty into sError
+   put empty into sTestKeys
+   put empty into sKeyWas
+   put empty into sSaid
+   VT.LoadClips
+   if sError is not empty then
+      HUD.Set "VT.Err", sError, gViewLeft + 20, gViewTop + 120, 14
+      exit Game.OnStart
+   end if
+   VT.LoadBanter
+   VT.NewMatch
+end Game.OnStart
+
+on Game.OnUpdate
+   if sError is not empty then exit Game.OnUpdate
+   add 1 to sTicks
+   VT.Controls
+   VT.Companion
+   VT.BallStep
+   VT.Animate "PROMPT"
+   VT.Animate "GLAZE"
+   VT.Preview
+   VT.TalkTick
+   VT.ShowHUD
+end Game.OnUpdate
+
+on Game.OnClick pX,pY,pButton
+end Game.OnClick
+
+on Game.OnKill pKey,pX,pY,pZ
+end Game.OnKill
+
+on Game.OnPause
+end Game.OnPause
+
+on Game.OnResume
+end Game.OnResume
+
+on Game.OnStop
+   HUD.Clear
+end Game.OnStop
+
+on Collision.Hit pA,pB
+end Collision.Hit
+
+-------------------------------------------------------------------- loading
+
+-- idles and the run straight from LIB_MOCAP; throw, lob and catch through the game's
+-- animation list (name TAB clip TAB in TAB out TAB loop), so the owner re-cuts them in the
+-- Inspector without touching this script
+on VT.LoadClips
+   local tFile, tLib, tList, tA, tName
+   put empty into sClip
+   VT.LoadClip "idleP", kPromptIdle, 1, kMaxIdleFrames
+   VT.LoadClip "idleG", kGlazeIdle, 1, kMaxIdleFrames
+   VT.LoadClip "run", kRun, empty, empty
+   if sError is not empty then exit VT.LoadClips
+   put VT.FindFile("LIB_MOCAP/livecode/anim_list.livecodescript") into tLib
+   put VT.FindFile("LIB_GAMES/Vibecode3D_Games/Animations/VectorToss.anims.txt") into tList
+   if tLib is empty or tList is empty then exit VT.LoadClips      -- no list: idles stand in
+   start using stack tLib
+   put Anims.Read(tList) into tA
+   repeat for each item tName in kActs
+      if tA[tName]["clip"] is empty then next repeat
+      VT.LoadClip tName, tA[tName]["clip"], tA[tName]["in"], tA[tName]["out"]
+      put empty into sError     -- a missing act clip only costs that move
+   end repeat
+end VT.LoadClips
+
+-- frames pFrom..pTo of a stick clip as engine meshes "VT.<key>.<n>"; empty pFrom: the clip's
+-- own cycle when it has one (walks, runs), else up to kMaxIdleFrames
+on VT.LoadClip pKey, pName, pFrom, pTo
+   local tFile, tText, tLine, tEdges, tFrame, tKept, tM, tV, i, tJoints, tE, tA, tB
+   put VT.FindFile("LIB_MOCAP/library/" & pName & "/" & pName & "_stick.txt") into tFile
+   if tFile is empty then
+      put "VECTOR TOSS: NO CLIP " & toUpper(pName) & " IN LIB_MOCAP/LIBRARY" into sError
+      exit VT.LoadClip
+   end if
+   put textDecode(url ("binfile:" & tFile), "UTF-8") into tText
+   replace numToCodepoint(13) with empty in tText
+   if pFrom is empty then
+      put 1 into pFrom
+      put kMaxIdleFrames into pTo
+      put lineOffset(return & "cycle,", return & tText) into i
+      if i > 0 then
+         set the itemDel to comma
+         put item 2 of line i of tText into pFrom
+         put item 3 of line i of tText into pTo
+      end if
+   end if
+   put 0 into tFrame
+   put 0 into tKept
+   repeat for each line tLine in tText
+      if tLine is empty or char 1 of tLine is "#" then next repeat
+      set the itemDel to comma
+      switch item 1 of tLine
+         case "fps"
+            put item 2 of tLine into sClip[pKey]["fps"]
+            break
+         case "travel"
+            if sClip[pKey]["travel"] is empty then put item 2 of tLine into sClip[pKey]["travel"]
+            break
+         case "cycle_travel"
+            put item 2 of tLine into sClip[pKey]["travel"]
+            break
+         case "joints"
+            put item 2 of tLine into tJoints
+            break
+         case "edges"
+            put item 2 of tLine into tEdges
+            break
+         default
+            if char 1 of tLine is "-" or char 1 of tLine is a number then
+               add 1 to tFrame
+               if tFrame < pFrom or tFrame > pTo then next repeat
+               add 1 to tKept
+               put tLine into tV
+               split tV by comma
+               put Mesh.New() into tM
+               repeat with i = 0 to tJoints - 1
+                  Mesh.AddVertex tM, tV[3 * i + 1] * kM, -tV[3 * i + 2] * kM, tV[3 * i + 3] * kM
+               end repeat
+               repeat for each word tE in tEdges
+                  set the itemDel to "-"
+                  put item 1 of tE + 1 into tA
+                  put item 2 of tE + 1 into tB
+                  set the itemDel to comma
+                  Mesh.AddLine tM, tA, tB
+               end repeat
+               Mesh.Define "VT." & pKey & "." & tKept, tM
+            end if
+      end switch
+   end repeat
+   put tKept into sClip[pKey]["frames"]
+   if tKept < 1 then put "VECTOR TOSS: CLIP " & toUpper(pName) & " HAS NO FRAMES " & pFrom & "-" & pTo into sError
+   if sClip[pKey]["fps"] is not a number then put 30 into sClip[pKey]["fps"]
+   if sClip[pKey]["travel"] is not a number then put 0 into sClip[pKey]["travel"]
+end VT.LoadClip
+
+-------------------------------------------------------------------- the arena
+
+on VT.NewMatch
+   local tName
+   Scene.ClearAll
+   HUD.Clear
+   VT.BuildArena
+   VT.Spawn "PROMPT", kPromptColor, -1, "idleP"
+   VT.Spawn "GLAZE", kGlazeColor, 1, "idleG"
+   put "PROMPT" into sActive
+   Mesh.Define "VT.Ball", MeshSphere(kBallR, 4, 7)
+   Mesh.Define "VT.Shadow", VT.RingMesh(kBallR + 2, 12)
+   Mesh.Define "VT.Dot", VT.DotMesh()
+   Mesh.Define "VT.Mark", VT.RingMesh(14, 16)
+   put empty into sBall
+   put Entity.Spawn("VT.Ball", 0, -kHandH, 0, kBallColor) into sBall["key"]
+   SetObjectRotationSpeed sBall["key"], 0.03, 0.05, 0
+   put Entity.Spawn("VT.Shadow", 0, -1, 0, "#5A6A80") into sBall["shadow"]
+   put empty into sDot
+   repeat with tName = 1 to kDots
+      put Entity.Spawn("VT.Dot", 0, 0, -100000, kPromptColor) into sDot[tName]
+   end repeat
+   put Entity.Spawn("VT.Mark", 0, 0, -100000, "#FFD040") into sMark
+   put 0 into sRally
+   put 0 into sBestRally
+   put 0 into sPlayerDrops
+   put false into sCharging
+   put 0.55 into sPower
+   put empty into sPlan
+   put empty into sTalk
+   put 0 into sLastTalk
+   VT.GiveBall "PROMPT"
+   VT.Camera
+   VT.Say "start", "*", 100
+end VT.NewMatch
+
+-- the floor in tiles (each half tinted its hero's colour), the bounds as a wire box,
+-- the centre line
+on VT.BuildArena
+   local tM, x, z, tA, tB, tSide, tX0, tX1, tY
+   repeat for each item tSide in "-1,1"
+      put Mesh.New() into tM
+      if tSide < 0 then
+         put -kHalfW into tX0
+         put 0 into tX1
+      else
+         put 0 into tX0
+         put kHalfW into tX1
+      end if
+      repeat with x = tX0 to tX1 step kTile
+         put VT.Line(tM, x, 0, -kHalfD, x, 0, kHalfD) into tA
+      end repeat
+      repeat with z = -kHalfD to kHalfD step kTile
+         put VT.Line(tM, tX0, 0, z, tX1, 0, z) into tA
+      end repeat
+      Mesh.Define "VT.Floor" & tSide, tM
+   end repeat
+   get Entity.Spawn("VT.Floor-1", 0, 0, 0, "#1F5A6A")
+   get Entity.Spawn("VT.Floor1", 0, 0, 0, "#5A1F55")
+   put Mesh.New() into tM
+   repeat for each item tY in "0," & kTop
+      put VT.Line(tM, -kHalfW, tY, -kHalfD, kHalfW, tY, -kHalfD) into tA
+      put VT.Line(tM, kHalfW, tY, -kHalfD, kHalfW, tY, kHalfD) into tA
+      put VT.Line(tM, kHalfW, tY, kHalfD, -kHalfW, tY, kHalfD) into tA
+      put VT.Line(tM, -kHalfW, tY, kHalfD, -kHalfW, tY, -kHalfD) into tA
+   end repeat
+   repeat for each item x in -kHalfW & comma & kHalfW
+      repeat for each item z in -kHalfD & comma & kHalfD
+         put VT.Line(tM, x, 0, z, x, kTop, z) into tA
+      end repeat
+   end repeat
+   Mesh.Define "VT.Bounds", tM
+   get Entity.Spawn("VT.Bounds", 0, 0, 0, "#3A4A70")
+   put Mesh.New() into tM
+   put VT.Line(tM, 0, 0, -kHalfD, 0, 0, kHalfD) into tA
+   Mesh.Define "VT.Centre", tM
+   get Entity.Spawn("VT.Centre", 0, -1, 0, "#C0D0FF")
+end VT.BuildArena
+
+-- a fixed camera behind the front bound and up high: the whole arena, seen at an angle
+on VT.Camera
+   local tCX, tCY, tCZ, tLY
+   put 0 into tCX
+   put -kCamUp into tCY
+   put -kHalfD - kCamBack into tCZ
+   put -36 into tLY
+   put 0 into gCameraYaw
+   put -atan2(tLY - tCY, -tCZ) into gCameraPitch
+   Engine.SetCam -tCX, -tCY, -tCZ
+end VT.Camera
+
+-------------------------------------------------------------------- heroes
+
+on VT.Spawn pName, pColor, pSide, pIdle
+   put Entity.Spawn("VT." & pIdle & ".1", pSide * kHalfW * 0.55, 0, 0, pColor) into sHero[pName]["key"]
+   put pSide * kHalfW * 0.55 into sHero[pName]["x"]
+   put 0 into sHero[pName]["z"]
+   put pSide into sHero[pName]["side"]
+   put -pSide * pi / 2 into sHero[pName]["yaw"]
+   put pIdle into sHero[pName]["idle"]
+   put "idle" into sHero[pName]["anim"]
+   put random(max(1, sClip[pIdle]["frames"])) into sHero[pName]["frame"]
+   put empty into sHero[pName]["act"]
+   put 0 into sHero[pName]["speed"]
+   put 0 into sHero[pName]["score"]
+   put 0 into sHero[pName]["catches"]
+   put pColor into sHero[pName]["color"]
+end VT.Spawn
+
+function VT.Other pName
+   if pName is "PROMPT" then return "GLAZE"
+   return "PROMPT"
+end VT.Other
+
+-- whose half x is in
+function VT.OwnerAt pX
+   if pX < 0 then return "PROMPT"
+   return "GLAZE"
+end VT.OwnerAt
+
+-- move a hero by dx,dz, kept inside its own half
+on VT.Move pName, pDX, pDZ
+   local tX, tZ, tSide
+   put sHero[pName]["side"] into tSide
+   put sHero[pName]["x"] + pDX into tX
+   put sHero[pName]["z"] + pDZ into tZ
+   if tSide < 0 then
+      put max(-kHalfW + kHeroR, min(-kMid, tX)) into tX
+   else
+      put max(kMid, min(kHalfW - kHeroR, tX)) into tX
+   end if
+   put max(-kHalfD + kHeroR, min(kHalfD - kHeroR, tZ)) into tZ
+   put tX - sHero[pName]["x"] into sHero[pName]["mdx"]
+   put tZ - sHero[pName]["z"] into sHero[pName]["mdz"]
+   put sqrt(sHero[pName]["mdx"] ^ 2 + sHero[pName]["mdz"] ^ 2) into sHero[pName]["speed"]
+   put tX into sHero[pName]["x"]
+   put tZ into sHero[pName]["z"]
+end VT.Move
+
+on VT.MoveToward pName, pX, pZ, pSpeed
+   local tDX, tDZ, tD
+   put pX - sHero[pName]["x"] into tDX
+   put pZ - sHero[pName]["z"] into tDZ
+   put sqrt(tDX ^ 2 + tDZ ^ 2) into tD
+   if tD < 2 then
+      VT.Move pName, 0, 0
+      exit VT.MoveToward
+   end if
+   if tD > pSpeed then
+      put tDX * pSpeed / tD into tDX
+      put tDZ * pSpeed / tD into tDZ
+   end if
+   VT.Move pName, tDX, tDZ
+end VT.MoveToward
+
+on VT.Controls
+   local tKeys, tDX, tDZ, tName, tHolds, tSpace
+   put VT.Keys() into tKeys
+   put sActive into tName
+   if VT.Pressed(tKeys, "99,67") then
+      VT.Swap
+      put sActive into tName
+   end if
+   if sTestAuto is true then
+      put tKeys into sKeyWas
+      exit VT.Controls
+   end if
+   put (sBall["state"] is "held" and sBall["by"] is tName) into tHolds
+   put (32 is among the items of tKeys) into tSpace
+   put 0 into tDX
+   put 0 into tDZ
+   if 65361 is among the items of tKeys or 97 is among the items of tKeys or 65 is among the items of tKeys then put -1 into tDX
+   if 65363 is among the items of tKeys or 100 is among the items of tKeys or 68 is among the items of tKeys then put 1 into tDX
+   if 65362 is among the items of tKeys or 119 is among the items of tKeys or 87 is among the items of tKeys then put 1 into tDZ
+   if 65364 is among the items of tKeys or 115 is among the items of tKeys or 83 is among the items of tKeys then put -1 into tDZ
+   if tHolds and tSpace then
+      -- charging: the arrows aim, the hero stands still
+      if not sCharging then
+         put true into sCharging
+         put 0 into sPower
+         put 1 into sPowerDir
+      end if
+      add sPowerDir * 0.032 to sPower
+      if sPower >= 1 then
+         put 1 into sPower
+         put -1 into sPowerDir
+      else if sPower <= 0 then
+         put 0 into sPower
+         put 1 into sPowerDir
+      end if
+      put max(-0.75, min(0.75, sAimZ + tDZ * 0.022)) into sAimZ
+      put max(0.04, min(1.15, sArc + tDX * 0.02)) into sArc
+      VT.Move tName, 0, 0
+   else
+      if sCharging and tHolds then
+         put false into sCharging
+         VT.Throw tName, sPower, sArc, sAimZ, false
+      end if
+      put false into sCharging
+      if tDX is not 0 and tDZ is not 0 then
+         VT.Move tName, tDX * kRunSpeed * 0.7071, tDZ * kRunSpeed * 0.7071
+      else
+         VT.Move tName, tDX * kRunSpeed, tDZ * kRunSpeed
+      end if
+      if tHolds and VT.Pressed(tKeys, "101,69") then VT.EasyOne tName
+   end if
+   put tKeys into sKeyWas
+end VT.Controls
+
+-- a key (any of pCodes) went down this step
+function VT.Pressed pKeys, pCodes
+   local tC
+   repeat for each item tC in pCodes
+      if tC is among the items of pKeys and tC is not among the items of sKeyWas then return true
+   end repeat
+   return false
+end VT.Pressed
+
+on VT.Swap
+   put VT.Other(sActive) into sActive
+   put false into sCharging
+   put empty into sPlan
+   VT.Message "YOU ARE " & sActive
+   VT.Say "swap", sActive, 60
+end VT.Swap
+
+-------------------------------------------------------------------- the ball
+
+-- the hand: in front of the hero, towards the other half
+function VT.HandX pName
+   return sHero[pName]["x"] - sHero[pName]["side"] * 12
+end VT.HandX
+
+on VT.GiveBall pName
+   put "held" into sBall["state"]
+   put pName into sBall["by"]
+   put VT.HandX(pName) into sBall["x"]
+   put kHandH into sBall["h"]
+   put sHero[pName]["z"] into sBall["z"]
+   -- aim straight at the partner, a gentle arc
+   put atan2(sHero[VT.Other(pName)]["z"] - sHero[pName]["z"], abs(sHero[VT.Other(pName)]["x"] - sHero[pName]["x"])) into sAimZ
+   put 0.35 into sArc
+   put false into sCharging
+   put sTicks + kAIWait into sHoldUntil
+   put empty into sPlan
+end VT.GiveBall
+
+-- a throw's velocity from power (0..1), arc (radians up) and sideways aim (radians)
+function VT.Velocity pName, pPower, pArc, pAimZ
+   local tV, tDir
+   put kMinV + pPower * (kMaxV - kMinV) into tV
+   put -sHero[pName]["side"] into tDir
+   return (tDir * tV * cos(pArc) * cos(pAimZ)) & comma & (tV * sin(pArc)) & comma & (tV * cos(pArc) * sin(pAimZ))
+end VT.Velocity
+
+on VT.Throw pName, pPower, pArc, pAimZ, pEasy
+   VT.Launch pName, VT.Velocity(pName, pPower, pArc, pAimZ), pEasy
+   if pArc > 0.55 then
+      VT.Act pName, "lob"
+   else
+      VT.Act pName, "throw"
+   end if
+end VT.Throw
+
+-- the ball leaves pName's hand with velocity "vx,vh,vz"
+on VT.Launch pName, pVel, pEasy
+   put "loose" into sBall["state"]
+   put pName into sBall["thrower"]
+   put empty into sBall["by"]
+   put VT.HandX(pName) into sBall["x"]
+   put kHandH into sBall["h"]
+   put sHero[pName]["z"] into sBall["z"]
+   set the itemDel to comma
+   put item 1 of pVel into sBall["vx"]
+   put item 2 of pVel into sBall["vh"]
+   put item 3 of pVel into sBall["vz"]
+   put true into sBall["air"]
+   put false into sBall["crossed"]
+   put 0 into sBall["age"]
+   put 0 into sBall["banks"]
+   put 0 into sBall["tops"]
+   put 0 into sBall["backs"]
+   put 0 into sBall["floors"]
+   put kHandH into sBall["peak"]
+   put empty into sBall["touched"]
+   put (pEasy is true) into sBall["easy"]
+   put empty into sPlan
+end VT.Launch
+
+-- an easy one: a slow lob that comes down right on the partner's hands
+on VT.EasyOne pName
+   local tOther, tT, tVX, tVH, tVZ
+   put VT.Other(pName) into tOther
+   put 44 into tT
+   put (VT.HandX(tOther) - VT.HandX(pName)) / tT into tVX
+   put (sHero[tOther]["z"] - sHero[pName]["z"]) / tT into tVZ
+   put (kHandH - kHandH + kGrav * tT * (tT + 1) / 2) / tT into tVH
+   VT.Launch pName, tVX & comma & tVH & comma & tVZ, true
+   VT.Act pName, "lob"
+   VT.Say "easy", pName, 100
+end VT.EasyOne
+
+-- one step of the ball's flight, for the real ball and for every prediction alike.
+-- pB["hit"]: side, top, back or floor when it struck one this step
+on VT.Advance @pB
+   local tAir, tLimZ, tLimX
+   put pB["air"] into tAir
+   put empty into pB["hit"]
+   subtract kGrav from pB["vh"]
+   add pB["vx"] to pB["x"]
+   add pB["vh"] to pB["h"]
+   add pB["vz"] to pB["z"]
+   add 1 to pB["age"]
+   put kHalfD - kBallR into tLimZ
+   if pB["z"] > tLimZ then
+      put 2 * tLimZ - pB["z"] into pB["z"]
+      put -abs(pB["vz"]) into pB["vz"]
+      add 1 to pB["banks"]
+      put "side" into pB["hit"]
+   else if pB["z"] < -tLimZ then
+      put -2 * tLimZ - pB["z"] into pB["z"]
+      put abs(pB["vz"]) into pB["vz"]
+      add 1 to pB["banks"]
+      put "side" into pB["hit"]
+   end if
+   put kHalfW - kBallR into tLimX
+   if pB["x"] > tLimX then
+      put 2 * tLimX - pB["x"] into pB["x"]
+      put -abs(pB["vx"]) * kBackLoss into pB["vx"]
+      add 1 to pB["backs"]
+      put "back" into pB["hit"]
+   else if pB["x"] < -tLimX then
+      put -2 * tLimX - pB["x"] into pB["x"]
+      put abs(pB["vx"]) * kBackLoss into pB["vx"]
+      add 1 to pB["backs"]
+      put "back" into pB["hit"]
+   end if
+   if pB["h"] > kTop - kBallR then
+      put 2 * (kTop - kBallR) - pB["h"] into pB["h"]
+      put -abs(pB["vh"]) into pB["vh"]
+      add 1 to pB["tops"]
+      put "top" into pB["hit"]
+   end if
+   if pB["h"] <= kBallR then
+      put kBallR into pB["h"]
+      if pB["vh"] < -kRollV then
+         put -pB["vh"] * kBounce into pB["vh"]
+         multiply pB["vx"] by kFloorDrag
+         multiply pB["vz"] by kFloorDrag
+      else
+         put 0 into pB["vh"]
+         multiply pB["vx"] by kRollDrag
+         multiply pB["vz"] by kRollDrag
+      end if
+      if tAir then
+         add 1 to pB["floors"]
+         put "floor" into pB["hit"]
+      end if
+      put false into pB["air"]
+   else
+      put true into pB["air"]
+   end if
+   put max(pB["peak"], pB["h"]) into pB["peak"]
+end VT.Advance
+
+on VT.BallStep
+   local tName, tOwner
+   if sBall["state"] is "held" then
+      put sBall["by"] into tName
+      put VT.HandX(tName) into sBall["x"]
+      put kHandH into sBall["h"]
+      put sHero[tName]["z"] into sBall["z"]
+   else
+      VT.Advance sBall
+      if sBall["x"] * sHero[sBall["thrower"]]["side"] < 0 then put true into sBall["crossed"]
+      if sBall["hit"] is "floor" and sBall["touched"] is empty then
+         put VT.OwnerAt(sBall["x"]) into tOwner
+         put tOwner into sBall["touched"]
+         if tOwner is sBall["thrower"] and not sBall["crossed"] then
+            put 0 into sRally
+            VT.Say "wild", tOwner, 70
+         else
+            VT.Drop tOwner
+         end if
+      end if
+      if sBall["age"] > 3 then
+         repeat for each item tName in "PROMPT,GLAZE"
+            if VT.CanCatch(tName) then
+               VT.Catch tName
+               exit repeat
+            end if
+         end repeat
+      end if
+   end if
+   SetObjectPosition sBall["key"], sBall["x"], -sBall["h"], sBall["z"]
+   SetObjectPosition sBall["shadow"], sBall["x"], -1, sBall["z"]
+end VT.BallStep
+
+function VT.CanCatch pName
+   if sBall["h"] > kReach then return false
+   if (sBall["x"] - sHero[pName]["x"]) ^ 2 + (sBall["z"] - sHero[pName]["z"]) ^ 2 > kCatchR ^ 2 then return false
+   if pName is sBall["thrower"] and not sBall["crossed"] and sBall["touched"] is empty then return false
+   -- the companion lets a ball go by when it waits for it after a bounce, worth more
+   if (pName is not sActive or sTestAuto is true) and sBall["touched"] is empty and sPlan[pName]["score"] > sBall["banks"] + sBall["tops"] then return false
+   return true
+end VT.CanCatch
+
+-- what a catch is worth: a bounce off a side bound or the ceiling +1 each, a high lob +1
+function VT.CatchPoints
+   local tP
+   if sBall["easy"] then return 0
+   put sBall["banks"] + sBall["tops"] into tP
+   if sBall["peak"] > kLobH then add 1 to tP
+   return tP
+end VT.CatchPoints
+
+function VT.CatchWhy
+   local tWhy
+   if sBall["easy"] then return "EASY ONES ARE FREE"
+   if sBall["banks"] > 0 then put "BANKED " & sBall["banks"] & "  " after tWhy
+   if sBall["tops"] > 0 then put "CEILING " & sBall["tops"] & "  " after tWhy
+   if sBall["peak"] > kLobH then put "LOB" after tWhy
+   if tWhy is empty then return "FLAT THROW: BANK IT OFF THE SIDES"
+   return word 1 to -1 of tWhy
+end VT.CatchWhy
+
+on VT.Catch pName
+   local tP, tWas
+   put sBall["easy"] into tWas
+   if sBall["touched"] is not empty then
+      -- a pick-up from the floor: no points, no rally
+      VT.GiveBall pName
+      exit VT.Catch
+   end if
+   put VT.CatchPoints() into tP
+   add tP to sHero[pName]["score"]
+   add 1 to sHero[pName]["catches"]
+   add 1 to sRally
+   put max(sBestRally, sRally) into sBestRally
+   if pName is sActive then put 0 into sPlayerDrops
+   VT.Act pName, "catch"
+   VT.Message pName & "  +" & tP & "   " & VT.CatchWhy()
+   VT.GiveBall pName
+   if tWas then
+      VT.Say "easy_caught", pName, 80
+   else if sRally is 5 or (sRally > 0 and sRally mod 10 is 0) then
+      VT.Say "rally", "*", 100
+   else if tP >= 3 then
+      VT.Say "catch_big", pName, 90
+   else if tP is 0 then
+      VT.Say "catch_flat", pName, 45
+   else
+      VT.Say "catch_good", pName, 35
+   end if
+end VT.Catch
+
+on VT.Drop pName
+   put 0 into sRally
+   if pName is sActive then add 1 to sPlayerDrops
+   VT.Message pName & " DROPPED IT"
+   VT.Say "drop", pName, 60
+end VT.Drop
+
+-------------------------------------------------------------------- the companion
+
+-- the hero you don't play: catches, picks up, throws; sTestAuto: both heroes play themselves
+on VT.Companion
+   local tName
+   repeat for each item tName in "PROMPT,GLAZE"
+      if tName is sActive and sTestAuto is not true then next repeat
+      VT.Think tName
+   end repeat
+end VT.Companion
+
+on VT.Think pName
+   local tHomeX, tSpeed
+   if pName is "PROMPT" then
+      put kRunSpeed into tSpeed
+   else
+      put kRunSpeed * 0.92 into tSpeed
+   end if
+   put sHero[pName]["side"] * kHalfW * 0.55 into tHomeX
+   if sBall["state"] is "held" then
+      if sBall["by"] is pName then
+         VT.Move pName, 0, 0
+         if sTicks >= sHoldUntil and (sTalk is empty or sTicks >= sHoldUntil + 90) then
+            VT.AIThrow pName
+         end if
+      else
+         VT.MoveToward pName, tHomeX, sHero[pName]["z"] * 0.97, tSpeed * 0.5
+      end if
+      exit VT.Think
+   end if
+   -- the ball is loose: is it coming to my half?
+   if sBall["age"] < 5 then
+      VT.Move pName, 0, 0
+      exit VT.Think
+   end if
+   if sPlan[pName]["at"] is empty or sBall["hit"] is not empty or sTicks - sPlan[pName]["at"] >= 8 then
+      VT.Plan pName, tSpeed
+      put sTicks into sPlan[pName]["at"]
+   end if
+   if sPlan[pName]["x"] is a number then
+      VT.MoveToward pName, sPlan[pName]["x"], sPlan[pName]["z"], tSpeed
+   else
+      VT.MoveToward pName, tHomeX, 0, tSpeed * 0.5
+   end if
+end VT.Think
+
+-- where pName should stand. A ball in the air: of the points on its half where the ball can
+-- be caught and it can get to in time, the one after the most bounces (the catcher gets the
+-- points), the earliest of those. A ball already down: the first point it can reach. If
+-- none, where the ball first comes down on its half.
+on VT.Plan pName, pSpeed
+   local tB, i, tD, tBest, tLand, tScore, tBestScore, tDown, tFloors
+   put sBall into tB
+   put empty into sPlan[pName]["x"]
+   put empty into sPlan[pName]["z"]
+   put empty into sPlan[pName]["score"]
+   put (sBall["touched"] is not empty) into tDown
+   put -1 into tBestScore
+   put tB["floors"] into tFloors
+   repeat with i = 1 to 140
+      if i > 1 then VT.Advance tB
+      if tB["x"] * sHero[pName]["side"] <= 0 then next repeat
+      if not tDown and tB["floors"] > tFloors then
+         -- it touches my floor here: nothing later is a catch
+         if tLand is empty then put tB["x"] & comma & tB["z"] into tLand
+         exit repeat
+      end if
+      if tB["h"] <= kReach - 8 and tB["h"] > 6 then
+         put sqrt((tB["x"] - sHero[pName]["x"]) ^ 2 + (tB["z"] - sHero[pName]["z"]) ^ 2) - kCatchR * 0.6 into tD
+         if tD <= pSpeed * i then
+            put tB["banks"] + tB["tops"] into tScore
+            if tScore > tBestScore then
+               put tScore into tBestScore
+               put tB["x"] & comma & tB["z"] into tBest
+            end if
+            if tDown then exit repeat
+         end if
+         if tLand is empty then put tB["x"] & comma & tB["z"] into tLand
+      end if
+      if not tB["air"] and abs(tB["vx"]) + abs(tB["vz"]) < 0.2 then
+         if tBest is empty then put tB["x"] & comma & tB["z"] into tBest
+         exit repeat
+      end if
+   end repeat
+   if tBest is empty then put tLand into tBest
+   if tBest is empty then exit VT.Plan
+   set the itemDel to comma
+   put item 1 of tBest into sPlan[pName]["x"]
+   put item 2 of tBest into sPlan[pName]["z"]
+   if tBestScore >= 0 then put tBestScore into sPlan[pName]["score"]
+end VT.Plan
+
+-- the companion's throw: its own style, tried out first so the partner can catch it.
+-- PROMPT throws hard and low and likes the sides; GLAZE lobs. After two drops in a row by
+-- the player, an easy one (no points, all heart).
+on VT.AIThrow pName
+   local tTry, tPower, tArc, tAim, tVel, tGot, tFirst, tWantBank
+   if pName is not sActive and sPlayerDrops >= 2 and sTestAuto is not true then
+      put 0 into sPlayerDrops
+      VT.EasyOne pName
+      exit VT.AIThrow
+   end if
+   put random(100) <= 60 into tWantBank
+   repeat with tTry = 1 to 24
+      if pName is "PROMPT" then
+         put 0.12 + random(30) / 100 into tArc
+         put 0.45 + random(40) / 100 into tPower
+      else
+         put 0.45 + random(45) / 100 into tArc
+         put 0.3 + random(40) / 100 into tPower
+      end if
+      if tWantBank then
+         put (random(2) * 2 - 3) * (0.3 + random(40) / 100) into tAim
+      else
+         put (random(41) - 21) / 100 into tAim
+      end if
+      put VT.Velocity(pName, tPower, tArc, tAim) into tVel
+      put VT.Catchable(pName, tVel) into tGot
+      if tGot is empty then next repeat
+      if tFirst is empty then put tPower & comma & tArc & comma & tAim into tFirst
+      if not tWantBank or tGot > 0 then
+         put tPower & comma & tArc & comma & tAim into tFirst
+         exit repeat
+      end if
+   end repeat
+   if tFirst is empty then
+      VT.EasyOne pName
+      exit VT.AIThrow
+   end if
+   set the itemDel to comma
+   VT.Throw pName, item 1 of tFirst, item 2 of tFirst, item 3 of tFirst, false
+end VT.AIThrow
+
+-- can the partner catch a throw from pName with velocity pVel? Empty: no; else its banks.
+-- A fair throw comes down to catching height on the partner's half before touching it,
+-- somewhere the partner can run to in time
+function VT.Catchable pName, pVel
+   local tB, i, tOther, tD
+   put VT.Other(pName) into tOther
+   put VT.HandX(pName) into tB["x"]
+   put kHandH into tB["h"]
+   put sHero[pName]["z"] into tB["z"]
+   set the itemDel to comma
+   put item 1 of pVel into tB["vx"]
+   put item 2 of pVel into tB["vh"]
+   put item 3 of pVel into tB["vz"]
+   put true into tB["air"]
+   put 0 into tB["banks"]
+   put 0 into tB["tops"]
+   put 0 into tB["floors"]
+   put kHandH into tB["peak"]
+   repeat with i = 1 to 150
+      VT.Advance tB
+      if tB["floors"] > 0 then return empty
+      if tB["x"] * sHero[tOther]["side"] > kMid and tB["h"] <= kReach - 14 and tB["h"] > 12 then
+         put sqrt((tB["x"] - sHero[tOther]["x"]) ^ 2 + (tB["z"] - sHero[tOther]["z"]) ^ 2) into tD
+         if tD <= kRunSpeed * 0.75 * i + kCatchR * 0.5 then return tB["banks"] + tB["tops"]
+      end if
+   end repeat
+   return empty
+end VT.Catchable
+
+-------------------------------------------------------------------- the aim preview
+
+-- while you hold the ball: dots along the throw's path until it first touches the floor,
+-- and a ring where it lands
+on VT.Preview
+   local tB, i, k, tVel, tShown, tLand
+   put 0 into tShown
+   if sBall["state"] is "held" and sBall["by"] is sActive and sTestAuto is not true then
+      put VT.Velocity(sActive, sPower, sArc, sAimZ) into tVel
+      put VT.HandX(sActive) into tB["x"]
+      put kHandH into tB["h"]
+      put sHero[sActive]["z"] into tB["z"]
+      set the itemDel to comma
+      put item 1 of tVel into tB["vx"]
+      put item 2 of tVel into tB["vh"]
+      put item 3 of tVel into tB["vz"]
+      put true into tB["air"]
+      put 0 into tB["floors"]
+      put kHandH into tB["peak"]
+      repeat with i = 1 to kDots * 3
+         VT.Advance tB
+         if tB["floors"] > 0 then
+            put tB["x"] & comma & tB["z"] into tLand
+            exit repeat
+         end if
+         if i mod 3 is 0 then
+            add 1 to tShown
+            SetObjectPosition sDot[tShown], tB["x"], -tB["h"], tB["z"]
+         end if
+      end repeat
+   end if
+   repeat with k = tShown + 1 to kDots
+      SetObjectPosition sDot[k], 0, 0, -100000
+   end repeat
+   if tLand is empty then
+      SetObjectPosition sMark, 0, 0, -100000
+   else
+      SetObjectPosition sMark, item 1 of tLand, -1, item 2 of tLand
+   end if
+end VT.Preview
+
+-------------------------------------------------------------------- animation
+
+-- a one-shot move (throw, lob, catch) plays over whatever the hero was doing
+on VT.Act pName, pAct
+   if sClip[pAct]["frames"] is not a number or sClip[pAct]["frames"] < 1 then exit VT.Act
+   put pAct into sHero[pName]["act"]
+   put 1 into sHero[pName]["frame"]
+end VT.Act
+
+on VT.Animate pName
+   local tKey, tClip, tN, tE, tWant, tRunStep
+   put sHero[pName]["key"] into tKey
+   if sHero[pName]["act"] is not empty then
+      put sHero[pName]["act"] into tClip
+      add sClip[tClip]["fps"] * sStepMS / 1000 to sHero[pName]["frame"]
+      if sHero[pName]["frame"] >= sClip[tClip]["frames"] + 1 then
+         put empty into sHero[pName]["act"]
+         put 1 into sHero[pName]["frame"]
+         put "idle" into sHero[pName]["anim"]
+      end if
+   end if
+   if sHero[pName]["act"] is empty then
+      if sHero[pName]["speed"] > 0.3 then
+         if sHero[pName]["anim"] is not "run" then
+            put "run" into sHero[pName]["anim"]
+            put 1 into sHero[pName]["frame"]
+         end if
+         put "run" into tClip
+         put max(0.5, sClip["run"]["travel"] * kM * sStepMS / 1000) into tRunStep
+         add sHero[pName]["speed"] / tRunStep * sClip["run"]["fps"] * sStepMS / 1000 to sHero[pName]["frame"]
+      else
+         if sHero[pName]["anim"] is not "idle" then
+            put "idle" into sHero[pName]["anim"]
+            put 1 into sHero[pName]["frame"]
+         end if
+         put sHero[pName]["idle"] into tClip
+         add sClip[tClip]["fps"] * sStepMS / 1000 to sHero[pName]["frame"]
+      end if
+      put sClip[tClip]["frames"] into tN
+      repeat while sHero[pName]["frame"] >= tN + 1
+         subtract tN from sHero[pName]["frame"]
+      end repeat
+   end if
+   -- facing: where you run; otherwise the other half (or along the aim while holding)
+   if sHero[pName]["speed"] > 0.3 and sHero[pName]["act"] is empty then
+      put atan2(sHero[pName]["mdx"], sHero[pName]["mdz"]) into tWant
+   else if sBall["state"] is "held" and sBall["by"] is pName and pName is sActive then
+      put atan2(-sHero[pName]["side"] * cos(sAimZ), sin(sAimZ)) into tWant
+   else
+      put -sHero[pName]["side"] * pi / 2 into tWant
+   end if
+   put VT.TurnToward(sHero[pName]["yaw"], tWant, 0.25) into sHero[pName]["yaw"]
+   VT.SetMesh tKey, "VT." & tClip & "." & max(1, trunc(sHero[pName]["frame"]))
+   SetObjectPosition tKey, sHero[pName]["x"], 0, sHero[pName]["z"]
+   put VT.Euler(sHero[pName]["yaw"], 0) into tE
+   SetObjectRotation tKey, item 1 of tE, item 2 of tE, item 3 of tE
+end VT.Animate
+
+function VT.TurnToward pFrom, pTo, pRate
+   local tD
+   put pTo - pFrom into tD
+   repeat while tD > pi
+      subtract 2 * pi from tD
+   end repeat
+   repeat while tD < -pi
+      add 2 * pi to tD
+   end repeat
+   if abs(tD) <= pRate then return pTo
+   if tD > 0 then return pFrom + pRate
+   return pFrom - pRate
+end VT.TurnToward
+
+-------------------------------------------------------------------- banter
+-- VectorToss/banter.txt: event TAB who TAB "P line | G line | ..."; who is PROMPT, GLAZE
+-- or * (either). P and G say who speaks each turn. Events: start catch_good catch_big
+-- catch_flat drop wild easy easy_caught rally swap idle. The HUD letters: A-Z 0-9 and
+-- : - + . ! / ? , '  (anything else is skipped).
+
+on VT.LoadBanter
+   local tFile, tText, tLine, n
+   put empty into sBanter
+   put VT.FindFile("LIB_GAMES/Vibecode3D_Games/VectorToss/banter.txt") into tFile
+   if tFile is not empty then
+      put textDecode(url ("binfile:" & tFile), "UTF-8") into tText
+      replace numToCodepoint(13) with empty in tText
+   end if
+   if tText is empty then put VT.DefaultBanter() into tText
+   set the itemDel to tab
+   repeat for each line tLine in tText
+      if tLine is empty or char 1 of tLine is "#" or the number of items of tLine < 3 then next repeat
+      put the number of lines of sBanter[item 1 of tLine] + 1 into n
+      put item 2 of tLine & tab & item 3 of tLine into line n of sBanter[item 1 of tLine]
+   end repeat
+end VT.LoadBanter
+
+function VT.DefaultBanter
+   return "start" & tab & "*" & tab & "P Ball. Floor. Each other. Catch it before the floor does. | G You make everything sound like a chore list." & return & \
+         "catch_flat" & tab & "*" & tab & "P Flat throws score nothing. | G Then I'll throw you a curvy one." & return & \
+         "drop" & tab & "*" & tab & "G Down it goes. | P Lucky the floor holds."
+end VT.DefaultBanter
+
+-- start an exchange for pEvent about pWho (a hero, or * for either), pChance percent of the
+-- time; a fresh exchange waits for the one already playing
+on VT.Say pEvent, pWho, pChance
+   local tPick, tLine, n, tTurn, tList
+   if sTalk is not empty and pEvent is not "start" then exit VT.Say
+   if random(100) > pChance then exit VT.Say
+   set the itemDel to tab
+   repeat for each line tLine in sBanter[pEvent]
+      if item 1 of tLine is "*" or item 1 of tLine is pWho or pWho is "*" then put item 2 of tLine & return after tList
+   end repeat
+   if tList is empty then exit VT.Say
+   put the number of lines of tList into n
+   put random(n) into tPick
+   if n > 1 and line tPick of tList is sLastEx[pEvent] then put tPick mod n + 1 into tPick
+   put line tPick of tList into sLastEx[pEvent]
+   put empty into sTalk
+   set the itemDel to "|"
+   repeat for each item tTurn in line tPick of tList
+      put word 1 to -1 of tTurn into tTurn
+      if word 1 of tTurn is "P" then
+         put "PROMPT" & tab & word 2 to -1 of tTurn & return after sTalk
+      else if word 1 of tTurn is "G" then
+         put "GLAZE" & tab & word 2 to -1 of tTurn & return after sTalk
+      end if
+   end repeat
+   put sTicks into sTalkNext
+   VT.Bubble "PROMPT", empty
+   VT.Bubble "GLAZE", empty
+   put pEvent & ":" & pWho & " " after sSaid
+end VT.Say
+
+on VT.TalkTick
+   local tTurn
+   if sTalk is not empty and sTicks >= sTalkNext then
+      put line 1 of sTalk into tTurn
+      delete line 1 of sTalk
+      set the itemDel to tab
+      VT.Bubble item 1 of tTurn, item 2 of tTurn
+      put sTicks + round((1300 + 60 * the number of chars of item 2 of tTurn) / sStepMS) into sTalkNext
+      put sTalkNext + round(1200 / sStepMS) into sTalkClearAt
+      put sTicks into sLastTalk
+   else if sTalk is empty and sTalkClearAt is a number and sTicks >= sTalkClearAt then
+      VT.Bubble "PROMPT", empty
+      VT.Bubble "GLAZE", empty
+      put empty into sTalkClearAt
+      put sTicks into sLastTalk
+   end if
+   if sTalk is empty and sTalkClearAt is empty and sTicks - sLastTalk > round(16000 / sStepMS) then
+      put sTicks into sLastTalk
+      VT.Say "idle", "*", 100
+   end if
+end VT.TalkTick
+
+-- a speech bubble under the speaker's score: PROMPT's on the left, GLAZE's on the right
+on VT.Bubble pName, pText
+   local tLines, tWord, tLine, i, tX, tLong, tSize
+   put 13 into tSize
+   repeat for each word tWord in pText
+      if the number of chars of (tLine && tWord) > 26 and tLine is not empty then
+         put tLine & return after tLines
+         put tWord into tLine
+      else if tLine is empty then
+         put tWord into tLine
+      else
+         put tLine && tWord into tLine
+      end if
+   end repeat
+   if tLine is not empty then put tLine after tLines
+   put 0 into tLong
+   repeat for each line tLine in tLines
+      put max(tLong, the number of chars of tLine) into tLong
+   end repeat
+   repeat with i = 1 to 4
+      if i > the number of lines of tLines then
+         HUD.Remove "VT.Say." & pName & "." & i
+         next repeat
+      end if
+      if pName is "PROMPT" then
+         put gViewLeft + 20 into tX
+      else
+         put gViewRight - 20 - tLong * tSize into tX
+      end if
+      HUD.Set "VT.Say." & pName & "." & i, line i of tLines, tX, gViewTop + 52 + (i - 1) * (tSize + 7), tSize
+   end repeat
+end VT.Bubble
+
+-------------------------------------------------------------------- HUD
+
+on VT.Message pText
+   put pText into sMsg
+   put sTicks + round(2200 / sStepMS) into sMsgUntil
+end VT.Message
+
+on VT.ShowHUD
+   local tBar, i, tScoreG
+   HUD.Set "VT.P", "PROMPT " & sHero["PROMPT"]["score"], gViewLeft + 20, gViewTop + 16, 20
+   put "GLAZE " & sHero["GLAZE"]["score"] into tScoreG
+   HUD.Set "VT.G", tScoreG, gViewRight - 20 - the number of chars of tScoreG * 20, gViewTop + 16, 20
+   HUD.Set "VT.Rally", "RALLY " & sRally & "  BEST " & sBestRally, (gViewLeft + gViewRight) / 2 - 80, gViewTop + 18, 13
+   if sMsgUntil is a number and sTicks < sMsgUntil then
+      HUD.Set "VT.Msg", sMsg, (gViewLeft + gViewRight) / 2 - the number of chars of sMsg * 7, gViewTop + 150, 14
+   else
+      HUD.Remove "VT.Msg"
+   end if
+   HUD.Set "VT.Who", "YOU ARE " & sActive & "   C: SWAP TO " & VT.Other(sActive), gViewLeft + 20, gViewBottom - 54, 12
+   if sBall["state"] is "held" and sBall["by"] is sActive then
+      if sCharging then
+         repeat with i = 1 to 16
+            if i <= round(sPower * 16) then
+               put "+" after tBar
+            else
+               put "-" after tBar
+            end if
+         end repeat
+         HUD.Set "VT.Help", "POWER " & tBar & "   W S AIM   A D ARC   LET GO: THROW", gViewLeft + 20, gViewBottom - 30, 12
+      else
+         HUD.Set "VT.Help", "HOLD SPACE TO THROW   E: AN EASY ONE   ARROWS: RUN", gViewLeft + 20, gViewBottom - 30, 12
+      end if
+   else
+      HUD.Set "VT.Help", "RUN UNDER THE BALL: WATCH ITS SHADOW   ARROWS OR W A S D", gViewLeft + 20, gViewBottom - 30, 12
+   end if
+end VT.ShowHUD
+
+-------------------------------------------------------------------- helpers
+
+function VT.Keys
+   if sTestKeys is not empty then return sTestKeys
+   return the keysDown
+end VT.Keys
+
+-- tests: hold these keys (0 = none)
+on VT.TestKeys pKeys
+   put pKeys into sTestKeys
+end VT.TestKeys
+
+-- tests: both heroes play themselves
+on VT.TestAuto pOn
+   put pOn into sTestAuto
+end VT.TestAuto
+
+-- tests: put a hero at x,z
+on VT.TestPlace pName, pX, pZ
+   put pX into sHero[pName]["x"]
+   put pZ into sHero[pName]["z"]
+   if sBall["state"] is "held" and sBall["by"] is pName then VT.GiveBall pName
+end VT.TestPlace
+
+-- tests: the player throws now
+on VT.TestThrow pPower, pArc, pAimZ
+   VT.Throw sActive, pPower, pArc, pAimZ, false
+end VT.TestThrow
+
+-- active | PROMPT score,catches,x,z | GLAZE ... | ball state,by,x,h,z,banks | rally,best | said
+function VT.State
+   return sActive & "|" & sHero["PROMPT"]["score"] & "," & sHero["PROMPT"]["catches"] & "," & round(sHero["PROMPT"]["x"]) & "," & round(sHero["PROMPT"]["z"]) & \
+         "|" & sHero["GLAZE"]["score"] & "," & sHero["GLAZE"]["catches"] & "," & round(sHero["GLAZE"]["x"]) & "," & round(sHero["GLAZE"]["z"]) & \
+         "|" & sBall["state"] & "," & sBall["by"] & "," & round(sBall["x"]) & "," & round(sBall["h"]) & "," & round(sBall["z"]) & "," & sBall["banks"] & \
+         "|" & sRally & "," & sBestRally & "|" & sSaid
+end VT.State
+
+function VT.ClipFrames pKey
+   return sClip[pKey]["frames"]
+end VT.ClipFrames
+
+-- swap the mesh an object is drawn with (from Antack)
+on VT.SetMesh pKey, pMesh
+   local tOut, tLine
+   if gObjectTransforms[pKey]["mesh"] is pMesh then exit VT.SetMesh
+   repeat for each line tLine in gSceneObjects
+      if word 2 of tLine is pKey then put pMesh into word 1 of tLine
+      put tLine & cr after tOut
+   end repeat
+   delete the last char of tOut
+   put tOut into gSceneObjects
+   put pMesh into gObjectTransforms[pKey]["mesh"]
+end VT.SetMesh
+
+-- engine rotation angles for a heading (from Antack.Euler; up is -Y)
+function VT.Euler pYaw, pPitch
+   local tSY, tCY, tSP, tCP
+   put sin(pYaw) into tSY
+   put cos(pYaw) into tCY
+   put sin(pPitch) into tSP
+   put cos(pPitch) into tCP
+   return atan2(tSP, tCY * tCP) & comma & asin(max(-1, min(1, tSY * tCP))) & comma & atan2(-tSY * tSP, tCY)
+end VT.Euler
+
+-- a line from x1,h1,z1 to x2,h2,z2 (heights up) into a wire mesh
+function VT.Line @pMesh, pX1, pH1, pZ1, pX2, pH2, pZ2
+   local tA, tB
+   Mesh.AddVertex pMesh, pX1, -pH1, pZ1
+   put the result into tA
+   Mesh.AddVertex pMesh, pX2, -pH2, pZ2
+   put the result into tB
+   Mesh.AddLine pMesh, tA, tB
+   return tB
+end VT.Line
+
+-- a flat ring on the floor
+function VT.RingMesh pR, pN
+   local tM, i, tFirst, tA, tB
+   put Mesh.New() into tM
+   repeat with i = 0 to pN - 1
+      Mesh.AddVertex tM, pR * cos(2 * pi * i / pN), 0, pR * sin(2 * pi * i / pN)
+      put the result into tB
+      if i is 0 then
+         put tB into tFirst
+      else
+         Mesh.AddLine tM, tA, tB
+      end if
+      put tB into tA
+   end repeat
+   Mesh.AddLine tM, tA, tFirst
+   return tM
+end VT.RingMesh
+
+-- a little three-way cross for the aim dots
+function VT.DotMesh
+   local tM, tA
+   put Mesh.New() into tM
+   put VT.Line(tM, -2, 0, 0, 2, 0, 0) into tA
+   put VT.Line(tM, 0, -2, 0, 0, 2, 0) into tA
+   put VT.Line(tM, 0, 0, -2, 0, 0, 2) into tA
+   return tM
+end VT.DotMesh
+
+-- looks for pRelPath in the folders above this stack, then in the WSL projects folder
+function VT.FindFile pRelPath
+   local tPath, tTry
+   put the effective filename of this stack into tPath
+   set the itemDel to "/"
+   repeat 6 times
+      delete item -1 of tPath
+      if tPath is empty then exit repeat
+      put tPath & "/" & pRelPath into tTry
+      if there is a file tTry then return tTry
+   end repeat
+   put "//wsl$/Ubuntu/home/igame3d/projects/" & pRelPath into tTry
+   if there is a file tTry then return tTry
+   put "/home/igame3d/projects/" & pRelPath into tTry
+   if there is a file tTry then return tTry
+   return empty
+end VT.FindFile
+
+-- the arrows move you; a focused menu or field must never get them
+on arrowKey pKey
+end arrowKey

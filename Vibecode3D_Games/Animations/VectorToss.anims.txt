@@ -1,0 +1,6 @@
+# Vector Toss animation list (Opus 15 Nov 2026): name TAB LIB_MOCAP clip TAB in TAB out TAB loop
+# Re-cut these in the Ig3dEditor: Window > Inspector > Animation (game: VectorToss).
+# The ball leaves the hand when you let go of SPACE, so throw and lob start just before the release.
+throw	iGame3D_throwtoss1	528	566	false
+lob	iGame3D_underHandThrow	126	160	false
+catch	iGame3D_reachhigh	540	592	false
