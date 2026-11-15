@@ -116,7 +116,11 @@ on Game.OnUpdate
    if sDashRest > 0 then subtract 1 from sDashRest
    if sHurt > 0 then subtract 1 from sHurt
    SetObjectPosition sShip, sX, sY, kShipZ
-   SetObjectRotation sShip, 1.5708, 0, sTicks / 8 * (sDash > 0)
+   if sDash > 0 then
+      SetObjectRotation sShip, 1.5708, 0, sTicks / 2
+   else
+      SetObjectRotation sShip, 1.5708, 0, 0
+   end if
    -- the tunnel rushes past
    repeat for each key tK in sRing
       subtract sSpeed from sRing[tK]["z"]
