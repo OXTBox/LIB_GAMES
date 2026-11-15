@@ -16,7 +16,7 @@ global bPaused, bPlaying
 local sCar, sX, sY, sVX, sJump, sDist, sStageLen, sSlice, sThing, sThingN, sNextSpawn, sRivers
 local sLevel, sLives, sScore, sOver, sWon, sHurt, sScroll, sBusy, sKeysWas, sTestKeys, sHUDWas, sTicks
 
-constant kZ = 380            -- the play plane, seen from above (1 unit = 1 pixel)
+constant kZ = 380            -- the play plane, seen from above (screen scale is 300/z: 0.8 px a unit)
 constant kCarY = 170         -- where your car sits on the screen when centred
 constant kHalfW = 210        -- the road's half width
 constant kSliceGap = 60

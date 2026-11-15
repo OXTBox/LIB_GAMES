@@ -20,7 +20,7 @@ local sCar, sBoat, sX, sVX, sDist, sStageLen, sSlice, sSliceWet, sThing, sThingN
 local sShot, sShotN, sGunWait, sSpecial, sAmmo, sTruckN, sHeli, sHeliX, sBombWait, sWet
 local sLevel, sLives, sScore, sOver, sWon, sHurt, sScroll, sKeysWas, sTestKeys, sHUDWas, sTicks
 
-constant kZ = 380            -- the play plane (1 unit = 1 pixel)
+constant kZ = 380            -- the play plane (screen scale is 300/z: 0.8 px a unit)
 constant kCarY = 170
 constant kHalfW = 230
 constant kSliceGap = 60
