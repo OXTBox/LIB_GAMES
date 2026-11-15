@@ -293,10 +293,12 @@ on Fuel.Spawn
    put random(4) into tLane
    put (tLane - 2.5) * kLaneW into tX
    put random(100) into tN
-   if tN <= 45 then
+   -- owner's game note 11 14 8:09 PM, "too much damn traffic": cars 45% -> 30% of what spawns,
+   -- cans 30% -> 45% (fuel stays as easy to find), oil stays 25%; swerving cars 50% -> 35%
+   if tN <= 30 then
       Fuel.Add "car", "Fuel.Traffic", tX, kGroundY - 25, sTop * (0.45 + random(25) / 100), "60,130,255"
       put tX into sThing[sThingN]["tx"]
-      put random(100) <= 50 into sThing[sThingN]["swerve"]       -- Spark's swerve rate 0.5
+      put random(100) <= 35 into sThing[sThingN]["swerve"]       -- was Spark's 0.5
    else if tN <= 75 then
       -- cans sit on the lane lines, between the traffic
       put (random(3) - 2) * kLaneW into tX
