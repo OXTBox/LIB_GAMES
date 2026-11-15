@@ -9,11 +9,11 @@
 
 start	*	P Ball. Floor. Each other. Catch it before the floor does. | G You make everything sound like a chore list. | P It is a chore list.
 start	*	G Isn't it pretty? All this light and nobody keeping score. | P The game keeps score. | G Then let's give it something nice to write down.
-start	*	P Straight throws don't score. Bounce it off the sides. | G Bounce it, he says. Like it's easy. | P It is easy. Watch.
+start	*	P Up, off the roof, down to me. That's the whole game. | G Up, he says. Like it's easy. | P It is easy. Watch.
 
 catch_good	PROMPT	P Got it. | G You're welcome.
 catch_good	PROMPT	G Nice hands, Prompt. | P They came with the arms.
-catch_good	PROMPT	P Off the side, into the hand. That's how it works. | G Show-off.
+catch_good	PROMPT	P Off the roof, into the hand. That's how it works. | G Show-off.
 catch_good	GLAZE	G Mine! | P It was always yours. I aimed it. | G Let me have this.
 catch_good	GLAZE	G Did you see that reach? Tell me you saw that reach. | P I saw it.
 catch_good	GLAZE	P Clean. | G Clean and gorgeous. You can say gorgeous.

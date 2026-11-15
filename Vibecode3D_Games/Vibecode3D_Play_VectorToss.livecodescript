@@ -2,15 +2,15 @@
 ## CARD SCRIPT: "Play.VectorToss"   VECTOR TOSS  (Opus 15 Nov 2026)  PHASE 1: CORE
 ## PROMPT (cyan) and GLAZE (magenta) face each other across a deep arena, one in each half,
 ## and toss a ball of vectors back and forth. You play one; the other is your companion.
-## First it is only play: high slow arcs (up, apex, down), nothing to lose. (Walls, breaking floor tiles
+## First it is only play: slow roof throws (up, the roof, down), nothing to lose. (Walls, breaking floor tiles
 ## and hang time come in the next phases: LIB_ig3d/GDD_OUTLINE_A88.md.)
-## CONTROLS  arrows / W A S D   run around your half      C  swap to the companion
-##           hold SPACE          power swings up and down; while held W S aim sideways,
-##                               A D lower / raise the arc. Let go: throw.
-##           E                   an easy one: a slow lob right into your partner's hands
-## SCORING   a catch is worth one point for every bounce off the side bounds and the
-##           ceiling, plus one for a high lob. A flat straight throw scores ZERO (the first
-##           lesson). A ball that touches your floor first is a drop, not a catch.
+## CONTROLS  mouse        a ghost ball on the floor shows where your throw comes down. Hold
+##                        the button for power, let go: the ball goes up, hits the ROOF and
+##                        comes down on the ghost. Aim past a side bound to bank it off it.
+##           W A S D / arrows  run (while you aim)    SPACE  jump (catch higher)
+##           C  swap to the companion    E  an easy one    TAB  landing ring on or off
+## SCORING   a catch is worth one point for the roof and one for each side bound the ball
+##           struck. A ball that touches your floor first is a drop, not a catch.
 ## BANTER    the heroes talk: VectorToss/banter.txt (event, who, then "P line | G line").
 ## MOVES     Animations/VectorToss.anims.txt (throw, lob, catch), cut from LIB_MOCAP clips
 ##           with the editor's Window > Inspector > Animation page.
@@ -21,12 +21,13 @@ global gObjectTransforms, gSceneObjects
 global gCameraYaw, gCameraPitch
 global gViewLeft, gViewTop, gViewRight, gViewBottom
 global bPaused, bPlaying
+global gNoMouse
 
 constant kM = 30              -- engine units a metre: the heroes are about 52 tall
-constant kHalfW = 260         -- the arena runs x -260..260 (PROMPT's half is x < 0)
-constant kHalfD = 130         -- and z -130..130 (deep: room to run)
+constant kHalfW = 360         -- the arena runs x -360..360 (PROMPT's half is x < 0)
+constant kHalfD = 160         -- and z -160..160 (deep: room to run)
 constant kTop = 300           -- the ceiling (top bound) height
-constant kTile = 52           -- floor tiles (phase 3 breaks them)
+constant kTile = 40           -- floor tiles (phase 3 breaks them)
 constant kMid = 22            -- heroes keep this far from the centre line
 constant kHeroR = 12          -- a hero's body, for the bounds
 constant kRunSpeed = 5.2      -- units a step
@@ -40,10 +41,9 @@ constant kRollV = 0.8         -- slower falls than this stop bouncing and roll
 constant kCatchR = 22         -- catch reach around a hero, across the floor
 constant kReach = 78          -- and up
 constant kHandH = 44          -- the ball sits here while held
-constant kLobH = 140          -- a peak above this is a lob: +1
-constant kMinV = 5            -- throw speed at no power (a short lob)
-constant kMaxV = 11           -- at full power (lands near the far back bound)
-constant kDots = 26           -- the aim preview, a dot every 4 steps
+constant kRoofPower = 3.2     -- full power adds this much upward speed: off the roof faster
+constant kHeroGrav = 0.3      -- the heroes' jumps
+constant kJumpV = 4.6
 constant kAIWait = 40         -- the companion holds the ball this many steps
 constant kCamUp = 230         -- camera height
 constant kCamBack = 170       -- behind the front bound
@@ -56,18 +56,18 @@ constant kPromptIdle = "Animazoo_hands_on_hips"
 constant kGlazeIdle = "Animazoo_talking_gesturing"
 constant kRun = "Animazoo_Running_-_Jog"
 constant kMaxIdleFrames = 300
-constant kActs = "throw,lob,catch"
+constant kActs = "throw,lob,catch,jump"
 
 local sStepMS = 33, sTicks = 0, sError
 local sClip          -- [key][frames|fps|travel]; meshes "VT.<key>.<n>"; keys idleP idleG run throw lob catch
 local sHero          -- [PROMPT|GLAZE][key|x|z|yaw|speed|mdx|mdz|anim|frame|act|side|idle|score|catches|color]
 local sActive        -- the hero you play
 local sBall          -- [key|shadow|state (held|loose)|by|x|h|z|vx|vh|vz|air|age|thrower|crossed|banks|tops|backs|floors|peak|touched|easy|hit]
-local sCharging, sPower, sPowerDir, sAimZ, sArc
+local sCharging, sPower, sAimX, sAimZ, sLandX, sLandZ, sShowLand, sTestAim, sTestMouse, sIntroUntil
 local sKeyWas, sTestKeys, sTestAuto
 local sRally, sBestRally, sPlayerDrops, sHoldUntil
 local sPlan          -- the companion's plan: [name][at|x|z]
-local sDot, sMark
+local sGhost, sMark
 local sMsg, sMsgUntil
 local sBanter, sLastEx, sTalk, sTalkNext, sTalkClearAt, sLastTalk, sSaid
 
@@ -240,16 +240,15 @@ on VT.NewMatch
    put Entity.Spawn("VT.Ball", 0, -kHandH, 0, kBallColor) into sBall["key"]
    SetObjectRotationSpeed sBall["key"], 0.03, 0.05, 0
    put Entity.Spawn("VT.Shadow", 0, -1, 0, "#5A6A80") into sBall["shadow"]
-   put empty into sDot
-   repeat with tName = 1 to kDots
-      put Entity.Spawn("VT.Dot", 0, 0, -100000, kPromptColor) into sDot[tName]
-   end repeat
+   put Entity.Spawn("VT.Ball", 0, 0, -100000, "#506070") into sGhost
    put Entity.Spawn("VT.Mark", 0, 0, -100000, "#FFD040") into sMark
    put 0 into sRally
    put 0 into sBestRally
    put 0 into sPlayerDrops
    put false into sCharging
-   put 0.55 into sPower
+   put 0 into sPower
+   put true into sShowLand
+   put sTicks + round(12000 / sStepMS) into sIntroUntil
    put empty into sPlan
    put empty into sTalk
    put 0 into sLastTalk
@@ -326,6 +325,8 @@ on VT.Spawn pName, pColor, pSide, pIdle
    put random(max(1, sClip[pIdle]["frames"])) into sHero[pName]["frame"]
    put empty into sHero[pName]["act"]
    put 0 into sHero[pName]["speed"]
+   put 0 into sHero[pName]["h"]
+   put 0 into sHero[pName]["vh"]
    put 0 into sHero[pName]["score"]
    put 0 into sHero[pName]["catches"]
    put pColor into sHero[pName]["color"]
@@ -377,59 +378,94 @@ on VT.MoveToward pName, pX, pZ, pSpeed
    VT.Move pName, tDX, tDZ
 end VT.MoveToward
 
+-- you: run with the keys while the mouse aims; hold the button for power, let go to throw
 on VT.Controls
-   local tKeys, tDX, tDZ, tName, tHolds, tSpace
+   local tKeys, tDX, tDZ, tName, tHolds, tDown
    put VT.Keys() into tKeys
    put sActive into tName
    if VT.Pressed(tKeys, "99,67") then
       VT.Swap
       put sActive into tName
    end if
+   if VT.Pressed(tKeys, "65289") then put not sShowLand into sShowLand
    if sTestAuto is true then
       put tKeys into sKeyWas
       exit VT.Controls
    end if
-   put (sBall["state"] is "held" and sBall["by"] is tName) into tHolds
-   put (32 is among the items of tKeys) into tSpace
+   if VT.Pressed(tKeys, "32") then VT.Jump tName
    put 0 into tDX
    put 0 into tDZ
    if 65361 is among the items of tKeys or 97 is among the items of tKeys or 65 is among the items of tKeys then put -1 into tDX
    if 65363 is among the items of tKeys or 100 is among the items of tKeys or 68 is among the items of tKeys then put 1 into tDX
    if 65362 is among the items of tKeys or 119 is among the items of tKeys or 87 is among the items of tKeys then put 1 into tDZ
    if 65364 is among the items of tKeys or 115 is among the items of tKeys or 83 is among the items of tKeys then put -1 into tDZ
-   if tHolds and tSpace then
-      -- charging: the arrows aim, the hero stands still
-      if not sCharging then
-         put true into sCharging
-         put 0 into sPower
-         put 1 into sPowerDir
-      end if
-      add sPowerDir * 0.032 to sPower
-      if sPower >= 1 then
-         put 1 into sPower
-         put -1 into sPowerDir
-      else if sPower <= 0 then
-         put 0 into sPower
-         put 1 into sPowerDir
-      end if
-      put max(-0.75, min(0.75, sAimZ + tDZ * 0.022)) into sAimZ
-      put max(0.7, min(1.45, sArc + tDX * 0.02)) into sArc
-      VT.Move tName, 0, 0
+   if tDX is not 0 and tDZ is not 0 then
+      VT.Move tName, tDX * kRunSpeed * 0.7071, tDZ * kRunSpeed * 0.7071
    else
-      if sCharging and tHolds then
+      VT.Move tName, tDX * kRunSpeed, tDZ * kRunSpeed
+   end if
+   put (sBall["state"] is "held" and sBall["by"] is tName) into tHolds
+   if tHolds then
+      VT.Aim tName
+      put VT.MouseDown() into tDown
+      if tDown then
+         if not sCharging then
+            put true into sCharging
+            put 0 into sPower
+         end if
+         put min(1, sPower + 0.025) into sPower
+      else if sCharging then
          put false into sCharging
-         VT.Throw tName, sPower, sArc, sAimZ, false
+         VT.RoofThrow tName, sAimX, sAimZ, sPower
+         put 0 into sPower
       end if
+      if sBall["by"] is tName and VT.Pressed(tKeys, "101,69") then
+         VT.EasyOne tName
+      end if
+   else
       put false into sCharging
-      if tDX is not 0 and tDZ is not 0 then
-         VT.Move tName, tDX * kRunSpeed * 0.7071, tDZ * kRunSpeed * 0.7071
-      else
-         VT.Move tName, tDX * kRunSpeed, tDZ * kRunSpeed
-      end if
-      if tHolds and VT.Pressed(tKeys, "101,69") then VT.EasyOne tName
    end if
    put tKeys into sKeyWas
 end VT.Controls
+
+on VT.Jump pName
+   if sHero[pName]["h"] > 0 then exit VT.Jump
+   put kJumpV into sHero[pName]["vh"]
+   put 0.01 into sHero[pName]["h"]
+   VT.Act pName, "jump"
+end VT.Jump
+
+-- where the mouse points on the floor, kept on the partner's half; past a side bound is
+-- fine (the throw banks off it)
+on VT.Aim pName
+   local tXZ, tSide, tX, tZ
+   put VT.MouseFloor() into tXZ
+   if the number of words of tXZ < 2 then exit VT.Aim
+   put word 1 of tXZ into tX
+   put word 2 of tXZ into tZ
+   put -sHero[pName]["side"] into tSide
+   if tX * tSide < kMid * 2 then put tSide * kMid * 2 into tX
+   put max(-kHalfW + kBallR + 2, min(kHalfW - kBallR - 2, tX)) into tX
+   put max(-3 * kHalfD, min(3 * kHalfD, tZ)) into tZ
+   put tX into sAimX
+   put tZ into sAimZ
+end VT.Aim
+
+function VT.MouseFloor
+   if sTestAim is not empty then return sTestAim
+   if gNoMouse is true then return empty
+   try
+      return Engine.ScreenToFloor(the mouseH, the mouseV, 0)
+   catch tErr
+      return empty
+   end try
+end VT.MouseFloor
+
+function VT.MouseDown
+   if sTestMouse is not empty then return sTestMouse is true
+   if gNoMouse is true then return false
+   return the mouse is "down"
+end VT.MouseDown
 
 -- a key (any of pCodes) went down this step
 function VT.Pressed pKeys, pCodes
@@ -461,30 +497,67 @@ on VT.GiveBall pName
    put VT.HandX(pName) into sBall["x"]
    put kHandH into sBall["h"]
    put sHero[pName]["z"] into sBall["z"]
-   -- aim straight at the partner, a gentle arc
-   put atan2(sHero[VT.Other(pName)]["z"] - sHero[pName]["z"], abs(sHero[VT.Other(pName)]["x"] - sHero[pName]["x"])) into sAimZ
-   put 1.1 into sArc      -- owner: go high, hit the apex, come down
+   -- the ghost starts on the partner
+   put sHero[VT.Other(pName)]["x"] into sAimX
+   put sHero[VT.Other(pName)]["z"] into sAimZ
    put false into sCharging
+   put 0 into sPower
    put sTicks + kAIWait into sHoldUntil
    put empty into sPlan
 end VT.GiveBall
 
 -- a throw's velocity from power (0..1), arc (radians up) and sideways aim (radians)
-function VT.Velocity pName, pPower, pArc, pAimZ
-   local tV, tDir
-   put kMinV + pPower * (kMaxV - kMinV) into tV
-   put -sHero[pName]["side"] into tDir
-   return (tDir * tV * cos(pArc) * cos(pAimZ)) & comma & (tV * sin(pArc)) & comma & (tV * cos(pArc) * sin(pAimZ))
-end VT.Velocity
+-- how many steps a roof throw with upward speed pVH stays up (until it first touches the
+-- floor): the same vertical steps as VT.Advance
+function VT.RoofSteps pVH
+   local tH, n
+   put kHandH into tH
+   put 0 into n
+   repeat 600 times
+      add 1 to n
+      subtract kGrav from pVH
+      add pVH to tH
+      if tH > kTop - kBallR then
+         put 2 * (kTop - kBallR) - tH into tH
+         put -abs(pVH) into pVH
+      end if
+      if tH <= kBallR then exit repeat
+   end repeat
+   return n
+end VT.RoofSteps
 
-on VT.Throw pName, pPower, pArc, pAimZ, pEasy
-   VT.Launch pName, VT.Velocity(pName, pPower, pArc, pAimZ), pEasy
-   if pArc > 1.2 then
-      VT.Act pName, "lob"
-   else
-      VT.Act pName, "throw"
-   end if
-end VT.Throw
+-- the upward speed of a roof throw at power 0..1: always enough to reach the roof
+function VT.RoofVH pPower
+   return sqrt(2 * kGrav * (kTop - kBallR - kHandH)) + 0.5 + pPower * kRoofPower
+end VT.RoofVH
+
+-- the velocity "vx,vh,vz" that takes the ball from pName's hand off the roof and down on
+-- x,z (a z past a side bound banks off it)
+function VT.RoofVelocity pName, pX, pZ, pPower
+   local tVH, n
+   put VT.RoofVH(pPower) into tVH
+   put VT.RoofSteps(tVH) into n
+   return ((pX - VT.HandX(pName)) / n) & comma & tVH & comma & ((pZ - sHero[pName]["z"]) / n)
+end VT.RoofVelocity
+
+-- a z past a side bound folded back the way the ball bounces
+function VT.Fold pZ
+   local tLim
+   put kHalfD - kBallR into tLim
+   repeat 4 times
+      if pZ > tLim then
+         put 2 * tLim - pZ into pZ
+      else if pZ < -tLim then
+         put -2 * tLim - pZ into pZ
+      end if
+   end repeat
+   return pZ
+end VT.Fold
+
+on VT.RoofThrow pName, pX, pZ, pPower
+   VT.Launch pName, VT.RoofVelocity(pName, pX, pZ, pPower), false
+   VT.Act pName, "throw"
+end VT.RoofThrow
 
 -- the ball leaves pName's hand with velocity "vx,vh,vz"
 on VT.Launch pName, pVel, pEasy
@@ -509,7 +582,24 @@ on VT.Launch pName, pVel, pEasy
    put empty into sBall["touched"]
    put (pEasy is true) into sBall["easy"]
    put empty into sPlan
+   VT.PredictLand
 end VT.Launch
+
+-- where the loose ball first comes down (the landing ring)
+on VT.PredictLand
+   local tB, i
+   put sBall into tB
+   put empty into sLandX
+   if tB["touched"] is not empty then exit VT.PredictLand
+   repeat with i = 1 to 400
+      VT.Advance tB
+      if tB["floors"] > sBall["floors"] then
+         put tB["x"] into sLandX
+         put tB["z"] into sLandZ
+         exit repeat
+      end if
+   end repeat
+end VT.PredictLand
 
 -- an easy one: a slow lob that comes down right on the partner's hands
 on VT.EasyOne pName
@@ -596,10 +686,12 @@ on VT.BallStep
       put sHero[tName]["z"] into sBall["z"]
    else
       VT.Advance sBall
+      if sBall["hit"] is not empty and sBall["hit"] is not "floor" then VT.PredictLand
       if sBall["x"] * sHero[sBall["thrower"]]["side"] < 0 then put true into sBall["crossed"]
       if sBall["hit"] is "floor" and sBall["touched"] is empty then
          put VT.OwnerAt(sBall["x"]) into tOwner
          put tOwner into sBall["touched"]
+         put empty into sLandX
          if tOwner is sBall["thrower"] and not sBall["crossed"] then
             put 0 into sRally
             VT.Say "wild", tOwner, 70
@@ -621,7 +713,7 @@ on VT.BallStep
 end VT.BallStep
 
 function VT.CanCatch pName
-   if sBall["h"] > kReach then return false
+   if sBall["h"] > kReach + sHero[pName]["h"] or sBall["h"] < sHero[pName]["h"] - 6 then return false
    if (sBall["x"] - sHero[pName]["x"]) ^ 2 + (sBall["z"] - sHero[pName]["z"]) ^ 2 > kCatchR ^ 2 then return false
    if pName is sBall["thrower"] and not sBall["crossed"] and sBall["touched"] is empty then return false
    -- the companion lets a ball go by when it waits for it after a bounce, worth more
@@ -630,21 +722,18 @@ function VT.CanCatch pName
 end VT.CanCatch
 
 -- what a catch is worth: a bounce off a side bound or the ceiling +1 each, a high lob +1
+-- what a catch is worth: the roof +1, each side bound +1
 function VT.CatchPoints
-   local tP
    if sBall["easy"] then return 0
-   put sBall["banks"] + sBall["tops"] into tP
-   if sBall["peak"] > kLobH then add 1 to tP
-   return tP
+   return sBall["banks"] + sBall["tops"]
 end VT.CatchPoints
 
 function VT.CatchWhy
    local tWhy
    if sBall["easy"] then return "EASY ONES ARE FREE"
-   if sBall["banks"] > 0 then put "BANKED " & sBall["banks"] & "  " after tWhy
-   if sBall["tops"] > 0 then put "CEILING " & sBall["tops"] & "  " after tWhy
-   if sBall["peak"] > kLobH then put "LOB" after tWhy
-   if tWhy is empty then return "FLAT THROW: BANK IT OFF THE SIDES"
+   if sBall["tops"] > 0 then put "ROOF  " after tWhy
+   if sBall["banks"] > 0 then put "SIDES " & sBall["banks"] after tWhy
+   if tWhy is empty then return "NO ROOF, NO POINTS"
    return word 1 to -1 of tWhy
 end VT.CatchWhy
 
@@ -744,7 +833,7 @@ on VT.Plan pName, pSpeed
    put (sBall["touched"] is not empty) into tDown
    put -1 into tBestScore
    put tB["floors"] into tFloors
-   repeat with i = 1 to 200
+   repeat with i = 1 to 400
       if i > 1 then VT.Advance tB
       if tB["x"] * sHero[pName]["side"] <= 0 then next repeat
       if not tDown and tB["floors"] > tFloors then
@@ -780,42 +869,52 @@ end VT.Plan
 -- the companion's throw: its own style, tried out first so the partner can catch it.
 -- PROMPT throws lower and harder and likes the sides; GLAZE lobs sky high. After two drops in a row by
 -- the player, an easy one (no points, all heart).
+-- the companion's throw: off the roof, down near the partner. PROMPT throws harder and
+-- likes banking off the sides; GLAZE throws soft and sweet. Every throw is tried out first
+-- so the partner can catch it. After two drops in a row by the player, an easy one.
 on VT.AIThrow pName
-   local tTry, tPower, tArc, tAim, tVel, tGot, tFirst, tWantBank
+   local tTry, tOther, tPower, tX, tZ, tR, tN, tVel, tGot, tPick, tBank, tLim
+   put VT.Other(pName) into tOther
    if pName is not sActive and sPlayerDrops >= 2 and sTestAuto is not true then
       put 0 into sPlayerDrops
       VT.EasyOne pName
       exit VT.AIThrow
    end if
-   put random(100) <= 60 into tWantBank
+   put kHalfD - kBallR into tLim
    repeat with tTry = 1 to 24
       if pName is "PROMPT" then
-         put 0.8 + random(25) / 100 into tArc
-         put 0.35 + random(50) / 100 into tPower
+         put random(50) / 100 into tPower
+         put random(100) <= 50 into tBank
       else
-         put 1.05 + random(30) / 100 into tArc
-         put 0.3 + random(40) / 100 into tPower
+         put random(25) / 100 into tPower
+         put random(100) <= 20 into tBank
       end if
-      if tWantBank then
-         put (random(2) * 2 - 3) * (0.3 + random(40) / 100) into tAim
-      else
-         put (random(41) - 21) / 100 into tAim
+      put VT.RoofSteps(VT.RoofVH(tPower)) into tN
+      -- somewhere the partner can run to in time, a little less as the rally grows
+      put tN * kRunSpeed * (0.25 + min(0.35, sRally * 0.02)) into tR
+      put sHero[tOther]["x"] + (random(201) - 101) / 100 * tR into tX
+      put sHero[tOther]["z"] + (random(201) - 101) / 100 * tR into tZ
+      put max(kMid * 2, min(kHalfW - 20, tX * sHero[tOther]["side"])) * sHero[tOther]["side"] into tX
+      put max(-tLim + 4, min(tLim - 4, tZ)) into tZ
+      if tBank then
+         if tZ > 0 then
+            put 2 * tLim - tZ into tZ
+         else
+            put -2 * tLim - tZ into tZ
+         end if
       end if
-      put VT.Velocity(pName, tPower, tArc, tAim) into tVel
+      put VT.RoofVelocity(pName, tX, tZ, tPower) into tVel
       put VT.Catchable(pName, tVel) into tGot
       if tGot is empty then next repeat
-      if tFirst is empty then put tPower & comma & tArc & comma & tAim into tFirst
-      if not tWantBank or tGot > 0 then
-         put tPower & comma & tArc & comma & tAim into tFirst
-         exit repeat
-      end if
+      put tVel into tPick
+      exit repeat
    end repeat
-   if tFirst is empty then
+   if tPick is empty then
       VT.EasyOne pName
       exit VT.AIThrow
    end if
-   set the itemDel to comma
-   VT.Throw pName, item 1 of tFirst, item 2 of tFirst, item 3 of tFirst, false
+   VT.Launch pName, tPick, false
+   VT.Act pName, "throw"
 end VT.AIThrow
 
 -- can the partner catch a throw from pName with velocity pVel? Empty: no; else its banks.
@@ -836,12 +935,12 @@ function VT.Catchable pName, pVel
    put 0 into tB["tops"]
    put 0 into tB["floors"]
    put kHandH into tB["peak"]
-   repeat with i = 1 to 200
+   repeat with i = 1 to 400
       VT.Advance tB
       if tB["floors"] > 0 then return empty
       if tB["x"] * sHero[tOther]["side"] > kMid and tB["h"] <= kReach - 14 and tB["h"] > 12 then
          put sqrt((tB["x"] - sHero[tOther]["x"]) ^ 2 + (tB["z"] - sHero[tOther]["z"]) ^ 2) into tD
-         if tD <= kRunSpeed * 0.75 * i + kCatchR * 0.5 then return tB["banks"] + tB["tops"]
+         if tD <= kRunSpeed * 0.8 * i + kCatchR * 0.5 then return tB["banks"] + tB["tops"]
       end if
    end repeat
    return empty
@@ -851,40 +950,25 @@ end VT.Catchable
 
 -- while you hold the ball: dots along the throw's path until it first touches the floor,
 -- and a ring where it lands
+-- the ghost ball where your throw will come down (while you hold the ball); the landing
+-- ring under it, and under where a loose ball will first come down (TAB: on or off)
 on VT.Preview
-   local tB, i, k, tVel, tShown, tLand
-   put 0 into tShown
-   if sBall["state"] is "held" and sBall["by"] is sActive and sTestAuto is not true then
-      put VT.Velocity(sActive, sPower, sArc, sAimZ) into tVel
-      put VT.HandX(sActive) into tB["x"]
-      put kHandH into tB["h"]
-      put sHero[sActive]["z"] into tB["z"]
-      set the itemDel to comma
-      put item 1 of tVel into tB["vx"]
-      put item 2 of tVel into tB["vh"]
-      put item 3 of tVel into tB["vz"]
-      put true into tB["air"]
-      put 0 into tB["floors"]
-      put kHandH into tB["peak"]
-      repeat with i = 1 to kDots * 4
-         VT.Advance tB
-         if tB["floors"] > 0 then
-            put tB["x"] & comma & tB["z"] into tLand
-            exit repeat
-         end if
-         if i mod 4 is 0 then
-            add 1 to tShown
-            SetObjectPosition sDot[tShown], tB["x"], -tB["h"], tB["z"]
-         end if
-      end repeat
+   local tLX, tLZ
+   if sBall["state"] is "held" and sBall["by"] is sActive and sTestAuto is not true and sAimX is a number then
+      put sAimX into tLX
+      put VT.Fold(sAimZ) into tLZ
+      SetObjectPosition sGhost, tLX, -kBallR, tLZ
+   else
+      SetObjectPosition sGhost, 0, 0, -100000
+      if sBall["state"] is "loose" and sShowLand and sLandX is a number then
+         put sLandX into tLX
+         put sLandZ into tLZ
+      end if
    end if
-   repeat with k = tShown + 1 to kDots
-      SetObjectPosition sDot[k], 0, 0, -100000
-   end repeat
-   if tLand is empty then
+   if tLX is empty then
       SetObjectPosition sMark, 0, 0, -100000
    else
-      SetObjectPosition sMark, item 1 of tLand, -1, item 2 of tLand
+      SetObjectPosition sMark, tLX, -1, tLZ
    end if
 end VT.Preview
 
@@ -934,14 +1018,23 @@ on VT.Animate pName
    -- facing: where you run; otherwise the other half (or along the aim while holding)
    if sHero[pName]["speed"] > 0.3 and sHero[pName]["act"] is empty then
       put atan2(sHero[pName]["mdx"], sHero[pName]["mdz"]) into tWant
-   else if sBall["state"] is "held" and sBall["by"] is pName and pName is sActive then
-      put atan2(-sHero[pName]["side"] * cos(sAimZ), sin(sAimZ)) into tWant
+   else if sBall["state"] is "held" and sBall["by"] is pName and pName is sActive and sAimX is a number then
+      put atan2(sAimX - sHero[pName]["x"], VT.Fold(sAimZ) - sHero[pName]["z"]) into tWant
    else
       put -sHero[pName]["side"] * pi / 2 into tWant
    end if
    put VT.TurnToward(sHero[pName]["yaw"], tWant, 0.25) into sHero[pName]["yaw"]
    VT.SetMesh tKey, "VT." & tClip & "." & max(1, trunc(sHero[pName]["frame"]))
-   SetObjectPosition tKey, sHero[pName]["x"], 0, sHero[pName]["z"]
+   -- jumps
+   if sHero[pName]["h"] > 0 then
+      subtract kHeroGrav from sHero[pName]["vh"]
+      add sHero[pName]["vh"] to sHero[pName]["h"]
+      if sHero[pName]["h"] <= 0 then
+         put 0 into sHero[pName]["h"]
+         put 0 into sHero[pName]["vh"]
+      end if
+   end if
+   SetObjectPosition tKey, sHero[pName]["x"], -sHero[pName]["h"], sHero[pName]["z"]
    put VT.Euler(sHero[pName]["yaw"], 0) into tE
    SetObjectRotation tKey, item 1 of tE, item 2 of tE, item 3 of tE
 end VT.Animate
@@ -1079,7 +1172,7 @@ end VT.Bubble
 
 on VT.Message pText
    put pText into sMsg
-   put sTicks + round(2200 / sStepMS) into sMsgUntil
+   put sTicks + round(4500 / sStepMS) into sMsgUntil
 end VT.Message
 
 on VT.ShowHUD
@@ -1093,7 +1186,7 @@ on VT.ShowHUD
    else
       HUD.Remove "VT.Msg"
    end if
-   HUD.Set "VT.Who", "YOU ARE " & sActive & "   C: SWAP TO " & VT.Other(sActive), gViewLeft + 20, gViewBottom - 54, 12
+   HUD.Set "VT.Who", "YOU ARE " & sActive & "   C: SWAP TO " & VT.Other(sActive) & "   TAB: LANDING RING", gViewLeft + 20, gViewBottom - 54, 12
    if sBall["state"] is "held" and sBall["by"] is sActive then
       if sCharging then
          repeat with i = 1 to 16
@@ -1103,12 +1196,22 @@ on VT.ShowHUD
                put "-" after tBar
             end if
          end repeat
-         HUD.Set "VT.Help", "POWER " & tBar & "   W S AIM   A D ARC   LET GO: THROW", gViewLeft + 20, gViewBottom - 30, 12
+         HUD.Set "VT.Help", "POWER " & tBar & "   LET GO: THROW", gViewLeft + 20, gViewBottom - 30, 12
       else
-         HUD.Set "VT.Help", "HOLD SPACE TO THROW   E: AN EASY ONE   ARROWS: RUN", gViewLeft + 20, gViewBottom - 30, 12
+         HUD.Set "VT.Help", "MOUSE: AIM THE GHOST BALL   HOLD THE BUTTON, LET GO: THROW   E: AN EASY ONE", gViewLeft + 20, gViewBottom - 30, 12
       end if
    else
-      HUD.Set "VT.Help", "RUN UNDER THE BALL: WATCH ITS SHADOW   ARROWS OR W A S D", gViewLeft + 20, gViewBottom - 30, 12
+      HUD.Set "VT.Help", "RUN UNDER THE BALL: WATCH ITS SHADOW   W A S D: RUN   SPACE: JUMP", gViewLeft + 20, gViewBottom - 30, 12
+   end if
+   -- the round's instructions, at the start
+   if sTicks < sIntroUntil then
+      HUD.Set "VT.Intro1", "LEVEL 1: PLAY CATCH", (gViewLeft + gViewRight) / 2 - 190, gViewTop + 200, 20
+      HUD.Set "VT.Intro2", "THROW IT OFF THE ROOF: +1   OFF A SIDE TOO: +1 EACH", (gViewLeft + gViewRight) / 2 - 300, gViewTop + 236, 12
+      HUD.Set "VT.Intro3", "AIM PAST A SIDE TO BANK IT   A BALL ON YOUR FLOOR IS A DROP", (gViewLeft + gViewRight) / 2 - 300, gViewTop + 256, 12
+   else
+      HUD.Remove "VT.Intro1"
+      HUD.Remove "VT.Intro2"
+      HUD.Remove "VT.Intro3"
    end if
 end VT.ShowHUD
 
@@ -1137,9 +1240,23 @@ on VT.TestPlace pName, pX, pZ
 end VT.TestPlace
 
 -- tests: the player throws now
-on VT.TestThrow pPower, pArc, pAimZ
-   VT.Throw sActive, pPower, pArc, pAimZ, false
-end VT.TestThrow
+-- tests: the player throws off the roof onto x,z now
+on VT.TestRoofThrow pX, pZ, pPower
+   VT.RoofThrow sActive, pX, pZ, pPower
+end VT.TestRoofThrow
+
+-- tests: the mouse points at floor "x z" / the button is down (true/false); empty: the real mouse
+on VT.TestAim pXZ
+   put pXZ into sTestAim
+end VT.TestAim
+
+on VT.TestMouse pDown
+   put pDown into sTestMouse
+end VT.TestMouse
+
+function VT.HeroH pName
+   return sHero[pName]["h"]
+end VT.HeroH
 
 -- active | PROMPT score,catches,x,z | GLAZE ... | ball state,by,x,h,z,banks | rally,best | said
 function VT.State

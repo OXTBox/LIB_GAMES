@@ -4,3 +4,4 @@
 throw	iGame3D_throwtoss1	528	566	false
 lob	iGame3D_underHandThrow	126	160	false
 catch	iGame3D_reachhigh	540	592	false
+jump	Animazoo_Jumping_-_Hopping	112	138	false
