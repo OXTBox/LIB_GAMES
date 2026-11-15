@@ -8,10 +8,19 @@
 ## genetic_anomaly over the base generic_array_data).
 ##   G     swaps every word to the generic base and back
 ##   Tab   collapses the whole game into a spreadsheet, and back
+## TURNS     (owner's game note 11 14, 8:13 PM: "the slow turn based game, where player has to
+##           'end turn' to advance", "the advancement economy", "a big map we can scroll around
+##           and zoom in and out of") the world waits for you. ENTER ends the turn: one night
+##           plays out (people walk, towns grow, the Strangeness acts), then it waits again.
+## ECONOMY   (after Galactica's growth / research / building sliders, LIB_GAD) each of your towns
+##           has a FOCUS: 1 RECRUIT (more people), 2 RESEARCH (points toward the Bureau's next
+##           rank, for every town), 3 TRAIN (this town's own rank). Output = 1 + people / 6.
+##           The Strangeness still climbs on its own clock: research to keep up.
 ## CONTROLS  click one of your towns, then any other town: half its people go there
+##           1 2 3: the selected town's focus   ENTER: end turn
+##           arrows or W A S D: scroll the map   mouse wheel or + -: zoom   H: home
 ##           Space: pause   R: a new world   Escape: stop
-## RULES     towns grow people each night; your people grow stranger (rank) with time.
-##           Arrive at a town that isn't yours: strength (people x rank) against strength.
+## RULES     arrive at a town that isn't yours: strength (people x rank) against strength.
 ##           Hold every town to win. The Strangeness escalates; something else may too.
 ######################################################################################
 
@@ -21,10 +30,19 @@ global bPaused, bPlaying
 local sWords, sTheme, sGenRoot
 local sTown, sTownCount, sCircle, sSerial, sSel, sTicks, sNight, sOver, sPaused, sKeysWas
 local sSheet, sHero, sHUDWas, sOtherRank, sMyRank, sWorldSeed
+local sAdvance       -- frames of the night still to play after ENTER (0 = waiting for the player)
+local sResearch      -- the Bureau's research points toward its next rank
+local sPanX, sPanY, sZoom, sCamWas   -- the view: centre of the screen in world units, and zoom (1 = as before)
+local sTestKeys      -- engine_play: keys held by GA.TestKeys instead of the keyboard
 
 constant kZ = 365
-constant kNightTicks = 45        -- frames per night (the game clock)
-constant kTowns = 30
+constant kNightTicks = 45        -- frames a night plays for after ENTER
+constant kTowns = 64             -- the big map (was 30 on one screen)
+constant kMapW = 1100            -- towns lie within -kMapW..kMapW across
+constant kMapH = 640             -- and -kMapH..kMapH down
+constant kPanStep = 9            -- map units a frame while an arrow is held (at zoom 1)
+constant kZoomMin = 0.45
+constant kZoomMax = 2.4
 constant kSideColor = "#B0B0B0,#40E0FF,#FF60D0"   -- locals, Bureau, Strangeness
 constant kCircleSpeed = 4
 
@@ -189,13 +207,15 @@ on GA.NewWorld pSeed
    put false into sHero
    put 1 into sOtherRank
    put 1 into sMyRank
+   put 0 into sResearch
+   put 0 into sAdvance
    put empty into sHUDWas
    -- towns: points scattered with some room between them
    put 0 into n
-   repeat 600 times
+   repeat 2000 times
       if n >= kTowns then exit repeat
-      put random(860) - 430 into x
-      put random(540) - 190 into y
+      put random(2 * kMapW) - kMapW into x
+      put random(2 * kMapH) - kMapH into y
       put true into ok
       repeat with k = 1 to n
          if abs(sTown[k]["x"] - x) < 70 and abs(sTown[k]["y"] - y) < 55 then
@@ -211,6 +231,8 @@ on GA.NewWorld pSeed
       put 2 + random(6) into sTown[n]["people"]
       put 1 into sTown[n]["rank"]
       put 1 + random(3) into sTown[n]["grow"]
+      put "recruit" into sTown[n]["focus"]
+      put 0 into sTown[n]["train"]
       -- a procedural name from the name parts
       put sWords["game_name_parts"] into tParts
       if tParts is empty then put "Ash" & cr & "Bel" & cr & "ford" & cr & "ton" into tParts
@@ -231,10 +253,12 @@ on GA.NewWorld pSeed
    put 20 into sTown[k]["people"]
    put 2 into sTown[k]["rank"]
    set the randomSeed to random(99999) + the milliseconds
+   -- the view starts on your home town, a little zoomed out
+   GA.Home
    repeat with k = 1 to sTownCount
       GA.DrawTown k
    end repeat
-   GA.Say GA.W("game_hud_labels", 6, "CLICK ONE OF YOURS, THEN ANOTHER PLACE")
+   GA.Say GA.W("game_hud_labels", 6, "CLICK ONE OF YOURS, THEN ANOTHER PLACE") && "- ENTER ENDS THE TURN"
 end GA.NewWorld
 
 function GA.Farthest pDir
@@ -269,20 +293,29 @@ end GA.DrawTown
 
 on GA.LabelTown k
    local tXY
-   put ProjectVertex(sTown[k]["x"], sTown[k]["y"], kZ) into tXY
+   put GA.Proj(sTown[k]["x"], sTown[k]["y"]) into tXY
    if tXY is empty then exit GA.LabelTown
    if sSheet then
       HUD.Remove "GA.T" & k
    else
-      HUD.Set "GA.T" & k, toUpper(sTown[k]["name"]) && sTown[k]["people"], word 1 of tXY - 24, word 2 of tXY + 10, 9
+      HUD.Set "GA.T" & k, toUpper(sTown[k]["name"]) && sTown[k]["people"] & GA.FocusTag(k), word 1 of tXY - 24, word 2 of tXY + 10, 9
    end if
 end GA.LabelTown
 
 -------------------------------------------------------------------- the loop
 
 function GA.Keys
+   if sTestKeys is not empty then
+      if sTestKeys is "0" then return empty
+      return sTestKeys
+   end if
    return the keysDown
 end GA.Keys
+
+-- engine_play: hold these keys (comma list; "0" = none) instead of the keyboard
+on GA.TestKeys pKeys
+   put pKeys into sTestKeys
+end GA.TestKeys
 
 on Game.OnUpdate
    local tKeys, tNew, k
@@ -315,23 +348,151 @@ on Game.OnUpdate
             put random(99999) into sWorldSeed
             GA.NewWorld sWorldSeed
             break
+         case 65293
+         case 65421
+            GA.EndTurn
+            break
+         case 49
+         case 50
+         case 51
+            GA.SetFocus sSel, item (k - 48) of "recruit,research,train"
+            break
+         case 104
+         case 72
+            GA.Home
+            break
+         case 43
+         case 61
+         case 65451
+            GA.ZoomBy 1.15
+            break
+         case 45
+         case 65453
+            GA.ZoomBy 1 / 1.15
+            break
       end switch
    end repeat
    put tKeys into sKeysWas
+   GA.PanKeys tKeys
+   GA.ApplyView
    if sPaused or sOver then exit Game.OnUpdate
-   add 1 to sTicks
-   GA.MoveCircles
-   if sTicks mod kNightTicks is 0 then GA.Night
+   -- turn based: the world moves only while a night plays out after ENTER
+   if sAdvance > 0 then
+      add 1 to sTicks
+      GA.MoveCircles
+      subtract 1 from sAdvance
+      if sAdvance is 0 then GA.Night
+   end if
    GA.ShowHUD
 end Game.OnUpdate
+
+-------------------------------------------------------------------- turns and the economy
+
+on GA.EndTurn
+   if sAdvance > 0 or sOver then exit GA.EndTurn
+   put kNightTicks into sAdvance
+   GA.Say GA.W("game_hud_labels", 4, "TURN") && sNight && "- THE NIGHT PLAYS OUT"
+end GA.EndTurn
+
+-- 1 / 2 / 3 on a selected town of yours: what its spare output goes to
+on GA.SetFocus k, pFocus
+   if k is empty then
+      GA.Say "SELECT ONE OF YOUR TOWNS FIRST, THEN 1 2 3"
+      exit GA.SetFocus
+   end if
+   if sTown[k]["side"] is not 1 then exit GA.SetFocus
+   put pFocus into sTown[k]["focus"]
+   GA.LabelTown k
+   GA.Say toUpper(sTown[k]["name"]) && "FOCUS:" && toUpper(pFocus)
+   put empty into sHUDWas
+end GA.SetFocus
+
+-- a short mark after a town's label: R S T for your towns' focus (recruit, research = study, train)
+function GA.FocusTag k
+   if sTown[k]["side"] is not 1 then return empty
+   if sTown[k]["focus"] is "research" then return " S"
+   if sTown[k]["focus"] is "train" then return " T"
+   return " R"
+end GA.FocusTag
+
+function GA.Output k
+   return 1 + sTown[k]["people"] div 6
+end GA.Output
+
+-- research points the Bureau needs for its next rank
+function GA.ResearchCost
+   return 12 * sMyRank * sMyRank
+end GA.ResearchCost
+
+-------------------------------------------------------------------- the view: scroll and zoom
+
+-- a world point on the screen, through the view
+function GA.Proj pX, pY
+   return ProjectVertex((pX - sPanX) * sZoom, (pY - sPanY) * sZoom, kZ)
+end GA.Proj
+
+on GA.Home
+   local k
+   put GA.FirstOf(1) into k
+   if k is empty then
+      put 0 into sPanX
+      put 0 into sPanY
+   else
+      put sTown[k]["x"] + 250 into sPanX
+      put sTown[k]["y"] into sPanY
+   end if
+   put 0.8 into sZoom
+   put empty into sCamWas
+end GA.Home
+
+on GA.ZoomBy pF
+   put max(kZoomMin, min(kZoomMax, sZoom * pF)) into sZoom
+end GA.ZoomBy
+
+-- arrows and W A S D scroll (faster when zoomed out); keys 65361-65364 left up right down
+on GA.PanKeys pKeys
+   local tStep
+   put kPanStep / sZoom into tStep
+   if 65361 is among the items of pKeys or 97 is among the items of pKeys or 65 is among the items of pKeys then subtract tStep from sPanX
+   if 65363 is among the items of pKeys or 100 is among the items of pKeys or 68 is among the items of pKeys then add tStep to sPanX
+   if 65362 is among the items of pKeys or 119 is among the items of pKeys or 87 is among the items of pKeys then subtract tStep from sPanY
+   if 65364 is among the items of pKeys or 115 is among the items of pKeys or 83 is among the items of pKeys then add tStep to sPanY
+   put max(-kMapW - 300, min(kMapW + 300, sPanX)) into sPanX
+   put max(-kMapH - 300, min(kMapH + 300, sPanY)) into sPanY
+end GA.PanKeys
+
+-- the engine draws the scene through its camera: the view moves the scene, not the towns.
+-- Pan = camera X/Y; zoom = camera Z (towns at kZ look sZoom times their size at kZ / sZoom).
+on GA.ApplyView
+   local tNow, k
+   put sPanX & "," & sPanY & "," & sZoom into tNow
+   if tNow is sCamWas then exit GA.ApplyView
+   put tNow into sCamWas
+   Engine.SetCam -sPanX, -sPanY, kZ / sZoom - kZ
+   repeat with k = 1 to sTownCount
+      GA.LabelTown k
+   end repeat
+end GA.ApplyView
+
+-- the mouse wheel zooms (wheel keys arrive as rawKeyDown 65308 down / 65309 up); others go on
+on rawKeyDown pKey
+   if pKey is 65309 then
+      GA.ZoomBy 1.1
+      exit rawKeyDown
+   end if
+   if pKey is 65308 then
+      GA.ZoomBy 1 / 1.1
+      exit rawKeyDown
+   end if
+   pass rawKeyDown
+end rawKeyDown
 
 -- every night: towns grow; ranks climb; the Strangeness acts; maybe something else
 on GA.Night
    local k, n, tMine, tTheirs
    add 1 to sNight
-   -- the Strangeness escalates a rank every 8 nights, the Bureau every 10
+   -- the Strangeness escalates a rank every 8 nights; the Bureau climbs by research (the economy)
    put min(7, 1 + sNight div 8) into sOtherRank
-   put min(7, 1 + sNight div 10) into sMyRank
    put 0 into tMine
    put 0 into tTheirs
    repeat with k = 1 to sTownCount
@@ -345,6 +506,7 @@ on GA.Night
          end if
       else
          add sTown[k]["grow"] to sTown[k]["people"]
+         if sTown[k]["side"] is 1 then GA.Produce k
          if sTown[k]["side"] is 1 and sTown[k]["rank"] < sMyRank then
             put sMyRank into sTown[k]["rank"]
             GA.DrawTown k
@@ -362,10 +524,43 @@ on GA.Night
    if sNight mod 3 is 0 then GA.OtherMoves
    -- the late shock: the Bureau doing well, and something in a cape arrives
    if not sHero and tMine >= sTownCount * 0.5 and sNight > 25 then GA.HeroArrives
+   -- research done: the Bureau's next rank, for every town of yours
+   if sMyRank < 7 and sResearch >= GA.ResearchCost() then
+      subtract GA.ResearchCost() from sResearch
+      add 1 to sMyRank
+      GA.Say "RESEARCH: THE BUREAU REACHES" && toUpper(GA.Rank(1, sMyRank))
+      repeat with k = 1 to sTownCount
+         if sTown[k]["side"] is 1 and sTown[k]["rank"] < sMyRank then
+            put sMyRank into sTown[k]["rank"]
+            GA.DrawTown k
+         end if
+      end repeat
+   end if
    if tTheirs is 0 and not GA.SideMoving(2) then GA.End 1
    if tMine is 0 and not GA.SideMoving(1) then GA.End 2
    if sSheet then GA.ShowSheet
 end GA.Night
+
+-- one town of yours at night: its output goes to its focus
+on GA.Produce k
+   local tOut
+   put GA.Output(k) into tOut
+   switch sTown[k]["focus"]
+      case "research"
+         add tOut to sResearch
+         break
+      case "train"
+         add tOut to sTown[k]["train"]
+         if sTown[k]["train"] >= sTown[k]["rank"] * 8 and sTown[k]["rank"] < 7 then
+            put 0 into sTown[k]["train"]
+            add 1 to sTown[k]["rank"]
+            GA.DrawTown k
+         end if
+         break
+      default
+         add tOut to sTown[k]["people"]
+   end switch
+end GA.Produce
 
 on GA.OtherMoves
    local k, j, tFrom, tBest, d, tTo, tScore
@@ -528,7 +723,7 @@ function GA.TownAt pX, pY
    local k, tXY, d, tBest, tB
    put 28 into tBest
    repeat with k = 1 to sTownCount
-      put ProjectVertex(sTown[k]["x"], sTown[k]["y"], kZ) into tXY
+      put GA.Proj(sTown[k]["x"], sTown[k]["y"]) into tXY
       if tXY is empty then next repeat
       put abs(word 1 of tXY - pX) + abs(word 2 of tXY - pY) into d
       if d < tBest then
@@ -592,7 +787,7 @@ on GA.ShowSheet
       else
          put GA.W("game_faction_labels", tSide, "Side" && tSide) after tText
       end if
-      put tab & sTown[k]["people"] & tab & GA.Rank(tSide, sTown[k]["rank"]) & tab & sTown[k]["x"] & tab & sTown[k]["y"] & tab & sTown[k]["rumour"] & cr after tText
+      put tab & sTown[k]["people"] & tab & GA.Rank(tSide, sTown[k]["rank"]) & tab & sTown[k]["x"] & tab & sTown[k]["y"] & tab & sTown[k]["rumour"] & GA.FocusTag(k) & cr after tText
    end repeat
    put cr & GA.W("game_hud_labels", 4, "TURN") && sNight & tab & GA.W("game_unit_types", 2, "group") & "s moving:" && the number of lines of the keys of sCircle after tText
    set the text of field "GASheet" to tText
@@ -616,17 +811,46 @@ on GA.ShowHUD
          add sTown[k]["people"] to tP2
       end if
    end repeat
-   put sNight & "|" & tMine & "|" & tTheirs & "|" & tP1 & "|" & tP2 & "|" & sTheme into tWords
+   put sNight & "|" & tMine & "|" & tTheirs & "|" & tP1 & "|" & tP2 & "|" & sTheme & "|" & sResearch & "|" & sMyRank & "|" & (sAdvance > 0) into tWords
    if tWords is sHUDWas then exit GA.ShowHUD
    put tWords into sHUDWas
    HUD.Set "GA.Score", GA.W("game_hud_labels", 4, "TURN") && sNight & "    " & GA.W("game_hud_labels", 1, "YOU") && tMine && "(" & tP1 & ", " & toUpper(GA.Rank(1, sMyRank)) & ")    " & \
          GA.W("game_hud_labels", 2, "OTHER") && tTheirs && "(" & tP2 & ", " & toUpper(GA.Rank(2, sOtherRank)) & ")", 10, 118, 12
-   HUD.Set "GA.Keys", GA.W("game_hud_labels", 7, "TAB: SHEET   G: WORDS   SPACE: PAUSE") & "   R: NEW WORLD", 10, 136, 10
+   if sMyRank < 7 then
+      HUD.Set "GA.Econ", "RESEARCH" && sResearch && "OF" && GA.ResearchCost() && "TO" && toUpper(GA.Rank(1, sMyRank + 1)) & "    " & GA.FocusCounts() & "    " & GA.TurnWord(), 10, 136, 11
+   else
+      HUD.Set "GA.Econ", "RESEARCH COMPLETE    " & GA.FocusCounts() & "    " & GA.TurnWord(), 10, 136, 11
+   end if
+   HUD.Set "GA.Keys", "ENTER: END TURN   1 2 3: FOCUS   ARROWS WASD: SCROLL   WHEEL + -: ZOOM   H: HOME   " & GA.W("game_hud_labels", 7, "TAB: SHEET   G: WORDS   SPACE: PAUSE") & "   R: NEW WORLD", 10, 172, 9
 end GA.ShowHUD
 
 on GA.Say pText
    HUD.Set "GA.Msg", toUpper(pText), 10, 154, 11
 end GA.Say
+
+function GA.TurnWord
+   if sAdvance > 0 then return "THE NIGHT PLAYS OUT..."
+   return "YOUR TURN: ENTER TO END IT"
+end GA.TurnWord
+
+-- how many of your towns recruit, study, train
+function GA.FocusCounts
+   local k, tR, tS, tT
+   put 0 into tR
+   put 0 into tS
+   put 0 into tT
+   repeat with k = 1 to sTownCount
+      if sTown[k]["side"] is not 1 then next repeat
+      if sTown[k]["focus"] is "research" then
+         add 1 to tS
+      else if sTown[k]["focus"] is "train" then
+         add 1 to tT
+      else
+         add 1 to tR
+      end if
+   end repeat
+   return "RECRUIT" && tR && " STUDY" && tS && " TRAIN" && tT
+end GA.FocusCounts
 
 -- test helpers: a town of a side, and where it is on screen
 function GA.FirstOf pSide
@@ -638,7 +862,7 @@ function GA.FirstOf pSide
 end GA.FirstOf
 
 function GA.ScreenOf k
-   return ProjectVertex(sTown[k]["x"], sTown[k]["y"], kZ)
+   return GA.Proj(sTown[k]["x"], sTown[k]["y"])
 end GA.ScreenOf
 
 -- test helper: what Tab does
@@ -653,10 +877,11 @@ function GA.State
       if sTown[k]["side"] is 1 then add 1 to tMine
       if sTown[k]["side"] is 2 then add 1 to tTheirs
    end repeat
-   return sNight & "|" & sTownCount & "|" & tMine & "|" & tTheirs & "|" & sTheme & "|" & sHero & "|" & sOver
+   return sNight & "|" & sTownCount & "|" & tMine & "|" & tTheirs & "|" & sTheme & "|" & sHero & "|" & sOver & "|res " & sResearch & "|rank " & sMyRank & "|adv " & sAdvance & "|view " & round(sPanX) & "," & round(sPanY) & "," & sZoom
 end GA.State
 
 on Game.OnStop
+   Engine.SetCam 0, 0, 0
    HUD.Clear
    if there is a field "GASheet" then set the visible of field "GASheet" to false
 end Game.OnStop
