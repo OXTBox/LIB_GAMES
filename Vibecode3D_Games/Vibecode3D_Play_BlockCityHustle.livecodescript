@@ -465,9 +465,8 @@ on Hust.Chase
          put "0," & Hust.Sgn(tDY) & ";" & Hust.Sgn(tDX) & ",0;" & sPatrol[tK]["dx"] & "," & sPatrol[tK]["dy"] into tWay
       end if
       put false into tTried
-      set the itemDel to ";"
-      repeat for each item tTried in tWay
-         set the itemDel to comma
+      replace ";" with cr in tWay
+      repeat for each line tTried in tWay
          if (item 1 of tTried is not 0 or item 2 of tTried is not 0) and not Hust.Solid(tPX + item 1 of tTried * tV, tPY + item 2 of tTried * tV, 12) then
             put tPX + item 1 of tTried * tV into sPatrol[tK]["x"]
             put tPY + item 2 of tTried * tV into sPatrol[tK]["y"]
@@ -475,9 +474,7 @@ on Hust.Chase
             put item 2 of tTried into sPatrol[tK]["dy"]
             exit repeat
          end if
-         set the itemDel to ";"
       end repeat
-      set the itemDel to comma
       SetObjectPosition sPatrol[tK]["key"], sPatrol[tK]["x"], sPatrol[tK]["y"], kZ
       SetObjectRotation sPatrol[tK]["key"], 0, 0, atan2(sPatrol[tK]["dy"], sPatrol[tK]["dx"])
       if abs(sPatrol[tK]["x"] - sX) < 22 and abs(sPatrol[tK]["y"] - sY) < 22 and sHurt <= 0 then
