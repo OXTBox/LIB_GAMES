@@ -5,7 +5,8 @@
 #   e.g. tools/engine_play.sh WallBreaker Wall "32:2 65363:60 0:90" C:/LIB_MCP/wall.png
 # Each key list (LiveCode key codes, comma separated; 0 = none) is held through
 # <Prefix>.TestKeys for that many 33 ms steps of real time; <Prefix>.State() is printed after
-# each. Run-time errors stop the game; they are printed from LIB_LLMIN/LIB_DEV/GAME_PLAYER_ERRORS.txt.
+# each. A step "!Handler:arg" dispatches that test handler instead (e.g. !Coast.TestLives:99).
+# Run-time errors stop the game; they are printed from LIB_LLMIN/LIB_DEV/GAME_PLAYER_ERRORS.txt.
 # Unlike headless_play.sh (engine stand-ins), this draws with the real engine: look at the snap.
 GAME="$1"; PRE="$2"; PLAN="$3"; SNAP="${4:-}"
 LCMCP="$(cd "$(dirname "$0")/../.." && pwd)/LIB_MCP/tools/lcmcp"
@@ -27,6 +28,10 @@ put "start: " & value("$PRE.State()", card 1 of stack tS) & cr into tLog
 LC
 for step in $PLAN; do
   K="${step%%:*}"; N="${step##*:}"
+  if [[ "$K" == !* ]]; then   # !Handler:arg  dispatches a test handler, e.g. !Coast.TestLives:99
+    echo "if there is a stack tS then dispatch \"${K#!}\" to card 1 of stack tS with \"$N\""
+    continue
+  fi
   cat <<LC
 if there is a stack tS then
   dispatch "$PRE.TestKeys" to card 1 of stack tS with "$K"
