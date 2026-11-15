@@ -12,7 +12,11 @@
 ## THE BALL  (owner's notes, 11 14 2026) a Big Ball of Vectors polyhedron is loose in every
 ##           maze; in the first one it waits right up the hall. It hops and rolls and LOSES
 ##           A SIDE EVERY TIME IT LANDS. Walk into it to KICK it (harder when running);
-##           E picks it up into your hands, E again kicks it. A worn-out ball shatters and
+##           F picks it up into your hands, F again kicks it straight. Q and E kick it at
+##           an angle (owner's note 11 14: Q kicks from the ball's left so it goes right, E from
+##           its right so it goes left), from the hands or when it is at your feet. The first
+##           ball RESTS ON THE FLOOR until a hero touches it (owner: "put it on the floor for
+##           their feet to interact with first"). A worn-out ball shatters and
 ##           a new one turns up in another room.
 ## MAZES     (owner's note, 11 14 2026: "make the maps procedurally ONCE") each maze is a
 ##           cellmap v2 file, LIB_BIT/editor/maps/amazing_couple_mazes/maze_NN.cellmap, made and
@@ -52,6 +56,7 @@ constant kBallHop = 4.6       -- upward speed at each bounce, units a step (peak
 constant kBallGrav = 0.12     -- units a step a step
 constant kBallRoll = 0.9      -- rolling speed along the corridors
 constant kBallColor = "#FFFFFF"
+constant kKickAngle = 0.6     -- radians off the hero's facing for a Q / E kick (about 35 degrees)
 
 local sStepMS = 33, sTicks = 0
 local sGrid, sCols, sRows, sLeft, sTop, sSeed, sMap, sTags, sMazeFile
@@ -573,6 +578,11 @@ on Couple.BallSpawn pNearStart
    put kBallHop into sBall["vh"]
    put kBallSides into sBall["sides"]
    put "loose" into sBall["state"]
+   if pNearStart is true then
+      -- the first ball sits still on the floor, whole, until a hero touches it
+      put 0 into sBall["vh"]
+      put "resting" into sBall["state"]
+   end if
    put empty into sBall["by"]
    put false into sBall["met"]
    put 0 into sBall["cool"]
@@ -591,12 +601,19 @@ on Couple.BallReshape
 end Couple.BallReshape
 
 on Couple.BallUpdate
-   local tName, dx, dz, d, tX, tZ, tYaw, tSpeed, tKeys, tE
+   local tName, dx, dz, d, tX, tZ, tYaw, tSpeed, tKeys, tF, tQ, tE
    if sBall["key"] is empty then exit Couple.BallUpdate
-   -- E, once a press: pick the ball up when near it; kick it when holding it
+   -- once a press: F picks the ball up when near it and kicks it straight when holding it;
+   -- Q kicks it angled right, E angled left
    put Couple.Keys() into tKeys
+   put (102 is among the items of tKeys or 70 is among the items of tKeys) into tF
+   put (113 is among the items of tKeys or 81 is among the items of tKeys) into tQ
    put (101 is among the items of tKeys or 69 is among the items of tKeys) into tE
-   if tE and sKeyWas["e"] is not true then Couple.BallUse
+   if tF and sKeyWas["f"] is not true then Couple.BallUse
+   if tQ and sKeyWas["q"] is not true then Couple.BallKickAngled kKickAngle
+   if tE and sKeyWas["e"] is not true then Couple.BallKickAngled -kKickAngle
+   put tF into sKeyWas["f"]
+   put tQ into sKeyWas["q"]
    put tE into sKeyWas["e"]
    if sBall["state"] is "held" then
       -- in the hands of the hero holding it, at chest height in front
@@ -606,6 +623,19 @@ on Couple.BallUpdate
       put sHero[tName]["z"] + cos(tYaw) * 18 into sBall["z"]
       SetObjectPosition sBall["key"], sBall["x"], -34, sBall["z"]
       exit Couple.BallUpdate
+   end if
+   -- resting on the floor (the first ball): still and whole until a hero touches it
+   if sBall["state"] is "resting" then
+      repeat for each item tName in "PROMPT,GLAZE"
+         put sBall["x"] - sHero[tName]["x"] into dx
+         put sBall["z"] - sHero[tName]["z"] into dz
+         if dx * dx + dz * dz < 26 * 26 then
+            put "loose" into sBall["state"]
+            put kBallHop into sBall["vh"]       -- woken: it hops from here (no landing this step)
+            exit repeat
+         end if
+      end repeat
+      if sBall["state"] is "resting" then exit Couple.BallUpdate
    end if
    -- hop: every landing costs a side
    subtract kBallGrav from sBall["vh"]
@@ -698,6 +728,40 @@ on Couple.BallUse
    end if
 end Couple.BallUse
 
+-- Q / E: kick the ball at an angle, from the hands or when it is at the feet of the hero you
+-- play. pTurn > 0 sends it to the hero's right (D turns right: yaw grows), < 0 to the left.
+on Couple.BallKickAngled pTurn
+   local dx, dz, tYaw
+   if sBall["key"] is empty then exit Couple.BallKickAngled
+   if sBall["state"] is "held" and sBall["by"] is not sActive then exit Couple.BallKickAngled
+   if sBall["state"] is not "held" then
+      put sHero[sActive]["x"] - sBall["x"] into dx
+      put sHero[sActive]["z"] - sBall["z"] into dz
+      if dx * dx + dz * dz >= 56 * 56 then exit Couple.BallKickAngled   -- out of reach
+   end if
+   put sHero[sActive]["yaw"] + pTurn into tYaw
+   if sBall["state"] is "held" then
+      put sHero[sActive]["x"] + sin(tYaw) * 30 into sBall["x"]
+      put sHero[sActive]["z"] + cos(tYaw) * 30 into sBall["z"]
+      if not Couple.BallFits(sBall["x"], sBall["z"]) then
+         put sHero[sActive]["x"] into sBall["x"]
+         put sHero[sActive]["z"] into sBall["z"]
+      end if
+      put 22 into sBall["h"]
+   end if
+   put "loose" into sBall["state"]
+   put sin(tYaw) * 5 into sBall["vx"]
+   put cos(tYaw) * 5 into sBall["vz"]
+   put 3 into sBall["vh"]
+   put 15 into sBall["cool"]
+   Couple.BallMet sActive, "KICKED"
+   if pTurn > 0 then
+      Couple.BallSay sActive && "KICKED THE BALL RIGHT"
+   else
+      Couple.BallSay sActive && "KICKED THE BALL LEFT"
+   end if
+end Couple.BallKickAngled
+
 -- the first touch of each ball counts it as found
 on Couple.BallMet pName, pHow
    if sBall["met"] is not true then
@@ -779,11 +843,11 @@ on Couple.ShowHUD
    end if
    HUD.Set "Couple.Who", "PLAYING " & sActive & "   (TAB: " & tOther & ")", gViewLeft + 20, gViewBottom - 78, 14
    HUD.Set "Couple.Skills", sHero[sActive]["skills"], gViewLeft + 20, gViewBottom - 56, 11
-   HUD.Set "Couple.Help", "W S WALK   SHIFT RUN   A D TURN   E BALL   FIND THE GOLD BEACON", gViewLeft + 20, gViewBottom - 30, 11
+   HUD.Set "Couple.Help", "W S WALK   SHIFT RUN   A D TURN   F BALL   Q E ANGLED KICK   FIND THE GOLD BEACON", gViewLeft + 20, gViewBottom - 30, 11
    if sBall["state"] is "held" then
-      HUD.Set "Couple.Ball", sBall["by"] && "HOLDS THE BALL (" & sBall["sides"] && "SIDES)   E: KICK IT   FOUND" && sBallFound && "  WORN OUT" && sBallLost, gViewLeft + 20, gViewBottom - 100, 12
+      HUD.Set "Couple.Ball", sBall["by"] && "HOLDS THE BALL (" & sBall["sides"] && "SIDES)   F: KICK IT   Q E: KICK RIGHT LEFT   FOUND" && sBallFound && "  WORN OUT" && sBallLost, gViewLeft + 20, gViewBottom - 100, 12
    else
-      HUD.Set "Couple.Ball", "THE BALL IS LOOSE:" && sBall["sides"] && "SIDES LEFT   WALK INTO IT TO KICK, E TO PICK UP   FOUND" && sBallFound && "  WORN OUT" && sBallLost, gViewLeft + 20, gViewBottom - 100, 12
+      HUD.Set "Couple.Ball", "THE BALL IS LOOSE:" && sBall["sides"] && "SIDES LEFT   WALK INTO IT TO KICK, F TO PICK UP, Q E ANGLED   FOUND" && sBallFound && "  WORN OUT" && sBallLost, gViewLeft + 20, gViewBottom - 100, 12
    end if
    if sBallMsgUntil is a number and sTicks < sBallMsgUntil then
       HUD.Set "Couple.BallMsg", sBallMsg, gViewLeft + 20, gViewTop + 170, 16
