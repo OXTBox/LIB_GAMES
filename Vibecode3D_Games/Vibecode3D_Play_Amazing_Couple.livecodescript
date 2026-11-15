@@ -14,7 +14,12 @@
 ##           A SIDE EVERY TIME IT LANDS. Walk into it to KICK it (harder when running);
 ##           E picks it up into your hands, E again kicks it. A worn-out ball shatters and
 ##           a new one turns up in another room.
-## NEEDS     ../LIB_BIT, ../LIB_MAP and ../LIB_MOCAP/library (the clips named below).
+## MAZES     (owner's note, 11 14 2026: "make the maps procedurally ONCE") each maze is a
+##           cellmap v2 file, LIB_BIT/editor/maps/amazing_couple_mazes/maze_NN.cellmap, made and
+##           checked by LIB_GAMES/tools/couple_mazes.py. The walls are DRAWN from that file
+##           (CellMap.LevelSegments) and BLOCK from that file (its heights), so what you see is
+##           what stops you. Open one in the BitEditor to change it. No file: the old built maze.
+## NEEDS     ../LIB_BIT (+ editor/livecode/lib_cellmap), ../LIB_MAP and ../LIB_MOCAP/library.
 ######################################################################################
 
 global gObjectTransforms, gSceneObjects
@@ -49,7 +54,8 @@ constant kBallRoll = 0.9      -- rolling speed along the corridors
 constant kBallColor = "#FFFFFF"
 
 local sStepMS = 33, sTicks = 0
-local sGrid, sCols, sRows, sLeft, sTop, sSeed
+local sGrid, sCols, sRows, sLeft, sTop, sSeed, sMap, sTags, sMazeFile
+constant kMazeFiles = 12      -- maze_01 .. maze_12, then round again
 local sClip          -- [clip name][frames|fps|travel]; meshes "Couple.<clip>.<n>"
 local sHero          -- [PROMPT|GLAZE][key|x|z|yaw|anim|frame|speed|color|path|pathTo|skills|walk|idle|run]
 local sActive        -- "PROMPT" or "GLAZE"
@@ -125,7 +131,7 @@ end Collision.Hit
 
 on Couple.LoadLibraries
    local tLib, tName
-   repeat for each item tName in "LIB_BIT/livecode/lib_bit.livecodescript,LIB_MAP/livecode/lib_map.livecodescript"
+   repeat for each item tName in "LIB_BIT/livecode/lib_bit.livecodescript,LIB_MAP/livecode/lib_map.livecodescript,LIB_BIT/editor/livecode/lib_cellmap.livecodescript"
       put Couple.FindFile(tName) into tLib
       if tLib is empty then
          put "COUPLE: NOT FOUND " & toUpper(tName) into sError
@@ -133,6 +139,8 @@ on Couple.LoadLibraries
       end if
       start using stack tLib
    end repeat
+   put Couple.FindFile("LIB_BIT/editor/data/tags_default.txt") into tLib
+   if tLib is not empty then put CellMap.TagsFromText(CellMap.ReadText(tLib)) into sTags
 end Couple.LoadLibraries
 
 -- walk and idle stick clips from LIB_MOCAP; one engine mesh per frame
@@ -216,13 +224,21 @@ on Couple.NewMaze
    HUD.Clear
    put empty into sNextMazeAt
    put empty into sMsgUntil
-   put Bit.Maze(kRooms, kRooms, sSeed) into sGrid
-   put the number of chars of line 1 of sGrid into sCols
-   put the number of lines of sGrid into sRows
+   put "maze_" & format("%02d", ((sSeed - 1) mod kMazeFiles) + 1) & ".cellmap" into tName
+   put Couple.FindFile("LIB_BIT/editor/maps/amazing_couple_mazes/" & tName) into sMazeFile
+   if sMazeFile is not empty and sTags is an array then
+      Couple.MazeFromFile
+   else
+      -- no file: the maze built here, as before
+      put empty into sMazeFile
+      put Bit.Maze(kRooms, kRooms, sSeed) into sGrid
+      put the number of chars of line 1 of sGrid into sCols
+      put the number of lines of sGrid into sRows
+      Mesh.Define "Couple.Walls", Couple.SegmentsToMesh(Map.BlockEdges(sGrid, kCell, kWallH, false))
+      Mesh.Define "Couple.Floor", Couple.SegmentsToMesh(Map.BlockEdges(Bit.Blank(sCols, sRows), kCell, 0, true))
+   end if
    put -sCols * kCell / 2 into sLeft
    put sRows * kCell / 2 into sTop
-   Mesh.Define "Couple.Walls", Couple.SegmentsToMesh(Map.BlockEdges(sGrid, kCell, kWallH, false))
-   Mesh.Define "Couple.Floor", Couple.SegmentsToMesh(Map.BlockEdges(Bit.Blank(sCols, sRows), kCell, 0, true))
    get Entity.Spawn("Couple.Floor", 0, 0, 0, "#1F4A5A")
    get Entity.Spawn("Couple.Walls", 0, 0, 0, "#7FA8FF")
    -- the beacon: far corner room
@@ -240,6 +256,52 @@ on Couple.NewMaze
    Couple.BallSpawn (sSeed is 1)   -- the first maze: right up the hall
    Couple.Camera true
 end Couple.NewMaze
+
+-- the maze from its file: the grid the heroes collide with comes from the file's heights
+-- (a full wall is floor 100+), and the lines you see come from the same file
+on Couple.MazeFromFile
+   local tR, tC, tLine, tSeg, tE, tMesh, tIndex, tA, tB, tClass
+   put CellMap.Read(sMazeFile) into sMap
+   CellMap.Upgrade sMap
+   put sMap["meta"]["cols"] into sCols
+   put sMap["meta"]["rows"] into sRows
+   put empty into sGrid
+   repeat with tR = 1 to sRows
+      put empty into tLine
+      repeat with tC = 1 to sCols
+         if sMap["floor"][tR][tC] >= 100 or sMap["floor"][tR][tC] <= 0 then
+            put "1" after tLine
+         else
+            put "0" after tLine
+         end if
+      end repeat
+      put tLine & return after sGrid
+   end repeat
+   delete the last char of sGrid
+   put Mesh.New() into tMesh["wall"]
+   put Mesh.New() into tMesh["floor"]
+   repeat for each line tSeg in CellMap.LevelSegments(sMap, sTags, empty)
+      put item 7 of tSeg into tClass
+      if tClass is not "wall" then put "floor" into tClass
+      put CellMap.SegToEngine(sMap, tSeg) into tE
+      -- map space has y up; the engine has up = -Y
+      put Couple.MeshPoint(tMesh[tClass], tIndex[tClass], item 1 of tE, -(item 2 of tE), item 3 of tE) into tA
+      put Couple.MeshPoint(tMesh[tClass], tIndex[tClass], item 4 of tE, -(item 5 of tE), item 6 of tE) into tB
+      Mesh.AddLine tMesh[tClass], tA, tB
+   end repeat
+   Mesh.Define "Couple.Walls", tMesh["wall"]
+   Mesh.Define "Couple.Floor", tMesh["floor"]
+end Couple.MazeFromFile
+
+function Couple.MeshPoint @pMesh, @pIndex, pX, pY, pZ
+   local tKey
+   put pX & "," & pY & "," & pZ into tKey
+   if pIndex[tKey] is empty then
+      Mesh.AddVertex pMesh, pX, pY, pZ
+      put the result into pIndex[tKey]
+   end if
+   return pIndex[tKey]
+end Couple.MeshPoint
 
 -- facing the open neighbour of the first room
 function Couple.FirstHeading
