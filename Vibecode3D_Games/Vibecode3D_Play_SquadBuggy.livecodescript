@@ -14,6 +14,11 @@
 ##           and the bombs too. Lose all three soldiers: a life, and back to the last flag
 ##           with a fresh squad. At a flag, stay near it for 20 seconds while they come from
 ##           both sides. 3 flags a level, 5 levels.
+##           Buildings and water towers stand along the course. While one is ahead of you,
+##           snipers on its roof fire at the buggy (shoot them, or shoot their rounds down),
+##           and that is when the bombers come in from BEHIND: two directions at once.
+## (owner's notes of 15 Nov 8:16 PM: buildings, water towers, enemies on them ahead,
+##  attack by air from behind)
 ######################################################################################
 
 global gObjectTransforms, gSceneObjects
@@ -26,6 +31,8 @@ local sBonus, sESpeed, sKeysWas, sTestKeys, sHUDWas, sTicks
 local sY, sVY, sAir, sAng                    -- the buggy's height, climb, in the air, tilt
 local sCrater, sCraterN, sFly, sFlyN, sBomb, sBombN, sNextFly
 local sRet, sAimX, sAimH, sFireT, sTestAim, sTestMouse, sJumped, sFired
+local sTower, sSnipe, sSnipeN, sNoSnipe, sBehind, sWarned  -- buildings, roof snipers
+local sMove                                              -- how fast you drive this step
 
 constant kZ = 300            -- screen scale 300/z: 1 unit = 1 pixel
 constant kBase = 230
@@ -39,6 +46,9 @@ constant kJumpV = 6.2        -- up to about 100 high, two seconds in the air
 constant kCraterR = 52       -- a bomb's crater: half width
 constant kCraterD = 38       -- and depth (craters on craters dig deeper, to 70)
 constant kShotV = 22
+constant kTowerGap = 1100    -- about this far between buildings and water towers
+constant kSnipeRange = 620   -- snipers fire while their roof is this near ahead
+constant kRoundV = 4.2       -- a sniper's round: slow enough to shoot down or dodge
 
 on Game.OnStart
    focus on nothing
@@ -54,6 +64,7 @@ on Game.OnStart
    put 0 into sTicks
    put false into sJumped
    put false into sFired
+   put false into sNoSnipe
    Squad.StartLevel 1
 end Game.OnStart
 
@@ -79,6 +90,9 @@ on Squad.StartLevel pLevel
    Mesh.Define "Squad.Flyer", Squad.FlyerMesh()
    Mesh.Define "Squad.Bomb", MeshBox(6, 8, 6)
    Mesh.Define "Squad.Reticle", Squad.ReticleMesh()
+   Mesh.Define "Squad.Sniper", Squad.ManMesh("aim")
+   Mesh.Define "Squad.Round", MeshBox(5, 5, 5)
+   put empty into sTower
    put empty into sSlice
    repeat with i = 0 to kSlices
       put empty into sSlice[i]["type"]
@@ -123,6 +137,17 @@ on Squad.Restart pX
    put 0 into sBombN
    put empty into sCrater
    put 0 into sCraterN
+   repeat for each key tK in sTower
+      if sTower[tK]["key"] is not empty then Entity.Kill sTower[tK]["key"]
+   end repeat
+   put empty into sTower
+   repeat for each key tK in sSnipe
+      Entity.Kill sSnipe[tK]["key"]
+   end repeat
+   put empty into sSnipe
+   put 0 into sSnipeN
+   put 0 into sBehind
+   put false into sWarned
    repeat for each key tK in sMan
       if sMan[tK]["key"] is not empty then Entity.Kill sMan[tK]["key"]
    end repeat
@@ -147,10 +172,15 @@ on Squad.Restart pX
    put max(150, 270 - sLevel * 30) into sNextFly
 end Squad.Restart
 
+-- the hills before any bomb
+function Squad.Hill pX
+   return 70 + 45 * sin(pX / 420) + 22 * sin(pX / 170 + 1) + 10 * sin(pX / 61)
+end Squad.Hill
+
 -- the hills, less what the bombs dug out
 function Squad.H pX
    local tH, tK, tD, tDig
-   put 70 + 45 * sin(pX / 420) + 22 * sin(pX / 170 + 1) + 10 * sin(pX / 61) into tH
+   put Squad.Hill(pX) into tH
    put 0 into tDig
    repeat for each key tK in sCrater
       put abs(pX - sCrater[tK]) into tD
@@ -209,6 +239,13 @@ function Squad.ManMesh pPose
          Squad.Poly tM, "0,-18|10,-20"
          Squad.Poly tM, "4,-22|26,-26"
          break
+      case "aim"
+         Squad.Poly tM, "-5,0|0,-14|5,0"
+         Squad.Poly tM, "0,-14|0,-28"
+         Squad.Poly tM, "-4,-28|-4,-36|4,-36|4,-28|-4,-28"
+         Squad.Poly tM, "0,-23|-16,-26"
+         Squad.Poly tM, "-16,-27|-22,-28"
+         break
       case "walk"
          Squad.Poly tM, "-6,0|0,-14|6,0"
          Squad.Poly tM, "0,-14|0,-28"
@@ -237,6 +274,39 @@ function Squad.FlyerMesh
    Squad.Poly tM, "-22,-2|-14,-2"
    return tM
 end Squad.FlyerMesh
+
+-- a building: pW wide, pH high, a parapet, rows of windows; it stands on 0,0 (its middle,
+-- at the ground) and reaches 60 below so it never floats over a dip
+function Squad.BuildingMesh pW, pH
+   local tM, tX, tY, w
+   put Mesh.New() into tM
+   put pW / 2 into w
+   Squad.Poly tM, -w & ",60|" & -w & "," & -pH & "|" & w & "," & -pH & "|" & w & ",60"
+   Squad.Poly tM, -w - 4 & "," & -pH & "|" & -w - 4 & "," & -pH - 6 & "|" & w + 4 & "," & -pH - 6 & "|" & w + 4 & "," & -pH
+   repeat with tY = 22 to pH - 20 step 26
+      repeat with tX = -w + 10 to w - 22 step 22
+         Squad.Poly tM, tX & "," & -tY & "|" & tX + 10 & "," & -tY & "|" & tX + 10 & "," & -tY - 12 & "|" & tX & "," & -tY - 12 & "|" & tX & "," & -tY
+      end repeat
+   end repeat
+   return tM
+end Squad.BuildingMesh
+
+-- a water tower: four legs (two seen) with braces, the tank, a cone roof; it stands on 0,0
+function Squad.TowerMesh pH
+   local tM, tLeg
+   put Mesh.New() into tM
+   put pH - 50 into tLeg
+   Squad.Poly tM, "-26,60|-20," & -tLeg
+   Squad.Poly tM, "26,60|20," & -tLeg
+   Squad.Poly tM, "-24," & -tLeg * 0.3 & "|22," & -tLeg * 0.7
+   Squad.Poly tM, "24," & -tLeg * 0.3 & "|-22," & -tLeg * 0.7
+   Squad.Poly tM, "-24," & -tLeg * 0.3 & "|24," & -tLeg * 0.3
+   Squad.Poly tM, "-22," & -tLeg * 0.7 & "|22," & -tLeg * 0.7
+   Squad.Poly tM, "-30," & -tLeg & "|30," & -tLeg & "|30," & -pH + 8 & "|-30," & -pH + 8 & "|-30," & -tLeg
+   Squad.Poly tM, "-30," & -pH + 22 & "|30," & -pH + 22
+   Squad.Poly tM, "-32," & -pH + 8 & "|0," & -pH - 6 & "|32," & -pH + 8
+   return tM
+end Squad.TowerMesh
 
 -- the gun's sight: a ring with four ticks
 function Squad.ReticleMesh
@@ -326,6 +396,7 @@ on Game.OnUpdate
    put 0 into tMove
    if Squad.Down(65363, tKeys) or Squad.Down(100, tKeys) then put sV into tMove
    if Squad.Down(65361, tKeys) or Squad.Down(97, tKeys) then put -sV * 0.6 into tMove
+   put tMove into sMove
    Squad.Drive tMove, tJump
    Squad.ShowBuggy
    -- the squad: riding, or lying where they fell
@@ -348,7 +419,10 @@ on Game.OnUpdate
       end if
    end repeat
    Squad.Ground
+   Squad.Towers
    Squad.Enemies
+   if sOver then exit Game.OnUpdate
+   Squad.Snipers
    if sOver then exit Game.OnUpdate
    Squad.Aim
    Squad.Flyers
@@ -663,10 +737,25 @@ on Squad.Shots
          repeat for each key tK in sBomb
             if tHit then exit repeat
             if (sBomb[tK]["x"] - sShot[tS]["x"]) ^ 2 + (sBomb[tK]["h"] - sShot[tS]["h"]) ^ 2 < 400 then
-               Squad.Blast sBomb[tK]["x"], sBomb[tK]["h"], false
+               if sBomb[tK]["round"] is true then
+                  FX.Sparks Squad.SX(sBomb[tK]["x"]), kBase - sBomb[tK]["h"], kZ, 6, "255,255,255"
+               else
+                  Squad.Blast sBomb[tK]["x"], sBomb[tK]["h"], false
+               end if
                Entity.Kill sBomb[tK]["key"]
                delete variable sBomb[tK]
                add 20 to sScore
+               put true into tHit
+            end if
+         end repeat
+         repeat for each key tK in sSnipe
+            if tHit then exit repeat
+            if abs(sSnipe[tK]["x"] - sShot[tS]["x"]) < 14 and sShot[tS]["h"] - sSnipe[tK]["h"] < 40 and sShot[tS]["h"] - sSnipe[tK]["h"] > -6 then
+               FX.Sparks Squad.SX(sSnipe[tK]["x"]), kBase - sSnipe[tK]["h"] - 18, kZ, 12, "200,80,255"
+               Entity.Kill sSnipe[tK]["key"]
+               delete variable sSnipe[tK]
+               add 75 to sScore
+               Squad.Say "SNIPER DOWN! +75"
                put true into tHit
             end if
          end repeat
@@ -717,11 +806,18 @@ end Squad.Shots
 on Squad.Flyers
    local tK, tT, tLand, tSide
    subtract 1 from sNextFly
+   -- snipers up ahead: the bombers come soon, and from behind
+   if Squad.SnipersAhead() > 0 and sNextFly > 120 and sNextFly < 1e8 then put 75 + random(45) into sNextFly
    if sNextFly <= 0 then
       put max(110, 300 - sLevel * 35) + random(90) into sNextFly
-      if the number of lines of the keys of sFly < min(3, sLevel) then
+      if the number of lines of the keys of sFly < min(3, sLevel) or (Squad.SnipersAhead() > 0 and the number of lines of the keys of sFly < min(3, sLevel + 1)) then
          put 1 into tSide
          if random(10) <= 3 then put -1 into tSide
+         if Squad.SnipersAhead() > 0 then
+            put -1 into tSide
+            add 1 to sBehind
+            Squad.Say "BOMBERS BEHIND YOU!"
+         end if
          if tSide is 1 then
             Squad.AddFlyer sX + 720, -(2 + 0.3 * sLevel)
          else
@@ -776,12 +872,26 @@ end Squad.AddBomb
 on Squad.Bombs
    local tK
    repeat for each key tK in sBomb
-      subtract kGrav from sBomb[tK]["vh"]
+      if sBomb[tK]["round"] is not true then subtract kGrav from sBomb[tK]["vh"]
       add sBomb[tK]["vx"] to sBomb[tK]["x"]
       add sBomb[tK]["vh"] to sBomb[tK]["h"]
       SetObjectPosition sBomb[tK]["key"], Squad.SX(sBomb[tK]["x"]), kBase - sBomb[tK]["h"], kZ
       SetObjectRotation sBomb[tK]["key"], 0, 0, sTicks / 4
-      if abs(sBomb[tK]["x"] - sX) < 36 and sBomb[tK]["h"] - sY < 44 and sBomb[tK]["h"] - sY > -8 then
+      if sBomb[tK]["round"] is true then
+         -- a sniper's round: it hits the buggy, the ground, or flies on out
+         subtract 1 from sBomb[tK]["life"]
+         if abs(sBomb[tK]["x"] - sX) < 40 and sBomb[tK]["h"] - sY < 50 and sBomb[tK]["h"] - sY > -6 then
+            FX.Sparks Squad.SX(sBomb[tK]["x"]), kBase - sBomb[tK]["h"], kZ, 10, "255,255,255"
+            Squad.ThrowOff true
+            if sMsg is not "MAN OVERBOARD! STOP BESIDE HIM" then
+               Squad.Say "SNIPER HIT!"
+            end if
+         else if sBomb[tK]["h"] <= Squad.H(sBomb[tK]["x"]) or sBomb[tK]["life"] <= 0 then
+            FX.Sparks Squad.SX(sBomb[tK]["x"]), kBase - sBomb[tK]["h"], kZ, 4, "200,200,200"
+         else
+            next repeat
+         end if
+      else if abs(sBomb[tK]["x"] - sX) < 36 and sBomb[tK]["h"] - sY < 44 and sBomb[tK]["h"] - sY > -8 then
          Squad.Blast sBomb[tK]["x"], sBomb[tK]["h"], true
       else if sBomb[tK]["h"] <= Squad.H(sBomb[tK]["x"]) then
          Squad.Blast sBomb[tK]["x"], Squad.H(sBomb[tK]["x"]), true
@@ -818,6 +928,147 @@ on Squad.Blast pX, pH, pDig
       Squad.ThrowOff true
    end if
 end Squad.Blast
+
+-------------------------------------------------------------------- buildings and snipers
+-- Where they stand is fixed by the course (the same every ride): about every kTowerGap,
+-- never near a flag. Slot n's place and kind come from a sine hash of n.
+function Squad.TowerSlot pN
+   local tX, tR
+   if pN < 1 then return empty
+   put pN * kTowerGap + 700 + round(260 * sin(pN * 12.9898)) into tX
+   if abs(tX - round(tX / kFlagGap) * kFlagGap) < 260 then return empty
+   put abs(sin(pN * 78.233)) into tR
+   if tR < 0.45 then return tX & ",w"
+   return tX & ",b"
+end Squad.TowerSlot
+
+on Squad.MakeTower pTw, pX, pKind
+   local tW, tH, tName
+   put pX into sTower[pTw]["x"]
+   put pKind into sTower[pTw]["kind"]
+   if pKind is "w" then
+      put 150 + (round(pX) mod 3) * 20 into tH
+      put "Squad.Tower" & tH into tName
+      if sTower["defined"][tName] is empty then Mesh.Define tName, Squad.TowerMesh(tH)
+      put 28 into tW
+   else
+      put 90 + (round(pX) mod 4) * 18 into tH
+      put 90 + (round(pX / 7) mod 3) * 22 into tW
+      put "Squad.Bld" & tW & "x" & tH into tName
+      if sTower["defined"][tName] is empty then Mesh.Define tName, Squad.BuildingMesh(tW, tH)
+      put tW / 2 - 8 into tW
+   end if
+   put true into sTower["defined"][tName]
+   put Squad.Hill(pX) into sTower[pTw]["ground"]
+   put Squad.Hill(pX) + tH into sTower[pTw]["roof"]
+   put tW into sTower[pTw]["half"]
+   put Entity.Spawn(tName, Squad.SX(pX), kBase - sTower[pTw]["ground"], kZ + 2, "90,150,190") into sTower[pTw]["key"]
+end Squad.MakeTower
+
+-- pN snipers on roof pTw (none behind you, none when quiet)
+on Squad.ManTower pTw, pN
+   local i, tX
+   repeat with i = 1 to pN
+      add 1 to sSnipeN
+      put sTower[pTw]["x"] + (i - (pN + 1) / 2) * sTower[pTw]["half"] into tX
+      put tX into sSnipe[sSnipeN]["x"]
+      put sTower[pTw]["roof"] into sSnipe[sSnipeN]["h"]
+      put pTw into sSnipe[sSnipeN]["tower"]
+      put 40 + random(50) into sSnipe[sSnipeN]["wait"]
+      put Entity.Spawn("Squad.Sniper", Squad.SX(tX), kBase - sSnipe[sSnipeN]["h"], kZ + 1, "200,80,255") into sSnipe[sSnipeN]["key"]
+   end repeat
+end Squad.ManTower
+
+-- buildings come into view ahead (manned), and go when far behind
+on Squad.Towers
+   local tN, tSlot, tI, tK
+   repeat with tN = max(0, (sX - 600) div kTowerGap) to (sX + 900) div kTowerGap + 1
+      put Squad.TowerSlot(tN) into tSlot
+      if tSlot is empty then next repeat
+      put "s" & tN into tI
+      if tI is among the keys of sTower then next repeat
+      if item 1 of tSlot < sX - 500 or item 1 of tSlot > sX + 850 then next repeat
+      Squad.MakeTower tI, item 1 of tSlot, item 2 of tSlot
+      if item 1 of tSlot > sX + 300 and not sNoSnipe then
+         put 1 into tK
+         if sLevel >= 3 then add 1 to tK
+         if sLevel >= 5 then add 1 to tK
+         Squad.ManTower tI, tK
+      end if
+   end repeat
+   repeat for each key tK in sTower
+      if tK is "defined" then next repeat
+      if sTower[tK]["x"] < sX - 700 or sTower[tK]["x"] > sX + 1200 then
+         Entity.Kill sTower[tK]["key"]
+         delete variable sTower[tK]
+         next repeat
+      end if
+      SetObjectPosition sTower[tK]["key"], Squad.SX(sTower[tK]["x"]), kBase - sTower[tK]["ground"], kZ + 2
+   end repeat
+end Squad.Towers
+
+-- snipers on a roof ahead aim at the buggy and fire slow rounds at where it will be
+on Squad.Snipers
+   local tK, tDX, tDH, tD, tT
+   repeat for each key tK in sSnipe
+      put sSnipe[tK]["x"] into tDX
+      if tDX < sX - 700 or tDX > sX + 1200 then
+         Entity.Kill sSnipe[tK]["key"]
+         delete variable sSnipe[tK]
+         next repeat
+      end if
+      SetObjectPosition sSnipe[tK]["key"], Squad.SX(tDX), kBase - sSnipe[tK]["h"], kZ + 1
+      if tDX - sX < 60 or tDX - sX > kSnipeRange then next repeat
+      if not sWarned then
+         put true into sWarned
+         Squad.Say "SNIPERS ON THE ROOF AHEAD!"
+      end if
+      subtract 1 from sSnipe[tK]["wait"]
+      if sSnipe[tK]["wait"] > 0 then next repeat
+      put max(55, 120 - sLevel * 10) + random(50) into sSnipe[tK]["wait"]
+      -- lead the buggy by how fast it is going
+      put tDX - 28 into tDX
+      put sSnipe[tK]["h"] + 26 into tDH
+      put (sX + sMove * 0.8 * abs(tDX - sX) / kRoundV) - tDX into tT
+      put (sY + 22) - tDH into tD
+      put sqrt(tT ^ 2 + tD ^ 2) into tDH
+      if tDH < 1 then next repeat
+      Squad.AddBomb tDX, sSnipe[tK]["h"] + 26, tT / tDH * kRoundV
+      put true into sBomb[sBombN]["round"]
+      put tD / tDH * kRoundV into sBomb[sBombN]["vh"]
+      put 220 into sBomb[sBombN]["life"]
+      Entity.Kill sBomb[sBombN]["key"]
+      put Entity.Spawn("Squad.Round", Squad.SX(tDX), kBase - sSnipe[tK]["h"] - 26, kZ, "255,255,255") into sBomb[sBombN]["key"]
+   end repeat
+end Squad.Snipers
+
+-- snipers on a roof that is ahead and in range
+function Squad.SnipersAhead
+   local tK, tN
+   put 0 into tN
+   repeat for each key tK in sSnipe
+      if sSnipe[tK]["x"] - sX >= 60 and sSnipe[tK]["x"] - sX <= kSnipeRange then add 1 to tN
+   end repeat
+   return tN
+end Squad.SnipersAhead
+
+function Squad.TowersNear
+   local tK, tN
+   put 0 into tN
+   repeat for each key tK in sTower
+      if tK is not "defined" then add 1 to tN
+   end repeat
+   return tN
+end Squad.TowersNear
+
+function Squad.Rounds
+   local tK, tN
+   put 0 into tN
+   repeat for each key tK in sBomb
+      if sBomb[tK]["round"] is true then add 1 to tN
+   end repeat
+   return tN
+end Squad.Rounds
 
 -- the flag: reach it, then stay near it while the clock runs
 on Squad.Flags
@@ -900,6 +1151,7 @@ function Squad.State
       put "|m" & i && sMan[i]["state"] after tS
    end repeat
    put "|air " & sAir & "|up " & round(sY - Squad.H(sX)) & "|bombers " & the number of lines of the keys of sFly & "|bombs " & the number of lines of the keys of sBomb & "|craters " & the number of lines of the keys of sCrater after tS
+   put "|towers " & Squad.TowersNear() & "|snipers " & the number of lines of the keys of sSnipe & "|rounds " & Squad.Rounds() & "|behind " & sBehind after tS
    return tS
 end Squad.State
 
@@ -936,7 +1188,43 @@ end Squad.TestCrater
 on Squad.TestQuiet
    put 1e9 into sNextEnemy
    put 1e9 into sNextFly
+   put true into sNoSnipe
 end Squad.TestQuiet
+
+-- a building (pKind "b") or a water tower ("w") pDX ahead, with pN snipers on it
+on Squad.TestTower pDX, pKind, pN
+   local tI
+   put "t" & (the number of lines of the keys of sTower + 1000) into tI
+   Squad.MakeTower tI, sX + pDX, pKind
+   put false into sNoSnipe
+   Squad.ManTower tI, pN
+end Squad.TestTower
+
+on Squad.TestNoSnipe pFlag
+   put pFlag into sNoSnipe
+end Squad.TestNoSnipe
+
+on Squad.TestFlyTimer pN
+   put pN into sNextFly
+end Squad.TestFlyTimer
+
+-- the first sniper's place "x,h" (course x, height)
+function Squad.SniperAt
+   local tK
+   repeat for each key tK in sSnipe
+      return sSnipe[tK]["x"] & comma & sSnipe[tK]["h"]
+   end repeat
+   return empty
+end Squad.SniperAt
+
+-- the course x of the bomber that flies the furthest behind the buggy, or empty
+function Squad.FlyerXs
+   local tK, tOut
+   repeat for each key tK in sFly
+      put round(sFly[tK]["x"] - sX) & comma & round(sFly[tK]["vx"], 1) & cr after tOut
+   end repeat
+   return tOut
+end Squad.FlyerXs
 
 function Squad.GroundAt pDX
    return Squad.H(sX + pDX)
