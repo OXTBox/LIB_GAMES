@@ -12,9 +12,18 @@
 ## THE BALL  (owner's notes, 11 14 2026) a Big Ball of Vectors polyhedron is loose in every
 ##           maze; in the first one it waits right up the hall. It hops and rolls and LOSES
 ##           A SIDE EVERY TIME IT LANDS. Walk into it to KICK it (harder when running);
-##           E picks it up into your hands, E again kicks it. A worn-out ball shatters and
+##           F picks it up into your hands, F again kicks it straight. Q and E kick it at
+##           an angle (owner's note 11 14: Q kicks from the ball's left so it goes right, E from
+##           its right so it goes left), from the hands or when it is at your feet. The first
+##           ball RESTS ON THE FLOOR until a hero touches it (owner: "put it on the floor for
+##           their feet to interact with first"). A worn-out ball shatters and
 ##           a new one turns up in another room.
-## NEEDS     ../LIB_BIT, ../LIB_MAP and ../LIB_MOCAP/library (the clips named below).
+## MAZES     (owner's note, 11 14 2026: "make the maps procedurally ONCE") each maze is a
+##           cellmap v2 file, LIB_BIT/editor/maps/amazing_couple_mazes/maze_NN.cellmap, made and
+##           checked by LIB_GAMES/tools/couple_mazes.py. The walls are DRAWN from that file
+##           (CellMap.LevelSegments) and BLOCK from that file (its heights), so what you see is
+##           what stops you. Open one in the BitEditor to change it. No file: the old built maze.
+## NEEDS     ../LIB_BIT (+ editor/livecode/lib_cellmap), ../LIB_MAP and ../LIB_MOCAP/library.
 ######################################################################################
 
 global gObjectTransforms, gSceneObjects
@@ -47,9 +56,11 @@ constant kBallHop = 4.6       -- upward speed at each bounce, units a step (peak
 constant kBallGrav = 0.12     -- units a step a step
 constant kBallRoll = 0.9      -- rolling speed along the corridors
 constant kBallColor = "#FFFFFF"
+constant kKickAngle = 0.6     -- radians off the hero's facing for a Q / E kick (about 35 degrees)
 
 local sStepMS = 33, sTicks = 0
-local sGrid, sCols, sRows, sLeft, sTop, sSeed
+local sGrid, sCols, sRows, sLeft, sTop, sSeed, sMap, sTags, sMazeFile
+constant kMazeFiles = 12      -- maze_01 .. maze_12, then round again
 local sClip          -- [clip name][frames|fps|travel]; meshes "Couple.<clip>.<n>"
 local sHero          -- [PROMPT|GLAZE][key|x|z|yaw|anim|frame|speed|color|path|pathTo|skills|walk|idle|run]
 local sActive        -- "PROMPT" or "GLAZE"
@@ -125,7 +136,7 @@ end Collision.Hit
 
 on Couple.LoadLibraries
    local tLib, tName
-   repeat for each item tName in "LIB_BIT/livecode/lib_bit.livecodescript,LIB_MAP/livecode/lib_map.livecodescript"
+   repeat for each item tName in "LIB_BIT/livecode/lib_bit.livecodescript,LIB_MAP/livecode/lib_map.livecodescript,LIB_BIT/editor/livecode/lib_cellmap.livecodescript"
       put Couple.FindFile(tName) into tLib
       if tLib is empty then
          put "COUPLE: NOT FOUND " & toUpper(tName) into sError
@@ -133,6 +144,8 @@ on Couple.LoadLibraries
       end if
       start using stack tLib
    end repeat
+   put Couple.FindFile("LIB_BIT/editor/data/tags_default.txt") into tLib
+   if tLib is not empty then put CellMap.TagsFromText(CellMap.ReadText(tLib)) into sTags
 end Couple.LoadLibraries
 
 -- walk and idle stick clips from LIB_MOCAP; one engine mesh per frame
@@ -216,13 +229,21 @@ on Couple.NewMaze
    HUD.Clear
    put empty into sNextMazeAt
    put empty into sMsgUntil
-   put Bit.Maze(kRooms, kRooms, sSeed) into sGrid
-   put the number of chars of line 1 of sGrid into sCols
-   put the number of lines of sGrid into sRows
+   put "maze_" & format("%02d", ((sSeed - 1) mod kMazeFiles) + 1) & ".cellmap" into tName
+   put Couple.FindFile("LIB_BIT/editor/maps/amazing_couple_mazes/" & tName) into sMazeFile
+   if sMazeFile is not empty and sTags is an array then
+      Couple.MazeFromFile
+   else
+      -- no file: the maze built here, as before
+      put empty into sMazeFile
+      put Bit.Maze(kRooms, kRooms, sSeed) into sGrid
+      put the number of chars of line 1 of sGrid into sCols
+      put the number of lines of sGrid into sRows
+      Mesh.Define "Couple.Walls", Couple.SegmentsToMesh(Map.BlockEdges(sGrid, kCell, kWallH, false))
+      Mesh.Define "Couple.Floor", Couple.SegmentsToMesh(Map.BlockEdges(Bit.Blank(sCols, sRows), kCell, 0, true))
+   end if
    put -sCols * kCell / 2 into sLeft
    put sRows * kCell / 2 into sTop
-   Mesh.Define "Couple.Walls", Couple.SegmentsToMesh(Map.BlockEdges(sGrid, kCell, kWallH, false))
-   Mesh.Define "Couple.Floor", Couple.SegmentsToMesh(Map.BlockEdges(Bit.Blank(sCols, sRows), kCell, 0, true))
    get Entity.Spawn("Couple.Floor", 0, 0, 0, "#1F4A5A")
    get Entity.Spawn("Couple.Walls", 0, 0, 0, "#7FA8FF")
    -- the beacon: far corner room
@@ -240,6 +261,52 @@ on Couple.NewMaze
    Couple.BallSpawn (sSeed is 1)   -- the first maze: right up the hall
    Couple.Camera true
 end Couple.NewMaze
+
+-- the maze from its file: the grid the heroes collide with comes from the file's heights
+-- (a full wall is floor 100+), and the lines you see come from the same file
+on Couple.MazeFromFile
+   local tR, tC, tLine, tSeg, tE, tMesh, tIndex, tA, tB, tClass
+   put CellMap.Read(sMazeFile) into sMap
+   CellMap.Upgrade sMap
+   put sMap["meta"]["cols"] into sCols
+   put sMap["meta"]["rows"] into sRows
+   put empty into sGrid
+   repeat with tR = 1 to sRows
+      put empty into tLine
+      repeat with tC = 1 to sCols
+         if sMap["floor"][tR][tC] >= 100 or sMap["floor"][tR][tC] <= 0 then
+            put "1" after tLine
+         else
+            put "0" after tLine
+         end if
+      end repeat
+      put tLine & return after sGrid
+   end repeat
+   delete the last char of sGrid
+   put Mesh.New() into tMesh["wall"]
+   put Mesh.New() into tMesh["floor"]
+   repeat for each line tSeg in CellMap.LevelSegments(sMap, sTags, empty)
+      put item 7 of tSeg into tClass
+      if tClass is not "wall" then put "floor" into tClass
+      put CellMap.SegToEngine(sMap, tSeg) into tE
+      -- map space has y up; the engine has up = -Y
+      put Couple.MeshPoint(tMesh[tClass], tIndex[tClass], item 1 of tE, -(item 2 of tE), item 3 of tE) into tA
+      put Couple.MeshPoint(tMesh[tClass], tIndex[tClass], item 4 of tE, -(item 5 of tE), item 6 of tE) into tB
+      Mesh.AddLine tMesh[tClass], tA, tB
+   end repeat
+   Mesh.Define "Couple.Walls", tMesh["wall"]
+   Mesh.Define "Couple.Floor", tMesh["floor"]
+end Couple.MazeFromFile
+
+function Couple.MeshPoint @pMesh, @pIndex, pX, pY, pZ
+   local tKey
+   put pX & "," & pY & "," & pZ into tKey
+   if pIndex[tKey] is empty then
+      Mesh.AddVertex pMesh, pX, pY, pZ
+      put the result into pIndex[tKey]
+   end if
+   return pIndex[tKey]
+end Couple.MeshPoint
 
 -- facing the open neighbour of the first room
 function Couple.FirstHeading
@@ -511,6 +578,11 @@ on Couple.BallSpawn pNearStart
    put kBallHop into sBall["vh"]
    put kBallSides into sBall["sides"]
    put "loose" into sBall["state"]
+   if pNearStart is true then
+      -- the first ball sits still on the floor, whole, until a hero touches it
+      put 0 into sBall["vh"]
+      put "resting" into sBall["state"]
+   end if
    put empty into sBall["by"]
    put false into sBall["met"]
    put 0 into sBall["cool"]
@@ -529,12 +601,19 @@ on Couple.BallReshape
 end Couple.BallReshape
 
 on Couple.BallUpdate
-   local tName, dx, dz, d, tX, tZ, tYaw, tSpeed, tKeys, tE
+   local tName, dx, dz, d, tX, tZ, tYaw, tSpeed, tKeys, tF, tQ, tE
    if sBall["key"] is empty then exit Couple.BallUpdate
-   -- E, once a press: pick the ball up when near it; kick it when holding it
+   -- once a press: F picks the ball up when near it and kicks it straight when holding it;
+   -- Q kicks it angled right, E angled left
    put Couple.Keys() into tKeys
+   put (102 is among the items of tKeys or 70 is among the items of tKeys) into tF
+   put (113 is among the items of tKeys or 81 is among the items of tKeys) into tQ
    put (101 is among the items of tKeys or 69 is among the items of tKeys) into tE
-   if tE and sKeyWas["e"] is not true then Couple.BallUse
+   if tF and sKeyWas["f"] is not true then Couple.BallUse
+   if tQ and sKeyWas["q"] is not true then Couple.BallKickAngled kKickAngle
+   if tE and sKeyWas["e"] is not true then Couple.BallKickAngled -kKickAngle
+   put tF into sKeyWas["f"]
+   put tQ into sKeyWas["q"]
    put tE into sKeyWas["e"]
    if sBall["state"] is "held" then
       -- in the hands of the hero holding it, at chest height in front
@@ -544,6 +623,19 @@ on Couple.BallUpdate
       put sHero[tName]["z"] + cos(tYaw) * 18 into sBall["z"]
       SetObjectPosition sBall["key"], sBall["x"], -34, sBall["z"]
       exit Couple.BallUpdate
+   end if
+   -- resting on the floor (the first ball): still and whole until a hero touches it
+   if sBall["state"] is "resting" then
+      repeat for each item tName in "PROMPT,GLAZE"
+         put sBall["x"] - sHero[tName]["x"] into dx
+         put sBall["z"] - sHero[tName]["z"] into dz
+         if dx * dx + dz * dz < 26 * 26 then
+            put "loose" into sBall["state"]
+            put kBallHop into sBall["vh"]       -- woken: it hops from here (no landing this step)
+            exit repeat
+         end if
+      end repeat
+      if sBall["state"] is "resting" then exit Couple.BallUpdate
    end if
    -- hop: every landing costs a side
    subtract kBallGrav from sBall["vh"]
@@ -636,6 +728,40 @@ on Couple.BallUse
    end if
 end Couple.BallUse
 
+-- Q / E: kick the ball at an angle, from the hands or when it is at the feet of the hero you
+-- play. pTurn > 0 sends it to the hero's right (D turns right: yaw grows), < 0 to the left.
+on Couple.BallKickAngled pTurn
+   local dx, dz, tYaw
+   if sBall["key"] is empty then exit Couple.BallKickAngled
+   if sBall["state"] is "held" and sBall["by"] is not sActive then exit Couple.BallKickAngled
+   if sBall["state"] is not "held" then
+      put sHero[sActive]["x"] - sBall["x"] into dx
+      put sHero[sActive]["z"] - sBall["z"] into dz
+      if dx * dx + dz * dz >= 56 * 56 then exit Couple.BallKickAngled   -- out of reach
+   end if
+   put sHero[sActive]["yaw"] + pTurn into tYaw
+   if sBall["state"] is "held" then
+      put sHero[sActive]["x"] + sin(tYaw) * 30 into sBall["x"]
+      put sHero[sActive]["z"] + cos(tYaw) * 30 into sBall["z"]
+      if not Couple.BallFits(sBall["x"], sBall["z"]) then
+         put sHero[sActive]["x"] into sBall["x"]
+         put sHero[sActive]["z"] into sBall["z"]
+      end if
+      put 22 into sBall["h"]
+   end if
+   put "loose" into sBall["state"]
+   put sin(tYaw) * 5 into sBall["vx"]
+   put cos(tYaw) * 5 into sBall["vz"]
+   put 3 into sBall["vh"]
+   put 15 into sBall["cool"]
+   Couple.BallMet sActive, "KICKED"
+   if pTurn > 0 then
+      Couple.BallSay sActive && "KICKED THE BALL RIGHT"
+   else
+      Couple.BallSay sActive && "KICKED THE BALL LEFT"
+   end if
+end Couple.BallKickAngled
+
 -- the first touch of each ball counts it as found
 on Couple.BallMet pName, pHow
    if sBall["met"] is not true then
@@ -717,11 +843,11 @@ on Couple.ShowHUD
    end if
    HUD.Set "Couple.Who", "PLAYING " & sActive & "   (TAB: " & tOther & ")", gViewLeft + 20, gViewBottom - 78, 14
    HUD.Set "Couple.Skills", sHero[sActive]["skills"], gViewLeft + 20, gViewBottom - 56, 11
-   HUD.Set "Couple.Help", "W S WALK   SHIFT RUN   A D TURN   E BALL   FIND THE GOLD BEACON", gViewLeft + 20, gViewBottom - 30, 11
+   HUD.Set "Couple.Help", "W S WALK   SHIFT RUN   A D TURN   F BALL   Q E ANGLED KICK   FIND THE GOLD BEACON", gViewLeft + 20, gViewBottom - 30, 11
    if sBall["state"] is "held" then
-      HUD.Set "Couple.Ball", sBall["by"] && "HOLDS THE BALL (" & sBall["sides"] && "SIDES)   E: KICK IT   FOUND" && sBallFound && "  WORN OUT" && sBallLost, gViewLeft + 20, gViewBottom - 100, 12
+      HUD.Set "Couple.Ball", sBall["by"] && "HOLDS THE BALL (" & sBall["sides"] && "SIDES)   F: KICK IT   Q E: KICK RIGHT LEFT   FOUND" && sBallFound && "  WORN OUT" && sBallLost, gViewLeft + 20, gViewBottom - 100, 12
    else
-      HUD.Set "Couple.Ball", "THE BALL IS LOOSE:" && sBall["sides"] && "SIDES LEFT   WALK INTO IT TO KICK, E TO PICK UP   FOUND" && sBallFound && "  WORN OUT" && sBallLost, gViewLeft + 20, gViewBottom - 100, 12
+      HUD.Set "Couple.Ball", "THE BALL IS LOOSE:" && sBall["sides"] && "SIDES LEFT   WALK INTO IT TO KICK, F TO PICK UP, Q E ANGLED   FOUND" && sBallFound && "  WORN OUT" && sBallLost, gViewLeft + 20, gViewBottom - 100, 12
    end if
    if sBallMsgUntil is a number and sTicks < sBallMsgUntil then
       HUD.Set "Couple.BallMsg", sBallMsg, gViewLeft + 20, gViewTop + 170, 16
