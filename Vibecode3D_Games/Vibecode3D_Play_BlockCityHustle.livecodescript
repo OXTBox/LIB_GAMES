@@ -6,7 +6,11 @@
 ## paint shop clears your heat. Spark's concept and level numbers
 ## (LIB_SPARK/arcade/out/841_Block_City_Hustle), script by Claude.
 ## CONTROLS  Arrows (or WASD): walk / drive    Space: take a parked car, answer a booth
-##           Escape: pause
+##           E: get out of the car    Escape: pause
+## OWNER'S NOTES (15 Nov): E leaves the car (booths need you on foot); five booths spread
+##           over the city, the next never one of the last two and away from you; every job
+##           runs on a clock, and a green SPEED bolt turns up on the far half of the map from
+##           the package (then the drop): go for it and lose time, or get it and fly.
 ## RULES     heat is 0 to 5. From heat 2 the patrols come, one more for each step of heat.
 ##           A patrol catching you costs a life (and your heat). A car runs 15 seconds,
 ##           then you leave it. Finish the level's jobs: next level (5).
@@ -19,6 +23,7 @@ local sMe, sX, sY, sDirX, sDirY, sBlock, sBlockN, sParked, sPatrol, sBooth, sRin
 local sJob, sPkg, sDest, sShop, sInCar, sCarT, sCarKey, sHeat, sJobsDone, sNeed, sBonus
 local sLevel, sLives, sScore, sOver, sWon, sMsg, sMsgT, sWalk, sHurt
 local sKeysWas, sTestKeys, sHUDWas, sTicks
+local sJobT, sBolt, sFastT, sLastRing
 
 constant kZ = 300            -- screen scale 300/z: 1 unit = 1 pixel
 constant kLeft = -440
@@ -98,10 +103,10 @@ on Hust.StartLevel pLevel
    Hust.AddBlock kLeft - 50, kTop + 245, 50, 400
    Hust.AddBlock -kLeft + 50, kTop + 245, 50, 400
    get Entity.Spawn("Hust.Edge", 0, kTop + 245, kZ + 5, "80,80,120")
-   -- phone booths at three street corners
+   -- phone booths at five street corners spread over the city
    put empty into sBooth
-   repeat with i = 1 to 3
-      put Hust.VStreetX(item i of "1,3,4") & "," & Hust.HStreetY(item i of "0,2,1") into tP
+   repeat with i = 1 to 5
+      put Hust.VStreetX(item i of "1,4,2,5,0") & "," & Hust.HStreetY(item i of "0,0,2,3,1") into tP
       put item 1 of tP into sBooth[i]["x"]
       put item 2 of tP into sBooth[i]["y"]
       put Entity.Spawn("Hust.Booth", sBooth[i]["x"], sBooth[i]["y"], kZ, "60,120,255") into sBooth[i]["key"]
@@ -118,6 +123,11 @@ on Hust.StartLevel pLevel
    Hust.MoveShop
    put Entity.Spawn("Hust.Pkg", 0, -900, kZ, "255,150,0") into sPkg["key"]
    put Entity.Spawn("Hust.Ring", 0, -900, kZ, "255,255,0") into sDest["key"]
+   Mesh.Define "Hust.Bolt", Hust.BoltMesh()
+   put Entity.Spawn("Hust.Bolt", 0, -900, kZ, "160,255,60") into sBolt["key"]
+   put false into sBolt["on"]
+   put 0 into sFastT
+   put 0 into sJobT
    put empty into sPatrol
    put kLeft + kStreet / 2 into sX
    put Hust.HStreetY(kRows) into sY
@@ -129,7 +139,9 @@ on Hust.StartLevel pLevel
    put 0 into sJobsDone
    put empty into sJob
    put 0 into sHurt
-   put random(3) into sRinging
+   put empty into sLastRing
+   put empty into sRinging
+   Hust.NextBooth
    put "LEVEL" && pLevel & ": ANSWER THE RINGING BOOTH" into sMsg
    put 60 into sMsgT
    put empty into sHUDWas
@@ -259,6 +271,13 @@ on Hust.TestJump pWhere
       case 5
          Hust.AddHeat 3
          break
+      case 6
+         put sBolt["x"] into sX
+         put sBolt["y"] into sY
+         break
+      case 7
+         put 1 into sJobT
+         break
    end switch
 end Hust.TestJump
 
@@ -290,6 +309,10 @@ on Game.OnUpdate
    if Hust.Down(65364, tKeys) or Hust.Down(115, tKeys) then put 1 into tDY
    put sWalk into tV
    if sInCar then put sWalk * 2.4 into tV
+   if sFastT > 0 then
+      put tV * 1.6 into tV
+      subtract 1 from sFastT
+   end if
    if tDX is 0 and tDY is 0 then
       put 0 into tV
    else
@@ -311,6 +334,8 @@ on Game.OnUpdate
    else
       SetObjectPosition sMe, sX, sY, kZ
    end if
+   -- E: out of the car
+   if sInCar and (Hust.Down(101, tKeys) or Hust.Down(69, tKeys)) then Hust.LeaveCar true
    -- Space: take a parked car, or answer the ringing booth
    if tPress and not sInCar then
       put false into tNear
@@ -347,11 +372,28 @@ on Game.OnUpdate
          put item 1 of it into sDest["x"]
          put item 2 of it into sDest["y"]
          SetObjectPosition sDest["key"], sDest["x"], sDest["y"], kZ + 1
+         Hust.PlaceBolt sDest["y"]
          Hust.Say "GOT IT. TO THE YELLOW MARK"
       end if
    else if sJob is "drop" then
       SetObjectRotation sDest["key"], 0, 0, sTicks / 12
       if abs(sDest["x"] - sX) < 26 and abs(sDest["y"] - sY) < 26 then Hust.JobDone
+   end if
+   -- the job's clock
+   if sJob is not empty then
+      subtract 1 from sJobT
+      if sJobT <= 0 then Hust.TooSlow
+   end if
+   -- the speed bolt
+   if sBolt["on"] then
+      SetObjectRotation sBolt["key"], 0, 0, sin(sTicks / 6) * 0.5
+      if abs(sBolt["x"] - sX) < 24 and abs(sBolt["y"] - sY) < 24 then
+         put false into sBolt["on"]
+         SetObjectPosition sBolt["key"], 0, -900, kZ
+         put 300 into sFastT
+         FX.Sparks sX, sY, kZ, 16, "160,255,60"
+         Hust.Say "SPEED! 10 SECONDS"
+      end if
    end if
    -- the paint shop
    if sHeat > 0 and abs(sShop["x"] - sX) < 30 and abs(sShop["y"] - sY) < 30 then
@@ -376,7 +418,7 @@ on Hust.Say pText
    put 50 into sMsgT
 end Hust.Say
 
-on Hust.LeaveCar
+on Hust.LeaveCar pChose
    local tN
    put false into sInCar
    put the number of lines of the keys of sParked + 100 + sTicks into tN
@@ -384,7 +426,11 @@ on Hust.LeaveCar
    put sY into sParked[tN]["y"]
    put sCarKey into sParked[tN]["key"]
    SetObjectPosition sMe, sX, sY, kZ
-   Hust.Say "THE CAR IS SPENT. ON FOOT"
+   if pChose is true then
+      Hust.Say "YOU STEP OUT OF THE CAR"
+   else
+      Hust.Say "THE CAR IS SPENT. ON FOOT"
+   end if
 end Hust.LeaveCar
 
 on Hust.StartJob
@@ -393,6 +439,8 @@ on Hust.StartJob
    put item 1 of it into sPkg["x"]
    put item 2 of it into sPkg["y"]
    SetObjectPosition sPkg["key"], sPkg["x"], sPkg["y"], kZ - 6
+   put max(20, 42 - 4 * sLevel) * 30 into sJobT
+   Hust.PlaceBolt sPkg["y"]
    Hust.Say "JOB: FETCH THE ORANGE PACKAGE"
 end Hust.StartJob
 
@@ -402,6 +450,9 @@ on Hust.JobDone
    SetObjectPosition sDest["key"], 0, -900, kZ
    add 1 to sJobsDone
    add 300 * sLevel to sScore
+   add (sJobT div 30) * 10 to sScore        -- time left on the clock: 10 a second
+   put false into sBolt["on"]
+   SetObjectPosition sBolt["key"], 0, -900, kZ
    FX.Sparks sX, sY, kZ, 16, "255,255,0"
    Hust.AddHeat 1
    if sJobsDone >= sNeed then
@@ -414,12 +465,70 @@ on Hust.JobDone
       end if
       exit Hust.JobDone
    end if
-   put sRinging into tOld
-   repeat while sRinging is tOld
-      put random(3) into sRinging
-   end repeat
+   Hust.NextBooth
    Hust.Say "JOB DONE. ANOTHER BOOTH IS RINGING"
 end Hust.JobDone
+
+-- the next booth to ring: never one of the last two, away from you when it can be
+on Hust.NextBooth
+   local tK, tList, tFar
+   repeat for each key tK in sBooth
+      if tK is sRinging or tK is sLastRing then next repeat
+      put tK & comma after tList
+      if abs(sBooth[tK]["x"] - sX) + abs(sBooth[tK]["y"] - sY) > 300 then put tK & comma after tFar
+   end repeat
+   if tFar is not empty then put tFar into tList
+   put sRinging into sLastRing
+   put item random(the number of items of tList) of tList into sRinging
+end Hust.NextBooth
+
+-- the clock ran out: the client hung up
+on Hust.TooSlow
+   put empty into sJob
+   SetObjectPosition sPkg["key"], 0, -900, kZ
+   SetObjectPosition sDest["key"], 0, -900, kZ
+   put false into sBolt["on"]
+   SetObjectPosition sBolt["key"], 0, -900, kZ
+   Hust.AddHeat 1
+   Hust.NextBooth
+   Hust.Say "TOO SLOW. THEY HUNG UP. ANOTHER BOOTH RINGS"
+end Hust.TooSlow
+
+-- the speed bolt: on the other half of the city (top or bottom) from pTargetY
+on Hust.PlaceBolt pTargetY
+   local tTry, tP, tTop
+   put pTargetY > kTop + 245 into tTop
+   repeat with tTry = 1 to 60
+      put Hust.Spot(sX, sY) into tP
+      if (item 2 of tP < kTop + 245) is tTop then exit repeat
+   end repeat
+   put item 1 of tP into sBolt["x"]
+   put item 2 of tP into sBolt["y"]
+   put true into sBolt["on"]
+   SetObjectPosition sBolt["key"], sBolt["x"], sBolt["y"], kZ - 4
+end Hust.PlaceBolt
+
+-- a lightning bolt, flat
+function Hust.BoltMesh
+   local tM, tA, tB, tPt, tFirst
+   put Mesh.New() into tM
+   set the itemDel to "|"
+   repeat for each item tPt in "-4,-14|6,-14|1,-3|8,-3|-6,14|-1,2|-8,2"
+      set the itemDel to comma
+      Mesh.AddVertex tM, (item 1 of tPt) * 1.4, (item 2 of tPt) * 1.4, 0
+      put the result into tB
+      set the itemDel to "|"
+      if tFirst is empty then
+         put tB into tFirst
+      else
+         Mesh.AddLine tM, tA, tB
+      end if
+      put tB into tA
+   end repeat
+   set the itemDel to comma
+   Mesh.AddLine tM, tA, tFirst
+   return tM
+end Hust.BoltMesh
 
 on Hust.AddHeat pN
    put min(5, sHeat + pN) into sHeat
@@ -506,7 +615,7 @@ end Hust.Caught
 
 on Hust.ShowHUD
    local tWords, tLine
-   put sLevel & "|" & sLives & "|" & sScore & "|" & sOver & "|" & sHeat & "|" & sJobsDone & "|" & sMsg & "|" & sJob & "|" & sInCar & (sCarT div 30) into tWords
+   put sLevel & "|" & sLives & "|" & sScore & "|" & sOver & "|" & sHeat & "|" & sJobsDone & "|" & sMsg & "|" & sJob & "|" & sInCar & (sCarT div 30) & "|" & (sJobT div 30) & "|" & (sFastT div 30) into tWords
    if tWords is sHUDWas then exit Hust.ShowHUD
    put tWords into sHUDWas
    HUD.Set "Hust.Score", "SCORE" && sScore && " LIVES" && sLives && " LEVEL" && sLevel && " JOBS" && sJobsDone & "/" & sNeed && " HEAT" && sHeat & "/5", 20, 40, 14
@@ -523,12 +632,14 @@ on Hust.ShowHUD
    else
       put "ANSWER THE RINGING BLUE BOOTH (SPACE)" into tLine
    end if
-   if sInCar then put tLine && "  CAR" && sCarT div 30 into tLine
+   if sInCar then put tLine && "  CAR" && sCarT div 30 & "   E: GET OUT" into tLine
+   if sJob is not empty then put tLine && "  TIME" && sJobT div 30 into tLine
+   if sFastT > 0 then put tLine && "  SPEED" && sFastT div 30 into tLine
    HUD.Set "Hust.Msg", tLine, 20, 70, 12
 end Hust.ShowHUD
 
 function Hust.State
-   return sLevel & "|" & sLives & "|" & sScore & "|at " & round(sX) & "," & round(sY) & "|job " & sJob & "|jobs " & sJobsDone & "/" & sNeed & "|heat " & sHeat & "|patrols " & the number of lines of the keys of sPatrol & "|car " & sInCar & "|" & sOver
+   return sLevel & "|" & sLives & "|" & sScore & "|at " & round(sX) & "," & round(sY) & "|job " & sJob & "|jobs " & sJobsDone & "/" & sNeed & "|heat " & sHeat & "|patrols " & the number of lines of the keys of sPatrol & "|car " & sInCar & "|" & sOver & "|ring " & sRinging & "|time " & (sJobT div 30) & "|bolt " & sBolt["on"] & "|fast " & sFastT
 end Hust.State
 
 on Game.OnStop
