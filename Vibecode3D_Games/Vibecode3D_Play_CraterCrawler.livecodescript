@@ -11,6 +11,11 @@
 ##           back to the last letter. A crater or boulder jumped: 50. A boulder shot: 100.
 ##           A saucer: 200. Each letter reached inside 30 seconds earns a time bonus.
 ##           Five letters a level (the last level runs to Z).
+## SAUCERS   cross the sky and fly off (from level 2 some come from behind), so each one
+##           passes over you once: time the up shot. One following another keeps its
+##           distance; two meeting head on collide (100), and a wreck that lands ahead of
+##           you sits in a dent: jump it (100) or shoot it clear (300).
+##           (owner's notes of 15 Nov 3:49)
 ######################################################################################
 
 global gObjectTransforms, gSceneObjects
@@ -19,7 +24,7 @@ global bPaused, bPlaying
 local sRover, sWheel, sDist, sSpeed, sY, sVY, sAir, sSlice, sCourse, sCourseN, sRock, sSaucer
 local sShot, sShotN, sBomb, sBombN, sPost, sLetter, sLastLetterD, sSectionT, sLetters
 local sLevel, sLives, sScore, sOver, sWon, sMsg, sMsgT, sHurt, sMount, sFireWait
-local sKeysWas, sTestKeys, sHUDWas, sTicks
+local sKeysWas, sTestKeys, sHUDWas, sTicks, sRollV, sNoSpawn
 
 constant kZ = 300            -- screen scale 300/z: 1 unit = 1 pixel
 constant kGroundY = 190      -- the ground line
@@ -58,6 +63,7 @@ on Crater.StartLevel pLevel
    Mesh.Define "Crater.Hole", Crater.HoleMesh()
    Mesh.Define "Crater.Rock", MeshPyramid(5, 26, 34)
    Mesh.Define "Crater.Saucer", Crater.SaucerMesh()
+   Mesh.Define "Crater.Wreck", Crater.WreckMesh()
    Mesh.Define "Crater.Shot", MeshBox(6, 6, 6)
    Mesh.Define "Crater.Bomb", MeshBox(10, 10, 10)
    Mesh.Define "Crater.Post", Crater.PostMesh()
@@ -207,6 +213,26 @@ function Crater.SaucerMesh
    return tM
 end Crater.SaucerMesh
 
+-- a crashed saucer nosed into the ground, tilted, its dome cracked off
+function Crater.WreckMesh
+   local tM, i, tA, tX, tY
+   put Mesh.New() into tM
+   repeat with i = 0 to 9
+      put i * 3.14159 / 5 into tA
+      put 30 * cos(tA) into tX
+      put 8 * sin(tA) into tY
+      Mesh.AddVertex tM, tX * 0.9 - tY * 0.42, tX * 0.42 + tY * 0.9 - 6, 0
+   end repeat
+   repeat with i = 1 to 10
+      Mesh.AddLine tM, i, (i mod 10) + 1
+   end repeat
+   Mesh.AddVertex tM, -10, -24, 0
+   Mesh.AddVertex tM, 4, -20, 0
+   Mesh.AddLine tM, 6, 11
+   Mesh.AddLine tM, 11, 12
+   return tM
+end Crater.WreckMesh
+
 -- a letter post: a pole and a flag box
 function Crater.PostMesh
    local tM
@@ -311,6 +337,7 @@ on Game.OnUpdate
       put 9 into sFireWait
    end if
    put tKeys into sKeysWas
+   put tV into sRollV
    add tV to sDist
    add 1 to sSectionT
    if sHurt > 0 then subtract 1 from sHurt
@@ -341,7 +368,7 @@ on Game.OnUpdate
       if tHole is empty then put "flat" into tHole
       if tHole is not sSlice[i]["type"] then
          Entity.Kill sSlice[i]["key"]
-         if tHole is "hole" then
+         if tHole is "hole" or tHole is "dent" then
             put Entity.Spawn("Crater.Hole", 0, kGroundY, kZ, "170,170,190") into sSlice[i]["key"]
          else
             put Entity.Spawn("Crater.Flat", 0, kGroundY, kZ, "170,170,190") into sSlice[i]["key"]
@@ -350,8 +377,12 @@ on Game.OnUpdate
       end if
       SetObjectPosition sSlice[i]["key"], Crater.SX(tIdx * kSliceW), kGroundY, kZ
       -- rocks come into view with their slice
-      if sRock[tIdx]["x"] is not empty and sRock[tIdx]["key"] is empty and not sRock[tIdx]["gone"] then
-         put Entity.Spawn("Crater.Rock", Crater.SX(sRock[tIdx]["x"]), kGroundY - 17, kZ, "255,150,0") into sRock[tIdx]["key"]
+      if sRock[tIdx]["x"] is not empty and sRock[tIdx]["key"] is empty and sRock[tIdx]["gone"] is not true then
+         if sRock[tIdx]["wreck"] is true then
+            put Entity.Spawn("Crater.Wreck", Crater.SX(sRock[tIdx]["x"]), kGroundY - 4, kZ, "255,0,255") into sRock[tIdx]["key"]
+         else
+            put Entity.Spawn("Crater.Rock", Crater.SX(sRock[tIdx]["x"]), kGroundY - 17, kZ, "255,150,0") into sRock[tIdx]["key"]
+         end if
       end if
    end repeat
    -- rocks
@@ -364,14 +395,26 @@ on Game.OnUpdate
          put true into sRock[tK]["gone"]
          next repeat
       end if
-      SetObjectPosition sRock[tK]["key"], tSX, kGroundY - 17, kZ
+      if sRock[tK]["wreck"] is true then
+         SetObjectPosition sRock[tK]["key"], tSX, kGroundY - 4, kZ
+      else
+         SetObjectPosition sRock[tK]["key"], tSX, kGroundY - 17, kZ
+      end if
       if abs(tSX - kRoverX) < 50 then
          if sY > kGroundY - 40 then
-            Crater.Lose "HIT A BOULDER!"
+            if sRock[tK]["wreck"] is true then
+               Crater.Lose "RAN INTO A WRECK!"
+            else
+               Crater.Lose "HIT A BOULDER!"
+            end if
             exit Game.OnUpdate
-         else if not sRock[tK]["jumped"] then
+         else if sRock[tK]["jumped"] is not true then
             put true into sRock[tK]["jumped"]
-            add 50 to sScore
+            if sRock[tK]["wreck"] is true then
+               add 100 to sScore
+            else
+               add 50 to sScore
+            end if
          end if
       end if
    end repeat
@@ -434,25 +477,50 @@ on Crater.Posts
    end if
 end Crater.Posts
 
--- saucers: from level 1 one at a time, more later; they hover ahead and drop bombs
+-- saucers cross the sky and fly off: from the right, and from level 2 some from behind.
+-- One following another keeps its distance; two meeting head on collide and fall.
 on Crater.Saucers
-   local tK, tN
+   local tK, tK2, tN, tSide, tVX, tDir
    put the number of lines of the keys of sSaucer into tN
-   if tN < 1 + sLevel div 2 and random(120) is 1 and sDist > 400 then
-      put sTicks & random(99) into tK
-      put 500 into sSaucer[tK]["x"]
-      put -120 - random(100) into sSaucer[tK]["y"]
-      put 30 + random(40) into sSaucer[tK]["wait"]
-      put Entity.Spawn("Crater.Saucer", 500, sSaucer[tK]["y"], kZ, "255,0,255") into sSaucer[tK]["key"]
+   if sNoSpawn is not true and tN < 1 + sLevel div 2 and random(90) is 1 and sDist > 400 then
+      put 1 into tSide
+      if sLevel >= 2 and random(3) is 1 then put -1 into tSide
+      Crater.AddSaucer tSide
    end if
    repeat for each key tK in sSaucer
-      -- drift toward a spot ahead of the rover, wobbling
-      add (kRoverX + 160 + 120 * sin(sTicks / 30 + tK) - sSaucer[tK]["x"]) * 0.03 to sSaucer[tK]["x"]
-      put sSaucer[tK]["y"] + 1.5 * sin(sTicks / 9) into sSaucer[tK]["y"]
+      if sSaucer[tK]["key"] is empty then next repeat
+      if sSaucer[tK]["state"] is "fall" then
+         Crater.SaucerFall tK
+         if sOver then exit Crater.Saucers
+         next repeat
+      end if
+      put sSaucer[tK]["vx"] into tVX
+      put Crater.Dir(tVX) into tDir
+      repeat for each key tK2 in sSaucer
+         if tK2 is tK or sSaucer[tK2]["key"] is empty or sSaucer[tK2]["state"] is "fall" then next repeat
+         if Crater.Dir(sSaucer[tK2]["vx"]) is tDir then
+            -- one ahead going the same way: hang back
+            if (sSaucer[tK2]["x"] - sSaucer[tK]["x"]) * tDir > 0 and abs(sSaucer[tK2]["x"] - sSaucer[tK]["x"]) < 170 then
+               put sSaucer[tK2]["vx"] * 0.6 into tVX
+            end if
+         else if abs(sSaucer[tK2]["x"] - sSaucer[tK]["x"]) < 50 and abs(sSaucer[tK2]["y"] - sSaucer[tK]["y"]) < 34 then
+            Crater.SaucerCrash tK, tK2
+            exit repeat
+         end if
+      end repeat
+      if sSaucer[tK]["state"] is "fall" then next repeat
+      add tVX to sSaucer[tK]["x"]
+      put sSaucer[tK]["base"] + 14 * sin(sTicks / 20 + sSaucer[tK]["phase"]) into sSaucer[tK]["y"]
       SetObjectPosition sSaucer[tK]["key"], sSaucer[tK]["x"], sSaucer[tK]["y"], kZ
       SetObjectRotation sSaucer[tK]["key"], 0, sTicks / 8, 0
+      if sSaucer[tK]["x"] * tDir > 600 then
+         -- gone off the far side
+         Entity.Kill sSaucer[tK]["key"]
+         delete variable sSaucer[tK]
+         next repeat
+      end if
       subtract 1 from sSaucer[tK]["wait"]
-      if sSaucer[tK]["wait"] <= 0 then
+      if sSaucer[tK]["wait"] <= 0 and abs(sSaucer[tK]["x"]) < 440 and sNoSpawn is not true then
          put max(25, 80 - sLevel * 10) + random(40) into sSaucer[tK]["wait"]
          add 1 to sBombN
          put sSaucer[tK]["x"] into sBomb[sBombN]["x"]
@@ -461,6 +529,86 @@ on Crater.Saucers
       end if
    end repeat
 end Crater.Saucers
+
+function Crater.Dir pV
+   if pV < 0 then return -1
+   return 1
+end Crater.Dir
+
+-- a saucer comes in from the right (pSide 1) or from behind (-1), clear of the others
+on Crater.AddSaucer pSide
+   local tK, tK2, tX
+   put 580 * pSide into tX
+   repeat for each key tK2 in sSaucer
+      if abs(sSaucer[tK2]["x"] - tX) < 200 then exit Crater.AddSaucer
+   end repeat
+   Crater.PutSaucer tX, -130 - random(90), -pSide * (2.2 + 0.3 * sLevel)
+end Crater.AddSaucer
+
+on Crater.PutSaucer pX, pY, pVX
+   local tK
+   put sTicks & random(999) into tK
+   repeat while sSaucer[tK]["key"] is not empty
+      put tK & "a" into tK
+   end repeat
+   put pX into sSaucer[tK]["x"]
+   put pY into sSaucer[tK]["y"]
+   put pY into sSaucer[tK]["base"]
+   put random(60) into sSaucer[tK]["phase"]
+   put pVX into sSaucer[tK]["vx"]
+   put "fly" into sSaucer[tK]["state"]
+   put 30 + random(40) into sSaucer[tK]["wait"]
+   put Entity.Spawn("Crater.Saucer", pX, pY, kZ, "255,0,255") into sSaucer[tK]["key"]
+end Crater.PutSaucer
+
+-- two saucers meet: one goes up in sparks, the other falls where they met
+on Crater.SaucerCrash pA, pB
+   put (sSaucer[pA]["x"] + sSaucer[pB]["x"]) / 2 into sSaucer[pA]["x"]
+   FX.Sparks sSaucer[pA]["x"], sSaucer[pA]["y"], kZ, 24, "255,0,255"
+   Entity.Kill sSaucer[pB]["key"]
+   delete variable sSaucer[pB]
+   put "fall" into sSaucer[pA]["state"]
+   put -2 into sSaucer[pA]["vy"]
+   add 100 to sScore
+   Crater.Say "SAUCERS COLLIDED!"
+end Crater.SaucerCrash
+
+-- a falling saucer drifts back with the ground; landing ahead of you it makes a wreck in a dent
+on Crater.SaucerFall pK
+   local tIdx
+   add 0.4 to sSaucer[pK]["vy"]
+   add sSaucer[pK]["vy"] to sSaucer[pK]["y"]
+   subtract sRollV * 0.5 from sSaucer[pK]["x"]
+   SetObjectPosition sSaucer[pK]["key"], sSaucer[pK]["x"], sSaucer[pK]["y"], kZ
+   SetObjectRotation sSaucer[pK]["key"], 0.5, sTicks / 3, 0.4
+   if abs(sSaucer[pK]["x"] - kRoverX) < 44 and abs(sSaucer[pK]["y"] - (sY - 20)) < 30 then
+      Entity.Kill sSaucer[pK]["key"]
+      delete variable sSaucer[pK]
+      Crater.Lose "HIT BY A FALLING SAUCER!"
+      exit Crater.SaucerFall
+   end if
+   if sSaucer[pK]["y"] < kGroundY - 6 then exit Crater.SaucerFall
+   FX.Sparks sSaucer[pK]["x"], kGroundY, kZ, 16, "255,120,40"
+   put (sSaucer[pK]["x"] - kRoverX + sDist) div kSliceW into tIdx
+   if sSaucer[pK]["x"] > kRoverX + 90 and Crater.Clear(tIdx) then
+      put "dent" into sCourse[tIdx]
+      put tIdx * kSliceW + kSliceW / 2 into sRock[tIdx]["x"]
+      put true into sRock[tIdx]["wreck"]
+      put empty into sRock[tIdx]["gone"]
+      put empty into sRock[tIdx]["jumped"]
+      Crater.Say "A WRECK AHEAD: JUMP IT OR SHOOT IT"
+   end if
+   Entity.Kill sSaucer[pK]["key"]
+   delete variable sSaucer[pK]
+end Crater.SaucerFall
+
+-- plain ground with nothing on it or next to it
+function Crater.Clear pIdx
+   if sCourse[pIdx] is not empty and sCourse[pIdx] is not "flat" then return false
+   if sCourse[pIdx - 1] is "hole" or sCourse[pIdx + 1] is "hole" then return false
+   if sRock[pIdx]["x"] is not empty and sRock[pIdx]["gone"] is not true then return false
+   return true
+end Crater.Clear
 
 on Crater.Fire pVX, pVY
    add 1 to sShotN
@@ -493,11 +641,19 @@ on Crater.Shots
          put kGroundY - 18 into sShot[tS]["y"]
          repeat for each key tK in sRock
             if sRock[tK]["key"] is not empty and abs(Crater.SX(sRock[tK]["x"]) - sShot[tS]["x"]) < 24 then
-               FX.Sparks sShot[tS]["x"], kGroundY - 17, kZ, 14, "255,150,0"
                Entity.Kill sRock[tK]["key"]
                put empty into sRock[tK]["key"]
                put true into sRock[tK]["gone"]
-               add 100 to sScore
+               if sRock[tK]["wreck"] is true then
+                  -- the wreck blown clear: the dent is flat ground again
+                  FX.Sparks sShot[tS]["x"], kGroundY - 6, kZ, 22, "255,0,255"
+                  put "flat" into sCourse[tK]
+                  add 300 to sScore
+                  Crater.Say "WRECK CLEARED! +300"
+               else
+                  FX.Sparks sShot[tS]["x"], kGroundY - 17, kZ, 14, "255,150,0"
+                  add 100 to sScore
+               end if
                put true into tHit
                exit repeat
             end if
@@ -528,7 +684,7 @@ on Crater.Bombs
       if sBomb[tB]["y"] >= kGroundY then
          FX.Sparks sBomb[tB]["x"], kGroundY, kZ, 12, "255,120,40"
          put (sBomb[tB]["x"] - kRoverX + sDist) div kSliceW into tIdx
-         if sBomb[tB]["x"] > kRoverX + 90 and sCourse[tIdx - 1] is not "hole" and sCourse[tIdx + 1] is not "hole" and sRock[tIdx]["x"] is empty then put "hole" into sCourse[tIdx]
+         if sBomb[tB]["x"] > kRoverX + 90 and Crater.Clear(tIdx) and sRock[tIdx]["x"] is empty then put "hole" into sCourse[tIdx]
          Entity.Kill sBomb[tB]["key"]
          delete variable sBomb[tB]
       end if
@@ -576,8 +732,59 @@ on Crater.ShowHUD
 end Crater.ShowHUD
 
 function Crater.State
-   return sLevel & "|" & sLives & "|" & sScore & "|d " & round(sDist) & "/" & sCourseN & "|y " & round(sY) & "|saucers " & the number of lines of the keys of sSaucer & "|bombs " & the number of lines of the keys of sBomb & "|" & sOver
+   return sLevel & "|" & sLives & "|" & sScore & "|d " & round(sDist) & "/" & sCourseN & "|y " & round(sY) & "|saucers " & the number of lines of the keys of sSaucer & "|bombs " & the number of lines of the keys of sBomb & "|" & sOver & "|wrecks " & Crater.Wrecks()
 end Crater.State
+
+function Crater.Wrecks
+   local tK, tN
+   put 0 into tN
+   repeat for each key tK in sRock
+      if sRock[tK]["wreck"] is true and sRock[tK]["gone"] is not true then add 1 to tN
+   end repeat
+   return tN
+end Crater.Wrecks
+
+-- test hooks: no saucers of their own (and no bombs); one placed (screen x, y, speed); saucer x's; the
+-- ground ahead made plain; the course at a screen x
+on Crater.TestQuiet pFlag
+   put pFlag into sNoSpawn
+end Crater.TestQuiet
+
+on Crater.TestSaucer pX, pY, pVX
+   Crater.PutSaucer pX, pY, pVX
+end Crater.TestSaucer
+
+function Crater.SaucerXs
+   local tK, tOut
+   repeat for each key tK in sSaucer
+      put round(sSaucer[tK]["x"]) & comma after tOut
+   end repeat
+   return char 1 to -2 of tOut
+end Crater.SaucerXs
+
+on Crater.TestFlat pFrom, pTo
+   local i
+   repeat with i = (sDist + pFrom - kRoverX) div kSliceW to (sDist + pTo - kRoverX) div kSliceW
+      put "flat" into sCourse[i]
+      if sRock[i]["key"] is not empty then Entity.Kill sRock[i]["key"]
+      delete variable sRock[i]
+   end repeat
+end Crater.TestFlat
+
+-- the screen x of the nearest wreck not yet behind you, or empty
+function Crater.WreckSX
+   local tK, tBest, tSX
+   repeat for each key tK in sRock
+      if sRock[tK]["wreck"] is not true or sRock[tK]["gone"] is true then next repeat
+      put Crater.SX(sRock[tK]["x"]) into tSX
+      if tSX > kRoverX - 60 and (tBest is empty or tSX < tBest) then put tSX into tBest
+   end repeat
+   return tBest
+end Crater.WreckSX
+
+function Crater.CourseAt pSX
+   return sCourse[(pSX - kRoverX + sDist) div kSliceW]
+end Crater.CourseAt
 
 on Game.OnStop
    HUD.Clear
