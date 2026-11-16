@@ -5,6 +5,15 @@ shipping the editor; make an edition stripped of everything external, with the e
 path kept as a template filled only with things we own or generate, a very light download that
 still shows what the editor can do. The owner decides; the checklist is his to mark.
 
+## Names (owner, 16 Nov)
+
+Shipped on itch.io under the owner's **xAction** handle.
+
+| Core | without Box2D | with Box2D |
+|---|---|---|
+| Vibecode3D (xTalk renderer) | **iGame3D XT** (this standalone edition) | **iGame3D Box2DXT** |
+| xt3d (raylib) | **iGame3D xRay** | **iGame3D xRayBox** |
+
 ## Two editions
 
 | Edition | Branch (LIB_GAMES and LIB_ig3d) | What it is |
@@ -103,7 +112,7 @@ vibeapps\common\iGame3D Editor\
 ## Questions for the owner
 
 1. (answered 16 Nov: the checklist)
-2. Name: "iGame3D Editor" in public, or a new name for the standalone edition?
+2. (answered 16 Nov: the names below)
 3. (answered: keep Help as legacy documentation)
 4. Which workstream first? My suggestion: B (Aquarius: small, shows LIB_BIT, gives a speed
    number), then A (buildings), then E (DeadDays) on top of A and C.
