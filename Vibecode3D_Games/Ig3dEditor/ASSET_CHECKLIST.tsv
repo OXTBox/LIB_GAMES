@@ -1,46 +1,46 @@
-group	files	size	what it is	ship (owner: own / free / generate / no)	note
-2008 Data/Emitters	76	336K	.emt particle emitters		
-2008 Data/Exporters	6	124K	exporter scripts		
-2008 Data/Fluid	158	3.1M	.fl fluid files		
-2008 Data/Help	20	556K	2008 help pages		
-2008 Data/Levels	145	2.5M	levels (.txt/.lua)		
-2008 Data/OBJ	51	3.8M	OBJ models + materials		
-2008 Data/Scripts	135	1.3M	Lua scripts		
-2008 Data/Shaders	34	612K	shaders		
-2008 Data/WTF/Animals	10	992K	.wtf models (Library > Models)		
-2008 Data/WTF/AquaChar	256	3.0M	.wtf models (Library > Models)		
-2008 Data/WTF/Armor	5	96K	.wtf models (Library > Models)		
-2008 Data/WTF/Billboards	2	12K	.wtf models (Library > Models)		
-2008 Data/WTF/Building_parts	23	888K	.wtf models (Library > Models)		
-2008 Data/WTF/Buildings	19	2.2M	.wtf models (Library > Models)		
-2008 Data/WTF/Bump_mesh	4	72K	.wtf models (Library > Models)		
-2008 Data/WTF/Characters	74	13M	.wtf models (Library > Models)		
-2008 Data/WTF/Clothing	1	144K	.wtf models (Library > Models)		
-2008 Data/WTF/Containers	7	280K	.wtf models (Library > Models)		
-2008 Data/WTF/Cubes	10	52K	.wtf models (Library > Models)		
-2008 Data/WTF/DeadDays	29	1.6M	.wtf models (Library > Models)		
-2008 Data/WTF/DungeonPack	28	1.4M	.wtf models (Library > Models)		
-2008 Data/WTF/Equipment	1	56K	.wtf models (Library > Models)		
-2008 Data/WTF/Floors	8	60K	.wtf models (Library > Models)		
-2008 Data/WTF/Foliage	10	604K	.wtf models (Library > Models)		
-2008 Data/WTF/Furniture	37	2.0M	.wtf models (Library > Models)		
-2008 Data/WTF/Houses	32	8.2M	.wtf models (Library > Models)		
-2008 Data/WTF/Locations	19	3.9M	.wtf models (Library > Models)		
-2008 Data/WTF/Misc	14	744K	.wtf models (Library > Models)		
-2008 Data/WTF/PathSources	1	8.0K	.wtf models (Library > Models)		
-2008 Data/WTF/Powerups	1	32K	.wtf models (Library > Models)		
-2008 Data/WTF/Reticule	1	8.0K	.wtf models (Library > Models)		
-2008 Data/WTF/Shapes	13	752K	.wtf models (Library > Models)		
-2008 Data/WTF/Skybox	3	16K	.wtf models (Library > Models)		
-2008 Data/WTF/Spheres	2	636K	.wtf models (Library > Models)		
-2008 Data/WTF/Street	11	184K	.wtf models (Library > Models)		
-2008 Data/WTF/Tools	3	112K	.wtf models (Library > Models)		
-2008 Data/WTF/Vehicles_air	46	5.3M	.wtf models (Library > Models)		
-2008 Data/WTF/Vehicles_land	26	4.2M	.wtf models (Library > Models)		
-2008 Data/WTF/Walls	7	312K	.wtf models (Library > Models)		
-2008 Data/WTF/Weapons	64	3.2M	.wtf models (Library > Models)		
-LIB_MOCAP/library/iGame3D_*	938	262M	iGame3D motion clips		262 MB in all: pick a handful
-LIB_MOCAP/library/Animazoo_*	41	4.2M	Animazoo-derived clips		rights unsettled (LAYOUT 6)
-LIB_MOCAP/library/FreeBVH_*	19	4.3M	free BVH clips		check each licence
-LIB_MOCAP/library/Video_*	1	572K	made from video by MoCapAnything	generate	ours
+group	files	size	what it is	owner's decision (16 Nov)	note
+2008 Data/Emitters	76	336K	.emt particle emitters	hold	need a particle system first; ship them then
+2008 Data/Exporters	6	124K	exporter scripts	convert	to xTalk and Python; Lua stays in the works branch (a Lua external later)
+2008 Data/Fluid	158	3.1M	.fl fluid files	remove	strip; any script calling a .fl gets a stack made to replace it (only the 2008 Lua does)
+2008 Data/Help	20	556K	2008 help pages	keep	legacy documentation, referenced from the new docs
+2008 Data/Levels	145	2.5M	levels (.txt/.lua)	generate	remake in Vibecode3D/xt3d/Python; the Aquarius level from its bitmap: 256 models from one file, a mesh-generation speed test
+2008 Data/OBJ	51	3.8M	OBJ models + materials	keep one	the cube / theBox; the rest made by the engine at runtime
+2008 Data/Scripts	135	1.3M	Lua scripts	convert	the same functions and hooks as editable xTalk files (Python later, in its own stack); the editor's data is internal, the files are for the user or their LLM to edit and apply
+2008 Data/Shaders	34	612K	shaders	remove	until there is a shader library
+2008 Data/WTF/Animals	10	992K	.wtf models (Library > Models)	generate	inventory for procedural generation, then remove
+2008 Data/WTF/AquaChar	256	3.0M	.wtf models (Library > Models)	generate	from the Aquarius font bitmap (LIB_BIT/editor/fonts/Aquarius); the bitmap in the stack and Data/Text; LIB_BIT is part of the editor
+2008 Data/WTF/Armor	5	96K	.wtf models (Library > Models)	remove	
+2008 Data/WTF/Billboards	2	12K	.wtf models (Library > Models)	generate	
+2008 Data/WTF/Building_parts	23	888K	.wtf models (Library > Models)	generate	lists for the generators, built from each model's name
+2008 Data/WTF/Buildings	19	2.2M	.wtf models (Library > Models)	generate	seeded by name; windows by kind: warehouse above head height and big, shop knee to above head, home hip to above head or smaller, military well above head; every building gets uDead's breakable doors and windows
+2008 Data/WTF/Bump_mesh	4	72K	.wtf models (Library > Models)	remove	
+2008 Data/WTF/Characters	74	13M	.wtf models (Library > Models)	replace	our stick figure (glb/gltf); scripts keep role names from their game behaviour (civilian_001, soldier_001)
+2008 Data/WTF/Clothing	1	144K	.wtf models (Library > Models)	remove	inventory; a 'customize your character' editor later (note for LIB_Taylor)
+2008 Data/WTF/Containers	7	280K	.wtf models (Library > Models)	generate	inventory for procedural generation, then remove
+2008 Data/WTF/Cubes	10	52K	.wtf models (Library > Models)	generate	inventory for procedural generation, then remove
+2008 Data/WTF/DeadDays	29	1.6M	.wtf models (Library > Models)	generate	the whole thing, as a new third-person shooter (see the plan)
+2008 Data/WTF/DungeonPack	28	1.4M	.wtf models (Library > Models)	generate	inventory for procedural generation, then remove
+2008 Data/WTF/Equipment	1	56K	.wtf models (Library > Models)	generate	inventory for procedural generation, then remove
+2008 Data/WTF/Floors	8	60K	.wtf models (Library > Models)	generate	inventory for procedural generation, then remove
+2008 Data/WTF/Foliage	10	604K	.wtf models (Library > Models)	generate	inventory for procedural generation, then remove
+2008 Data/WTF/Furniture	37	2.0M	.wtf models (Library > Models)	generate	inventory for procedural generation, then remove
+2008 Data/WTF/Houses	32	8.2M	.wtf models (Library > Models)	generate	inventory for procedural generation, then remove
+2008 Data/WTF/Locations	19	3.9M	.wtf models (Library > Models)	generate	inventory for procedural generation, then remove
+2008 Data/WTF/Misc	14	744K	.wtf models (Library > Models)	generate	inventory for procedural generation, then remove
+2008 Data/WTF/PathSources	1	8.0K	.wtf models (Library > Models)	remove	
+2008 Data/WTF/Powerups	1	32K	.wtf models (Library > Models)	generate	(no note: generated like the rest)
+2008 Data/WTF/Reticule	1	8.0K	.wtf models (Library > Models)	generate	inventory for procedural generation, then remove
+2008 Data/WTF/Shapes	13	752K	.wtf models (Library > Models)	generate	inventory for procedural generation, then remove
+2008 Data/WTF/Skybox	3	16K	.wtf models (Library > Models)	generate	inventory for procedural generation, then remove
+2008 Data/WTF/Spheres	2	636K	.wtf models (Library > Models)	generate	inventory for procedural generation, then remove
+2008 Data/WTF/Street	11	184K	.wtf models (Library > Models)	generate	inventory for procedural generation, then remove
+2008 Data/WTF/Tools	3	112K	.wtf models (Library > Models)	generate	inventory for procedural generation, then remove
+2008 Data/WTF/Vehicles_air	46	5.3M	.wtf models (Library > Models)	generate	inventory for procedural generation, then remove
+2008 Data/WTF/Vehicles_land	26	4.2M	.wtf models (Library > Models)	generate	inventory for procedural generation, then remove
+2008 Data/WTF/Walls	7	312K	.wtf models (Library > Models)	generate	inventory for procedural generation, then remove
+2008 Data/WTF/Weapons	64	3.2M	.wtf models (Library > Models)	generate	inventory for procedural generation, then remove
+LIB_MOCAP/library/iGame3D_*	938	262M	iGame3D motion clips	pick	what PROMPT & GLAZE, uDead and the working games use (today 4: reachhigh, throwtoss1, underHandThrow, + any added)
+LIB_MOCAP/library/Animazoo_*	41	4.2M	Animazoo-derived clips	keep used	the clips the games use (today 6), credited to Animazoo
+LIB_MOCAP/library/FreeBVH_*	19	4.3M	free BVH clips	keep used	CMU's motion capture, repackaged: credit Carnegie Mellon
+LIB_MOCAP/library/Video_*	1	572K	made from video by MoCapAnything	keep	ours: made from AI-generated video, no real people
 LIB_MOCAP/library/proc_*	1	24K	procedural clip	generate	ours

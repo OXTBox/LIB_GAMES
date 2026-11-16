@@ -13,7 +13,40 @@ still shows what the editor can do. The owner decides; the checklist is his to m
 | **Standalone** | `ig3d-editor-standalone` (starts from the same commits) | needs nothing outside its install; ships a template Data folder; can still be pointed at a full Data folder |
 
 The installer holds the editor back (LIB_PUBLIC `vibe-install`, `HOLD` in vibeinstall.py)
-until the standalone edition is ready.
+until the standalone edition is ready. The 2008 Data folder itself (never in git before) is
+committed to `ig3d-editor-works` (5a62a5d): the Lua, levels and models wait there for the
+return to Lua (Defold, LOVE, a Lua external).
+
+## The owner's decisions (16 Nov, 6:58 AM)
+
+Per group in `ASSET_CHECKLIST.tsv`; what every group held, name by name, in `INVENTORY.md` and
+`INVENTORY.tsv` (made by `tools/inventory.py`: 1,394 files, each model's vertices, edges, size).
+
+| Decision | Groups |
+|---|---|
+| **generate** (procedurally, seeded by the inventoried names) | every WTF group but those below; Levels; AquaChar (from the Aquarius font bitmap) |
+| **replace** | Characters: our stick figure (glb/gltf), the scripts keeping role names (civilian_001, soldier_001) |
+| **convert** | Scripts and Exporters: the same functions and hooks as editable xTalk files (Python later, its own stack). The editor's data is internal and static; the files are there to read, edit and apply, by the user or their LLM. iGame3D has always been about exposing source and editing files in a text editor |
+| **keep** | Help (legacy documentation, linked from the new docs); OBJ: the cube / theBox only |
+| **hold** | Emitters, until there is a particle system |
+| **remove** | Fluid (only the 2008 Lua calls .fl files), Shaders (until a shader library), Armor, Bump_mesh, PathSources, Clothing (a character customizer later: LIB_Taylor) |
+| **motion clips** | only what the working games use (today 10: 4 iGame3D, 6 Animazoo) + ours (Video, proc); Animazoo and CMU (FreeBVH) credited |
+
+Rights: the owner's position is that the iGame3D library is GPL-compatible and used for
+teaching and research; only what's needed ships. Generated stand-ins get plain names (a few
+2008 models carry third-party character names; they stay in the works branch only).
+
+## Workstreams
+
+| | Work | First result |
+|---|---|---|
+| A | **Generators** seeded by name: buildings with window rules by kind (warehouse: big, above head height; shop: knee to above head; home: hip to above head, or smaller; military: well above head) and uDead's breakable doors and windows on every one; then dungeon parts (arches, columns, walls, arched bridges), furniture, street, foliage, vehicles, weapons, containers, a vector skybox | a building generator + a street of each kind |
+| B | **Aquarius**: AquaChar from LIB_BIT's Aquarius font (LIB_BIT inside the editor); the Aquarius level from its bitmap, 256 models from one file, timed | the speed test |
+| C | **Stick-figure characters** with role names, replacing every WTF character reference | one glTF figure + the name map |
+| D | **Scripts as files**: the Lua functions the editor calls, as xTalk files with the same hooks | the list of hooks, then the first files |
+| E | **DeadDays**, a new game (third-person shooter), generated: a small city, police station, a park with an alien/ancient temple; zombies, a robot that hunts them; weapons found on the map. Police station door -> the station map; its upstairs office -> the park; the temple ends it: "To be continued" (it won best story) | its own branch in LIB_GAMES, a concept page first |
+| F | The editor itself: steps 3-6 below | |
+
 
 ## What it reaches outside itself today (review, 16 Nov)
 
@@ -59,7 +92,7 @@ vibeapps\common\iGame3D Editor\
 | # | Step | Who |
 |---|---|---|
 | 0 | Two branches in each repo; the installer holds the editor back | done 16 Nov |
-| 1 | Mark `ASSET_CHECKLIST.tsv` (beside this file): own / free / generate / no for each group | owner |
+| 1 | Mark `ASSET_CHECKLIST.tsv` (beside this file) | done by the owner 16 Nov |
 | 2 | Generator + template: README per folder, generated meshes/emitter/level/clip, the marked owned files copied | Claude |
 | 3 | Internalize the tool windows (`Tools\`), `Ig.DataRoot` / `Ig.Projects` in the order above, Set Data Folder... | Claude |
 | 4 | Every wired tool has a demo on the template; tools not wired yet say so | Claude |
@@ -69,7 +102,8 @@ vibeapps\common\iGame3D Editor\
 
 ## Questions for the owner
 
-1. Which asset groups are yours to ship (paid for, or made by you)? Mark the checklist; my
-   guesses aren't in it on purpose.
+1. (answered 16 Nov: the checklist)
 2. Name: "iGame3D Editor" in public, or a new name for the standalone edition?
-3. Help pages (2008 Help, 20 files): rewrite short new ones, or leave Help out?
+3. (answered: keep Help as legacy documentation)
+4. Which workstream first? My suggestion: B (Aquarius: small, shows LIB_BIT, gives a speed
+   number), then A (buildings), then E (DeadDays) on top of A and C.

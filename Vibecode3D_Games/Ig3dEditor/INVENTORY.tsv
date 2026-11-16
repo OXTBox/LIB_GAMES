@@ -1,0 +1,1395 @@
+group	name	kind	vertices	edges	width	height	depth
+.	alternateRoot	txt					
+.	game script	lua					
+Emitters	abomb	emt					
+Emitters	atomic	emt					
+Emitters	atomic2	emt					
+Emitters	bullet	emt					
+Emitters	cloud	emt					
+Emitters	damagedsmoke	emt					
+Emitters	engine	emt					
+Emitters	explosion	emt					
+Emitters	fighterexplode	emt					
+Emitters	fire	emt					
+Emitters	friendexplode	emt					
+Emitters	frigateloseturret	emt					
+Emitters	lilsplash	emt					
+Emitters	playerexplode	emt					
+Emitters	seasplash	emt					
+Emitters	seasplash	emt kopie					
+Emitters	slowbullet	emt					
+Emitters	smoke	emt					
+Emitters	tiretrace	emt					
+Emitters	tracer	emt					
+Emitters/oldEmitters	bullet	emt					
+Emitters/oldEmitters	COSMOS	emt					
+Emitters/oldEmitters	explosion	emt					
+Emitters/oldEmitters	fireball	emt					
+Emitters/oldEmitters	fireballbetter	emt					
+Emitters/oldEmitters	fogmoveing	emt					
+Emitters/oldEmitters	greenheaven	emt					
+Emitters/oldEmitters	More puslar	emt					
+Emitters/oldEmitters	newglob	emt					
+Emitters/oldEmitters	pulsar	emt					
+Emitters/oldEmitters	puslar2	emt					
+Emitters/oldEmitters	puslarSmokey	emt					
+Emitters/oldEmitters	smoke	emt					
+Emitters/oldEmitters	smokier	emt					
+Emitters/oldEmitters	smokish	emt					
+Emitters/oldEmitters	smokish2	emt					
+Emitters/oldEmitters	smokish3	emt					
+Emitters/oldEmitters	snowDOWN	emt					
+Emitters/oldEmitters	snowstorm	emt					
+Emitters/oldEmitters	zapper	emt					
+Emitters/oldEmitters	zapper2	emt					
+Emitters/oldEmitters/Blast	BLASTERBeam	emt					
+Emitters/oldEmitters/Blast	blaststat	emt					
+Emitters/oldEmitters/Blast	blaststatatoo	emt					
+Emitters/oldEmitters/Blast	blasttat2	emt					
+Emitters/oldEmitters/FireBalls	fireball200	emt					
+Emitters/oldEmitters/FireBalls	fireball3	emt					
+Emitters/oldEmitters/FireBalls	fireball3 copy	emt					
+Emitters/oldEmitters/FireBalls	firegoodmm	emt					
+Emitters/oldEmitters/Glo	globall200	emt					
+Emitters/oldEmitters/Glo	glowball200	emt					
+Emitters/oldEmitters/Glo	glowball400	emt					
+Emitters/oldEmitters/More Emitters	asuperSpark	emt					
+Emitters/oldEmitters/More Emitters	blasttestFire	emt					
+Emitters/oldEmitters/More Emitters	cometFire	emt					
+Emitters/oldEmitters/More Emitters	cracklingfire	emt					
+Emitters/oldEmitters/More Emitters	floatBulb	emt					
+Emitters/oldEmitters/More Emitters	harshpark	emt					
+Emitters/oldEmitters/More Emitters	hottrail	emt					
+Emitters/oldEmitters/More Emitters	lightex	emt					
+Emitters/oldEmitters/More Emitters	lightex2	emt					
+Emitters/oldEmitters/More Emitters	planar	emt					
+Emitters/oldEmitters/More Emitters	puslar	emt					
+Emitters/oldEmitters/More Emitters	saveasfire	emt					
+Emitters/oldEmitters/More Emitters	superFogifier	emt					
+Emitters/oldEmitters/More Emitters	superWhatTheHell	emt					
+Emitters/oldEmitters/More Emitters	tightsparkle	emt					
+Emitters/oldEmitters/More Emitters	tripSpark	emt					
+Emitters/oldEmitters/More Emitters	tripSpark3	emt					
+Emitters/oldEmitters/More Emitters	truecomet	emt					
+Emitters/oldEmitters/Star	sparklesparkle	emt					
+Emitters/oldEmitters/Star	starBal	emt					
+Emitters/warhammer	attackarrow	emt					
+Emitters/warhammer	bluecircle	emt					
+Emitters/warhammer	redfloor	emt					
+Emitters/warhammer	redfloorvibro	emt					
+Exporters	C3D2WTF_exporter	js					
+Exporters	C3D_sixJointcube	jas					
+Exporters	C3DCube	wtf	8	36	660.0	660.0	660.0
+Exporters	WTF_Export	py					
+Exporters	wtf_export	p					
+Exporters	wtf_import	p					
+Fluid	box	fl					
+Fluid	box	lua					
+Fluid	ins	fl					
+Fluid	sc	fl					
+Fluid/3Dnetclient	3Dnetclient	fl					
+Fluid/3Dnetserver	3Dnetserver	fl					
+Fluid/animation_browser	animation_browser	fl					
+Fluid/animation_browser	animation_browser	lua					
+Fluid/animation_editor	animation_editor	fl					
+Fluid/animation_editor	animation_editor	lua					
+Fluid/askLevel	askLevel	fl					
+Fluid/askLevel	askLevel	lua					
+Fluid/AutoBones	AutoBones	fl					
+Fluid/AutoBones	AutoBones	lua					
+Fluid/BodyPaint	BodyPaint	fl					
+Fluid/BodyPaint	BodyPaint	lua					
+Fluid/BVHbrowser	BVHbrowser	fl					
+Fluid/BVHbrowser	BVHbrowser	lua					
+Fluid/CameraBrowser	CameraBrowser	fl					
+Fluid/CameraBrowser	CameraBrowser	lua					
+Fluid/CameraBrowser	script	fl					
+Fluid/CarAndDriver	CarAndDriver	fl					
+Fluid/ClassesBrowser	ClassesBrowser	fl					
+Fluid/ClassesBrowser	ClassesBrowser	lua					
+Fluid/Collector	Collector	lua					
+Fluid/Collector	collector	fl					
+Fluid/Colors	Colors	fl					
+Fluid/Colors	Colors	lua					
+Fluid/Colors	MikColors	lua					
+Fluid/console	console	fl					
+Fluid/console	console	lua					
+Fluid/cubemap	cubemap	fl					
+Fluid/cubemap	cubemap	lua					
+Fluid/DungeonMapper	DungeonMapper	fl					
+Fluid/DungeonMapper	DungeonMapper	lua					
+Fluid/DungeonMapper	DungeonMapper1226830pm	fl					
+Fluid/DungeonMapper	DungeonMapper1226830pm	lua					
+Fluid/DungeonMapper	DungeonMapperwModels	fl					
+Fluid/EntityPicker	EntityPicker	fl					
+Fluid/EntityPicker	EntityPicker	lua					
+Fluid/ExportObj	ExportObj	fl					
+Fluid/gravitygame	gravitygame	fl					
+Fluid/gravitygame	gravitygamet	lua					
+Fluid/HelloWorld	helloworld	fl					
+Fluid/keyboard_editor	keyboard_editor	fl					
+Fluid/keyboard_editor	kk	fl					
+Fluid/Lights	Lights	fl					
+Fluid/Lights	Lights	lua					
+Fluid/Mappers	Dungeon3D	fl					
+Fluid/Mappers	Dungeon3D	lua					
+Fluid/Mappers	DungeonDraw	fl					
+Fluid/Mappers	DungeonDraw	lua					
+Fluid/Mappers	DungeonDraw3D	fl					
+Fluid/Mappers	DungeonDraw3D	lua					
+Fluid/Mappers	DungeonDraw3D8	fl					
+Fluid/Mappers	DungeonDraw3D8	lua					
+Fluid/Mappers	DungeonDraw3Dn	fl					
+Fluid/Mappers	DungeonDraw3Dn	lua					
+Fluid/Mappers	DungeonMagicDraw	fl					
+Fluid/Mappers	DungeonMagicDraw	lua					
+Fluid/Mappers	DungeonMagicDrawfl	-					
+Fluid/Mappers	DungeonMapper worksok	fl					
+Fluid/Mappers	DungeonMapperfullishbroke	fl					
+Fluid/Mappers	DungeonMapperNaked	fl					
+Fluid/Mappers	DungeonMapperNaked	lua					
+Fluid/Mappers	DungeonMapperNOBSD	fl					
+Fluid/Mappers	DungeonMapperNOBSD	lua					
+Fluid/Mappers	DungeonMapperworks	lua					
+Fluid/Mappers	DungoneMap	fl					
+Fluid/Mappers	DungoneMap	lua					
+Fluid/Mappers	Mapper	fl					
+Fluid/Mappers	Mapper	lua					
+Fluid/Mappers	Mapper2	fl					
+Fluid/Mappers	Mapper2	lua					
+Fluid/Mappers	Mapper3	fl					
+Fluid/Mappers	Mapper3	lua					
+Fluid/Mappers	Mapper4	fl					
+Fluid/Mappers	Mapper4	lua					
+Fluid/Mappers	Mapper5	fl					
+Fluid/Mappers	Mapper5	lua					
+Fluid/Mappers	MapperA	fl					
+Fluid/Mappers	MapperA	lua					
+Fluid/Mappers	MapperB	fl					
+Fluid/Mappers	MapperB	lua					
+Fluid/mesh_editor	mesh_editor	fl					
+Fluid/mesh_editor	mesh_editor	lua					
+Fluid/mesh_editor	mesh_Fixer	fl					
+Fluid/MeshtagBrowser	MeshtagBrowser	fl					
+Fluid/MeshtagBrowser	MeshtagBrowser	lua					
+Fluid/Meshtags	MeshTags	fl					
+Fluid/Meshtags	MeshTags	lua					
+Fluid/ModelsBrowser	ModelsBrowser	fl					
+Fluid/ModelsBrowser	ModelsBrowser	lua					
+Fluid/murgacompiler	amurgacompiler	lua					
+Fluid/murgacompiler	lala	lua					
+Fluid/murgacompiler	murgacompiler	fl					
+Fluid/murgacompiler	murgacompiler	lua					
+Fluid/ParticleBrowser	ParticleBrowser	fl					
+Fluid/ParticleBrowser	ParticleBrowser	lua					
+Fluid/ParticleBrowser	ParticleBrowser Original	fl					
+Fluid/ParticleBrowser	ParticleBrowser Original	lua					
+Fluid/PBMMapper	pbmimages	fl					
+Fluid/PBMMapper	PBMMapper	fl					
+Fluid/PBMMapper	PBMMapper	lua					
+Fluid/PNG_Browser	PNG_Browser	fl					
+Fluid/PNG_Browser	PNG_Browser	lua					
+Fluid/RNDFPS	RNDFPS	fl					
+Fluid/RNDFPS	RNDFPS	lua					
+Fluid/RNDIFLY	RNDIFLY	fl					
+Fluid/RNDIFLY	RNDIFLY	lua					
+Fluid/RNDRTS	RNDRTS	fl					
+Fluid/RNDRTS	RNDRTS	lua					
+Fluid/RNDUDG	RNDUDG	fl					
+Fluid/RNDUDG	RNDUDG	lua					
+Fluid/saveLevelAs	saveLevelAs	fl					
+Fluid/saveLevelAs	saveLevelAs	lua					
+Fluid/script_editor	script_editor	fl					
+Fluid/script_editor	script_editor	lua					
+Fluid/Scripts_Walkthrough	Scripts_Walkthrough	fl					
+Fluid/shader_test	shader_test	fl					
+Fluid/shader_test	shader_test	lua					
+Fluid/SpellingList	compileshebang	-					
+Fluid/SpellingList	out	lua					
+Fluid/SpellingList	SpellingList	-					
+Fluid/SpellingList	SpellingList	fl					
+Fluid/SpellingList	SpellingList	lua					
+Fluid/TabbedWindow	TabbedWindow	fl					
+Fluid/telnetclient	load script	lua					
+Fluid/telnetclient	telnetclient	fl					
+Fluid/telnetserver	telnetserver	fl					
+Fluid/telnetserver	telnetserver	lua					
+Fluid/TextboxBrowser	TextboxBrowser	fl					
+Fluid/TextboxBrowser	TextboxBrowser	lua					
+Fluid/TRON_RTS	RNDRTS	lua					
+Fluid/TRON_RTS	TRON_RTS	fl					
+Fluid/TRON_RTS	TRON_RTS	lua					
+Fluid/UDG_Options	RNDUDG	lua					
+Fluid/UDG_Options	UDG_Options	fl					
+Fluid/UDG_Options	UDG_Options	lua					
+Fluid/UDGMapper	UDGMapper	fl					
+Fluid/UI_MAIN_TOOLS	UI_MAIN_TOOLS	fl					
+Fluid/UI_MAIN_TOOLS	UI_MAIN_TOOLS	lua					
+Fluid/UI_MAIN_TOOLS	UI_MAIN_TOOLS_base22408	fl					
+Fluid/UI_MAIN_TOOLS	UIMainToolsMenuBase	fl					
+Fluid/UI_MAIN_TOOLS	UIMainToolsMenuBase_21808	fl					
+Fluid/UniversalBrowser	UniversalBrowser	fl					
+Fluid/UniversalBrowser	UniversalBrowser	lua					
+Fluid/wifbrowser	wifbrowser	fl					
+Fluid/wifbrowser	wifbrowser	lua					
+Fluid/WTFbrowser	TextureBrowser	fl					
+Fluid/WTFbrowser	TextureBrowser	lua					
+Fluid/WTFbrowser	WTFbrowser	fl					
+Fluid/WTFbrowser	WTFbrowser	lua					
+Fluid/WTFbrowser	WTFbrowser2	fl					
+Fluid/XPMBrowser	XPMBrowser	fl					
+Fluid/XPMBrowser	XPMBrowser	lua					
+Fluid/ZGS_Maker	ZGS_Maker	fl					
+Fluid/ZGS_Maker	ZGS_Maker	lua					
+Help	index	html					
+Help	lex.yy	c					
+Help	materials	html					
+Help	materials	txt					
+Help	particles	html					
+Help	particles	txt					
+Help	reference	html					
+Help	reference	txt					
+Help	referencecontent	html					
+Help	referenceframe	html					
+Help	scanner	-					
+Help	scripting	html					
+Help	scripting	txt					
+Help	scriptingcontent	html					
+Help	scriptingframe	html					
+Help	texttohtml	lex					
+Help/faq	faqcontent	html					
+Help/faq	faqtoc	html					
+Help/faq	igame3dfaq	txt					
+Help/faq	index	html					
+Levels/AntackFight1	cache	txt					
+Levels/AntackFight1	HUDInit	txt					
+Levels/AntackFight1	level models	txt					
+Levels/AntackFight1	load script	txt					
+Levels/AntackFight1	person	txt					
+Levels/AntackFight1	starting	txt					
+Levels/AntackFight1	tex	txt					
+Levels/AntackFight1	tint	txt					
+Levels/AntackFight1/Textures	GUI02	png					
+Levels/AntackFight1/Textures	nix	png					
+Levels/AntackFight1/Textures	redmissile	png					
+Levels/AntackFight2	cache	txt					
+Levels/AntackFight2	HUDInit	txt					
+Levels/AntackFight2	level models	txt					
+Levels/AntackFight2	load script	txt					
+Levels/AntackFight2	person	txt					
+Levels/AntackFight2	starting	txt					
+Levels/AntackFight2	tex	txt					
+Levels/AntackFight2	tint	txt					
+Levels/AntackFight3	cache	txt					
+Levels/AntackFight3	HUDInit	txt					
+Levels/AntackFight3	level models	txt					
+Levels/AntackFight3	load script	txt					
+Levels/AntackFight3	person	txt					
+Levels/AntackFight3	starting	txt					
+Levels/AntackFight3	tex	txt					
+Levels/AntackFight3	tint	txt					
+Levels/AntackFight4	cache	txt					
+Levels/AntackFight4	HUDInit	txt					
+Levels/AntackFight4	level models	txt					
+Levels/AntackFight4	load script	txt					
+Levels/AntackFight4	person	txt					
+Levels/AntackFight4	starting	txt					
+Levels/AntackFight4	tex	txt					
+Levels/AntackFight4	tint	txt					
+Levels/AntackGUI0	easy	txt					
+Levels/AntackGUI0	hard	txt					
+Levels/AntackGUI0	level models	txt					
+Levels/AntackGUI0	load script	txt					
+Levels/AntackGUI0	medium	txt					
+Levels/AntackGUI0	mouseover	txt					
+Levels/AntackGUI0	person	txt					
+Levels/AntackGUI0	quit	txt					
+Levels/AntackGUI0	starting	txt					
+Levels/AntackGUI0	tex	txt					
+Levels/AntackGUI0	texsetter	txt					
+Levels/AntackGUI0	tint	txt					
+Levels/AntackGUI0	trainer	txt					
+Levels/AntackGUI0/Textures	GUI00	png					
+Levels/AntackGUI0/Textures	GUI01	png					
+Levels/AntackGUI1	level models	txt					
+Levels/AntackGUI1	load script	txt					
+Levels/AntackGUI1	person	txt					
+Levels/AntackGUI1	startfade	txt					
+Levels/AntackGUI1	starting	txt					
+Levels/AntackGUI1	tint	txt					
+Levels/AntackGUI2	level models	txt					
+Levels/AntackGUI2	load script	txt					
+Levels/AntackGUI2	person	txt					
+Levels/AntackGUI2	startfade	txt					
+Levels/AntackGUI2	starting	txt					
+Levels/AntackGUI2	tint	txt					
+Levels/AntackTrainer	cache	txt					
+Levels/AntackTrainer	HUDInit	txt					
+Levels/AntackTrainer	level models	txt					
+Levels/AntackTrainer	load script	txt					
+Levels/AntackTrainer	person	txt					
+Levels/AntackTrainer	starting	txt					
+Levels/AntackTrainer	tex	txt					
+Levels/AntackTrainer	tint	txt					
+Levels/AntackTrainer/Textures	1	png					
+Levels/AntackTrainer/Textures	2	png					
+Levels/AntackTrainer/Textures	3	png					
+Levels/AntackTrainer/Textures	4	png					
+Levels/AntackTrainer/Textures	5	png					
+Levels/AntackTrainer/Textures	6	png					
+Levels/AntackTrainer/Textures	trainer	png					
+Levels/aquatext	aquatext_level_mesh	wtf	0	0	0	0	0
+Levels/aquatext	load script	lua					
+Levels/Bike	load script	lua					
+Levels/BobetteSoccer	BobetteSoccer_level_mesh	wtf	16	49	64924.44	2574.0	55675.24
+Levels/BobetteSoccer	load script	lua					
+Levels/BobetteSoccer	mesh	wtf	16	49	16231.11	4290.0	13918.81
+Levels/BrickFun	load script	lua					
+Levels/BrickFun	README	-					
+Levels/Car	load script	lua					
+Levels/Car	mesh	wtf	3456	13985	129360.0	8424.48	129360.0
+Levels/Colltests	load script	lua					
+Levels/Colltests	mesh	wtf	16	49	16231.11	4290.0	13918.81
+Levels/cubmaptest	load script	lua					
+Levels/default	default_Globals	lua					
+Levels/default	load script	lua					
+Levels/FPS	FPS_level_mesh	wtf	3542	16928	153264.74	372702.73	374727.2
+Levels/FPS	load script	lua					
+Levels/FPS	mesh	wtf	365	1018	122227.5	2475.0	84138.29
+Levels/HelloWorld	load script	lua					
+Levels/iFly	iFly_controls	txt					
+Levels/iFly	iFly_name	txt					
+Levels/iFly	iFly_options	txt					
+Levels/iFly	load script	lua					
+Levels/iFly/iFly_Briefing	load script	lua					
+Levels/iFly/iFly_Controls	load script	lua					
+Levels/iFly/iFly_EnterName	load script	lua					
+Levels/iFly/iFly_Options	load script	lua					
+Levels/iFly/iFly_Quit	load script	lua					
+Levels/iFly/iFly_Success	load script	lua					
+Levels/iFly/iFly_Title	load script	lua					
+Levels/NXTpbLuaSim	load script	lua					
+Levels/NXTpbLuaSim	pbLuaAPI	lua					
+Levels/NXTpbLuaSim	README	-					
+Levels/NXTpbLuaSim	robot	lua					
+Levels/NXTpbLuaSim	robotAPI	lua					
+Levels/NXTpbLuaSim	robotDefaults	lua					
+Levels/NXTpbLuaSim	Todo	-					
+Levels/Recognizer	load script	lua					
+Levels/RPG	load script	lua					
+Levels/SquigLand	badmesh	wtf	256	705	46406.25	6900.88	46406.25
+Levels/SquigLand	load script	lua					
+Levels/Tank	1205494182	png					
+Levels/Tank	load script	lua					
+Levels/Tank	Tank_level_mesh	wtf	11	36	92546.05	0.0	70768.34
+Levels/Tronish	load script	lua					
+Levels/Tronish	Tronish_level_mesh	wtf	11	36	92546.05	0.0	70768.34
+Levels/Tronish	tronishlevel	png					
+Levels/UFO	load script	lua					
+Levels/UFO	mesh	wtf	4	5	27249.88	0.0	25756.34
+Levels/ufotest	load script	lua					
+Levels/Warhammer	einheit	lua					
+Levels/Warhammer	einregiment	xml					
+Levels/Warhammer	hauptmenue	fl					
+Levels/Warhammer	hauptmenue	lua					
+Levels/Warhammer	load script	lua					
+Levels/Warhammer	matrix	lua					
+Levels/Warhammer	mitspielen	fl					
+Levels/Warhammer	mitspielen	lua					
+Levels/Warhammer	nk2	lua					
+Levels/Warhammer	spielparameter	fl					
+Levels/Warhammer	spielparameter	lua					
+Levels/Warhammer	tools	lua					
+Levels/Warhammer	warhammer	fl					
+Levels/Warhammer	warhammer	lua					
+Levels/Warhammer	wartenaufmitspieler	fl					
+Levels/Warhammer	wartenaufmitspieler	lua					
+Levels/Warhammer	xmlladen	lua					
+Levels/Warhammer	zweiregiment	xml					
+OBJ	1205111514	mtl					
+OBJ	1205111514	obj					
+OBJ	1205112340	mtl					
+OBJ	1205112340	obj					
+OBJ	1205112412	mtl					
+OBJ	1205112412	obj					
+OBJ	1205112466	mtl					
+OBJ	1205112466	obj					
+OBJ	1205112504	mtl					
+OBJ	1205112504	obj					
+OBJ	1205112558	mtl					
+OBJ	1205112558	obj					
+OBJ	1205112841	mtl					
+OBJ	1205112841	obj					
+OBJ	1205112885	mtl					
+OBJ	1205112885	obj					
+OBJ	1205112903	mtl					
+OBJ	1205112903	obj					
+OBJ	1205112925	mtl					
+OBJ	1205112925	obj					
+OBJ	1205113003	mtl					
+OBJ	1205113003	obj					
+OBJ	1205113017	mtl					
+OBJ	1205113017	obj					
+OBJ	1205113047	mtl					
+OBJ	1205113047	obj					
+OBJ	1205113226	mtl					
+OBJ	1205113226	obj					
+OBJ	1205113252	mtl					
+OBJ	1205113252	obj					
+OBJ	1205113283	mtl					
+OBJ	1205113283	obj					
+OBJ	1205113317	mtl					
+OBJ	1205113317	obj					
+OBJ	1205113332	mtl					
+OBJ	1205113332	obj					
+OBJ	1205113383	mtl					
+OBJ	1205113383	obj					
+OBJ	1205113403	mtl					
+OBJ	1205113403	obj					
+OBJ	1205113435	mtl					
+OBJ	1205113435	obj					
+OBJ	1205113451	mtl					
+OBJ	1205113451	obj					
+OBJ	1205113488	mtl					
+OBJ	1205113561	mtl					
+OBJ	1205113561	obj					
+OBJ	1205113599	mtl					
+OBJ	1205113599	obj					
+OBJ	1205113634	mtl					
+OBJ	1205113634	obj					
+Scripts	core	lua					
+Scripts	testrun	lua					
+Scripts/Convert	AquariusCharactersPMB	lua					
+Scripts/Convert	BVHtoWIFtoWTF	lua					
+Scripts/Convert	ConvermakeLevel1tomesh	lua					
+Scripts/Convert	cxxToiGame3DLua	lua					
+Scripts/Convert	DSB_Dungeons	lua					
+Scripts/Convert	DSB_global	lua					
+Scripts/Convert	dungeonout	lua					
+Scripts/Examples	animazoobvh_parser	lua					
+Scripts/Examples	bvh_parser	lua					
+Scripts/Examples	character_utilities	lua					
+Scripts/Examples	example_menu	lua					
+Scripts/Examples	PlayTBinEditMode	lua					
+Scripts/Examples	truebonesbuilder1	lua					
+Scripts/Examples	truebonesbvh_parser	lua					
+Scripts/Examples	uv_fun	lua					
+Scripts/FPS_Functions	FPS_AI	lua					
+Scripts/FPS_Functions	FPS_Game	lua					
+Scripts/FPS_Functions	FPS_Init	lua					
+Scripts/Functions	animation_functions	lua					
+Scripts/Functions	bone_functions	lua					
+Scripts/Functions	camera_functions	lua					
+Scripts/Functions	collect_functions	lua					
+Scripts/Functions	debug_functions	lua					
+Scripts/Functions	decal_functions	lua					
+Scripts/Functions	dialog_functions	lua					
+Scripts/Functions	dungeon_functions	lua					
+Scripts/Functions	edit_mode_functions	lua					
+Scripts/Functions	file_functions	lua					
+Scripts/Functions	fltk_functions	lua					
+Scripts/Functions	GLwindow_functions	lua					
+Scripts/Functions	help_functions	lua					
+Scripts/Functions	keyboard_functions	lua					
+Scripts/Functions	main_tool_functions	lua					
+Scripts/Functions	material_functions	lua					
+Scripts/Functions	math_functions	lua					
+Scripts/Functions	mesh_editor_functions	lua					
+Scripts/Functions	mesh_tag_functions	lua					
+Scripts/Functions	mesh_tool_functions	lua					
+Scripts/Functions	mouse_functions	lua					
+Scripts/Functions	object_functions	lua					
+Scripts/Functions	particle_functions	lua					
+Scripts/Functions	particlesbrowser_functions	lua					
+Scripts/Functions	path_functions	lua					
+Scripts/Functions	pbm_functions	lua					
+Scripts/Functions	physics_functions	lua					
+Scripts/Functions	random_functions	lua					
+Scripts/Functions	randomtext	lua					
+Scripts/Functions	scene_functions	lua					
+Scripts/Functions	screenshot_functions	lua					
+Scripts/Functions	string_functions	lua					
+Scripts/Functions	telnet_functions	lua					
+Scripts/Functions	telnet_functions_alpha	lua					
+Scripts/Functions	textBox_functions	lua					
+Scripts/Functions	uv_functions	lua					
+Scripts/Functions	xpm_functions	lua					
+Scripts/Functions/Menus	edit_menu_functions	lua					
+Scripts/Functions/Menus	entities_menu_functions	lua					
+Scripts/Functions/Menus	file_menu_functions	lua					
+Scripts/Functions/Menus	fluid_menu_functions	lua					
+Scripts/Functions/Menus	level_menu_functions	lua					
+Scripts/Functions/Menus	levels_menu_functions	lua					
+Scripts/Functions/Menus	library_menu_functions	lua					
+Scripts/Functions/Menus	main_menu_functions	lua					
+Scripts/Functions/Menus	mesh_menu_functions	lua					
+Scripts/Functions/Menus	objects_menu_functions	lua					
+Scripts/Functions/Menus	particles_menu_functions	lua					
+Scripts/iFly_Functions	iFly_AI	lua					
+Scripts/iFly_Functions	iFly_Game	lua					
+Scripts/iFly_Functions	iFly_Init	lua					
+Scripts/iFly_Functions	iFly_math	lua					
+Scripts/iFly_Functions	iFly_plane	lua					
+Scripts/LuaSocket	compat-5.1	lua					
+Scripts/LuaSocket	ltn12	lua					
+Scripts/LuaSocket	mime	lua					
+Scripts/LuaSocket	socket	lua					
+Scripts/LuaSocket/socket	ftp	lua					
+Scripts/LuaSocket/socket	http	lua					
+Scripts/LuaSocket/socket	smtp	lua					
+Scripts/LuaSocket/socket	tp	lua					
+Scripts/LuaSocket/socket	url	lua					
+Scripts/oldConvert	BVHtoWIFtoWTF	lua					
+Scripts/oldConvert	cxxToiGame3DLua	lua					
+Scripts/RTS_Functions	RTS_AI	lua					
+Scripts/RTS_Functions	RTS_astar	lua					
+Scripts/RTS_Functions	RTS_Attributes	lua					
+Scripts/RTS_Functions	RTS_Behaviours	lua					
+Scripts/RTS_Functions	RTS_Camera	lua					
+Scripts/RTS_Functions	RTS_Collisions	lua					
+Scripts/RTS_Functions	RTS_Events	lua					
+Scripts/RTS_Functions	RTS_Game	lua					
+Scripts/RTS_Functions	RTS_Init	lua					
+Scripts/RTS_Functions	RTS_Keyboard	lua					
+Scripts/RTS_Functions	RTS_Orders	lua					
+Scripts/RTS_Functions	RTS_Senses	lua					
+Scripts/RTS_Functions	RTS_Sounds	lua					
+Scripts/RTS_Functions	RTS_Tasks	lua					
+Scripts/RTS_Functions	RTS_Utilities	lua					
+Scripts/RTS_Functions	RTS_Vehicles	lua					
+Scripts/RTS_Functions	RTS_Weapons	lua					
+Scripts/RTS_Functions/RTS_Entities	RTS_BloodPencil	lua					
+Scripts/RTS_Functions/RTS_Entities	RTS_Building	lua					
+Scripts/RTS_Functions/RTS_Entities	RTS_Car	lua					
+Scripts/RTS_Functions/RTS_Entities	RTS_Door	lua					
+Scripts/RTS_Functions/RTS_Entities	RTS_Emitters	lua					
+Scripts/RTS_Functions/RTS_Entities	RTS_GUI	lua					
+Scripts/RTS_Functions/RTS_Entities	RTS_Gun	lua					
+Scripts/RTS_Functions/RTS_Entities	RTS_Human	lua					
+Scripts/RTS_Functions/RTS_Entities	RTS_Teams	lua					
+Scripts/RTS_Functions/RTS_Entities	RTS_Window	lua					
+Scripts/RTS_Functions/RTS_Entities	RTS_Zombie	lua					
+Scripts/UDG_Functions	UDG_AI	lua					
+Scripts/UDG_Functions	UDG_Editor	lua					
+Scripts/UDG_Functions	UDG_Game	lua					
+Scripts/UDG_Functions	UDG_Gamemine	lua					
+Scripts/UDG_Functions	UDG_Init	lua					
+Scripts/UDG_Functions	UDG_Lights	lua					
+Scripts/UDG_Functions	UDG_Sounds	lua					
+Scripts/UDG_Functions	UDG_Textboxes	lua					
+Scripts/UDG_Functions	UDG_Utilities	lua					
+Scripts/UDG_Functions/UDG_Entities	UDG_BloodPencil	lua					
+Scripts/UDG_Functions/UDG_Entities	UDG_Building	lua					
+Scripts/UDG_Functions/UDG_Entities	UDG_Car	lua					
+Scripts/UDG_Functions/UDG_Entities	UDG_Door	lua					
+Scripts/UDG_Functions/UDG_Entities	UDG_Emitters	lua					
+Scripts/UDG_Functions/UDG_Entities	UDG_GUI	lua					
+Scripts/UDG_Functions/UDG_Entities	UDG_Gun	lua					
+Scripts/UDG_Functions/UDG_Entities	UDG_Human	lua					
+Scripts/UDG_Functions/UDG_Entities	UDG_LevelExits	lua					
+Scripts/UDG_Functions/UDG_Entities	UDG_MeleeWeapons	lua					
+Scripts/UDG_Functions/UDG_Entities	UDG_Scenery	lua					
+Scripts/UDG_Functions/UDG_Entities	UDG_Teams	lua					
+Scripts/UDG_Functions/UDG_Entities	UDG_Window	lua					
+Scripts/UDG_Functions/UDG_Entities	UDG_Zombie	lua					
+Shaders/bump	FragmentProgram	-					
+Shaders/bump	FragmentProgram_ATI	-					
+Shaders/bump	VertexProgram	-					
+Shaders/bumppass	FragmentProgram	-					
+Shaders/bumppass	FragmentProgram_ATI	-					
+Shaders/bumppass	VertexProgram	-					
+Shaders/flashlight	FragmentProgram	-					
+Shaders/flashlight	FragmentProgram_ATI	-					
+Shaders/flashlight	VertexProgram	-					
+Shaders/light	FragmentProgram	-					
+Shaders/light	FragmentProgram_ATI	-					
+Shaders/light	VertexProgram	-					
+Shaders/light_radius	FragmentProgram	-					
+Shaders/light_radius	FragmentProgram_ATI	-					
+Shaders/light_radius	VertexProgram	-					
+Shaders/newbump	newbump	fs					
+Shaders/newbump	newbump	sbproj					
+Shaders/newbump	newbump	vs					
+Shaders/pass	FragmentProgram	-					
+Shaders/pass	FragmentProgram_ATI	-					
+Shaders/pass	VertexProgram	-					
+Shaders/per_pixel_lighting	per_pixel_lighting	fs					
+Shaders/per_pixel_lighting	per_pixel_lighting	sbproj					
+Shaders/per_pixel_lighting	per_pixel_lighting	vs					
+Shaders/radius	FragmentProgram	-					
+Shaders/radius	FragmentProgram_ATI	-					
+Shaders/radius	VertexProgram	-					
+Shaders/spotlight	FragmentProgram	-					
+Shaders/spotlight	FragmentProgram_ATI	-					
+Shaders/spotlight	FragmentProgram_ATI Kopie	-					
+Shaders/spotlight	VertexProgram	-					
+Shaders/tomdrin	tomdrin	fs					
+Shaders/tomdrin	tomdrin	sbproj					
+Shaders/tomdrin	tomdrin	vs					
+WTF/Animals	bird	wtf	165	879	6982.03	2041.0	5804.9
+WTF/Animals	brainworm	wtf	1165	5604	47317.03	93481.72	125901.2
+WTF/Animals	brontsaurus1K	wtf	587	3240	4791.61	10022.1	18008.08
+WTF/Animals	deer400	wtf	448	2670	153.14	516.5	832.45
+WTF/Animals	falcon	wtf	116	795	899.03	175.18	446.71
+WTF/Animals	horse690	wtf	346	2070	255.75	860.06	1289.06
+WTF/Animals	mantis2K	wtf	914	5208	69.53	618.78	401.59
+WTF/Animals	monster884	wtf	444	2652	1352.17	2062.16	3482.99
+WTF/Animals	starfish	wtf	306	1824	960.51	127.05	913.5
+WTF/Animals	whale653	wtf	384	1959	15823.5	4620.0	20790.0
+WTF/AquaChar	chr0	wtf	85	102	3960.0	0.0	4620.0
+WTF/AquaChar	chr1	wtf	75	90	3300.0	0.0	4620.0
+WTF/AquaChar	chr10	wtf	110	132	4620.0	0.0	4620.0
+WTF/AquaChar	chr100	wtf	80	96	3300.0	0.0	4620.0
+WTF/AquaChar	chr101	wtf	70	84	3300.0	0.0	3300.0
+WTF/AquaChar	chr102	wtf	45	54	1980.0	0.0	4620.0
+WTF/AquaChar	chr103	wtf	80	96	3300.0	0.0	3960.0
+WTF/AquaChar	chr104	wtf	70	84	3300.0	0.0	4620.0
+WTF/AquaChar	chr105	wtf	45	54	1980.0	0.0	4620.0
+WTF/AquaChar	chr106	wtf	40	48	1980.0	0.0	5280.0
+WTF/AquaChar	chr107	wtf	65	78	3300.0	0.0	4620.0
+WTF/AquaChar	chr108	wtf	50	60	1980.0	0.0	4620.0
+WTF/AquaChar	chr109	wtf	80	96	3960.0	0.0	3300.0
+WTF/AquaChar	chr11	wtf	110	132	4620.0	0.0	4620.0
+WTF/AquaChar	chr110	wtf	60	72	3300.0	0.0	3300.0
+WTF/AquaChar	chr111	wtf	60	72	3300.0	0.0	3300.0
+WTF/AquaChar	chr112	wtf	75	90	3300.0	0.0	3960.0
+WTF/AquaChar	chr113	wtf	80	96	3960.0	0.0	3960.0
+WTF/AquaChar	chr114	wtf	40	48	2640.0	0.0	3300.0
+WTF/AquaChar	chr115	wtf	65	78	3300.0	0.0	3300.0
+WTF/AquaChar	chr116	wtf	55	66	3300.0	0.0	4620.0
+WTF/AquaChar	chr117	wtf	60	72	3300.0	0.0	3300.0
+WTF/AquaChar	chr118	wtf	45	54	3300.0	0.0	3300.0
+WTF/AquaChar	chr119	wtf	75	90	3960.0	0.0	3300.0
+WTF/AquaChar	chr12	wtf	110	132	4620.0	0.0	4620.0
+WTF/AquaChar	chr120	wtf	45	54	3300.0	0.0	3300.0
+WTF/AquaChar	chr121	wtf	70	84	2640.0	0.0	3960.0
+WTF/AquaChar	chr122	wtf	65	78	3300.0	0.0	3300.0
+WTF/AquaChar	chr123	wtf	45	54	2640.0	0.0	4620.0
+WTF/AquaChar	chr124	wtf	30	36	660.0	0.0	4620.0
+WTF/AquaChar	chr125	wtf	45	54	2640.0	0.0	4620.0
+WTF/AquaChar	chr126	wtf	25	30	3300.0	0.0	1980.0
+WTF/AquaChar	chr127	wtf	320	384	5280.0	0.0	5280.0
+WTF/AquaChar	chr128	wtf	280	336	5280.0	0.0	4620.0
+WTF/AquaChar	chr129	wtf	40	48	660.0	0.0	5280.0
+WTF/AquaChar	chr13	wtf	110	132	4620.0	0.0	4620.0
+WTF/AquaChar	chr130	wtf	130	156	4620.0	0.0	4620.0
+WTF/AquaChar	chr131	wtf	145	174	4620.0	0.0	5280.0
+WTF/AquaChar	chr132	wtf	80	96	5280.0	0.0	2640.0
+WTF/AquaChar	chr133	wtf	80	96	2640.0	0.0	5280.0
+WTF/AquaChar	chr134	wtf	160	192	5280.0	0.0	5280.0
+WTF/AquaChar	chr135	wtf	120	144	3960.0	0.0	3960.0
+WTF/AquaChar	chr136	wtf	80	96	5280.0	0.0	1320.0
+WTF/AquaChar	chr137	wtf	240	288	5280.0	0.0	3960.0
+WTF/AquaChar	chr138	wtf	175	210	5280.0	0.0	5280.0
+WTF/AquaChar	chr139	wtf	170	204	5280.0	0.0	5280.0
+WTF/AquaChar	chr14	wtf	190	228	5280.0	0.0	4620.0
+WTF/AquaChar	chr140	wtf	140	168	5280.0	0.0	4620.0
+WTF/AquaChar	chr141	wtf	160	192	5280.0	0.0	4620.0
+WTF/AquaChar	chr142	wtf	200	240	5280.0	0.0	5280.0
+WTF/AquaChar	chr143	wtf	200	240	5280.0	0.0	5280.0
+WTF/AquaChar	chr144	wtf	40	48	5280.0	0.0	660.0
+WTF/AquaChar	chr145	wtf	280	336	4620.0	0.0	5280.0
+WTF/AquaChar	chr146	wtf	175	210	5280.0	0.0	5280.0
+WTF/AquaChar	chr147	wtf	175	210	5280.0	0.0	5280.0
+WTF/AquaChar	chr148	wtf	80	96	5280.0	0.0	2640.0
+WTF/AquaChar	chr149	wtf	80	96	2640.0	0.0	5280.0
+WTF/AquaChar	chr15	wtf	130	156	3960.0	0.0	5280.0
+WTF/AquaChar	chr150	wtf	260	312	5280.0	0.0	5280.0
+WTF/AquaChar	chr151	wtf	80	96	1320.0	0.0	5280.0
+WTF/AquaChar	chr152	wtf	120	144	1980.0	0.0	5280.0
+WTF/AquaChar	chr153	wtf	160	192	2640.0	0.0	5280.0
+WTF/AquaChar	chr154	wtf	170	204	5280.0	0.0	5280.0
+WTF/AquaChar	chr155	wtf	170	204	5280.0	0.0	5280.0
+WTF/AquaChar	chr156	wtf	130	156	5280.0	0.0	3960.0
+WTF/AquaChar	chr157	wtf	130	156	5280.0	0.0	3960.0
+WTF/AquaChar	chr158	wtf	200	240	5280.0	0.0	5280.0
+WTF/AquaChar	chr159	wtf	200	240	5280.0	0.0	5280.0
+WTF/AquaChar	chr16	wtf	120	144	5280.0	0.0	3300.0
+WTF/AquaChar	chr160	wtf	0	0	0	0	0
+WTF/AquaChar	chr161	wtf	60	72	2640.0	0.0	1980.0
+WTF/AquaChar	chr162	wtf	60	72	2640.0	0.0	1980.0
+WTF/AquaChar	chr163	wtf	120	144	5280.0	0.0	1980.0
+WTF/AquaChar	chr164	wtf	40	48	2640.0	0.0	1320.0
+WTF/AquaChar	chr165	wtf	100	120	2640.0	0.0	3300.0
+WTF/AquaChar	chr166	wtf	100	120	5280.0	0.0	3300.0
+WTF/AquaChar	chr167	wtf	160	192	5280.0	0.0	3300.0
+WTF/AquaChar	chr168	wtf	40	48	2640.0	0.0	1320.0
+WTF/AquaChar	chr169	wtf	100	120	5280.0	0.0	3300.0
+WTF/AquaChar	chr17	wtf	140	168	4620.0	0.0	5280.0
+WTF/AquaChar	chr170	wtf	100	120	2640.0	0.0	3300.0
+WTF/AquaChar	chr171	wtf	160	192	5280.0	0.0	3300.0
+WTF/AquaChar	chr172	wtf	80	96	5280.0	0.0	1320.0
+WTF/AquaChar	chr173	wtf	140	168	5280.0	0.0	3300.0
+WTF/AquaChar	chr174	wtf	140	168	5280.0	0.0	3300.0
+WTF/AquaChar	chr175	wtf	200	240	5280.0	0.0	3300.0
+WTF/AquaChar	chr176	wtf	60	72	2640.0	0.0	1980.0
+WTF/AquaChar	chr177	wtf	120	144	2640.0	0.0	5280.0
+WTF/AquaChar	chr178	wtf	120	144	5280.0	0.0	5280.0
+WTF/AquaChar	chr179	wtf	180	216	5280.0	0.0	5280.0
+WTF/AquaChar	chr18	wtf	160	192	2640.0	0.0	5280.0
+WTF/AquaChar	chr180	wtf	100	120	2640.0	0.0	3300.0
+WTF/AquaChar	chr181	wtf	160	192	2640.0	0.0	5280.0
+WTF/AquaChar	chr182	wtf	160	192	5280.0	0.0	5280.0
+WTF/AquaChar	chr183	wtf	220	264	5280.0	0.0	5280.0
+WTF/AquaChar	chr184	wtf	100	120	5280.0	0.0	3300.0
+WTF/AquaChar	chr185	wtf	160	192	5280.0	0.0	5280.0
+WTF/AquaChar	chr186	wtf	160	192	5280.0	0.0	5280.0
+WTF/AquaChar	chr187	wtf	220	264	5280.0	0.0	5280.0
+WTF/AquaChar	chr188	wtf	140	168	5280.0	0.0	3300.0
+WTF/AquaChar	chr189	wtf	200	240	5280.0	0.0	5280.0
+WTF/AquaChar	chr19	wtf	170	204	5280.0	0.0	4620.0
+WTF/AquaChar	chr190	wtf	200	240	5280.0	0.0	5280.0
+WTF/AquaChar	chr191	wtf	240	288	5280.0	0.0	5280.0
+WTF/AquaChar	chr192	wtf	180	216	5280.0	0.0	5280.0
+WTF/AquaChar	chr193	wtf	180	216	5280.0	0.0	5280.0
+WTF/AquaChar	chr194	wtf	130	156	5280.0	0.0	2640.0
+WTF/AquaChar	chr195	wtf	240	288	3960.0	0.0	5280.0
+WTF/AquaChar	chr196	wtf	80	96	2640.0	0.0	2640.0
+WTF/AquaChar	chr197	wtf	200	240	5280.0	0.0	5280.0
+WTF/AquaChar	chr198	wtf	20	24	1320.0	0.0	1320.0
+WTF/AquaChar	chr199	wtf	65	78	2640.0	0.0	2640.0
+WTF/AquaChar	chr2	wtf	80	96	3300.0	0.0	4620.0
+WTF/AquaChar	chr20	wtf	180	216	5280.0	0.0	5280.0
+WTF/AquaChar	chr200	wtf	140	168	5280.0	0.0	5280.0
+WTF/AquaChar	chr201	wtf	65	78	2640.0	0.0	2640.0
+WTF/AquaChar	chr202	wtf	40	48	5280.0	0.0	5280.0
+WTF/AquaChar	chr203	wtf	130	156	2640.0	0.0	5280.0
+WTF/AquaChar	chr204	wtf	110	132	5280.0	0.0	3300.0
+WTF/AquaChar	chr205	wtf	110	132	3300.0	0.0	5280.0
+WTF/AquaChar	chr206	wtf	80	96	3300.0	0.0	3300.0
+WTF/AquaChar	chr207	wtf	80	96	3300.0	0.0	3300.0
+WTF/AquaChar	chr208	wtf	50	60	5280.0	0.0	5280.0
+WTF/AquaChar	chr209	wtf	120	144	5280.0	0.0	5280.0
+WTF/AquaChar	chr21	wtf	130	156	4620.0	0.0	4620.0
+WTF/AquaChar	chr210	wtf	130	156	5280.0	0.0	2640.0
+WTF/AquaChar	chr211	wtf	80	96	3960.0	0.0	3960.0
+WTF/AquaChar	chr212	wtf	210	252	5280.0	0.0	5280.0
+WTF/AquaChar	chr213	wtf	120	144	5280.0	0.0	5280.0
+WTF/AquaChar	chr214	wtf	80	96	1320.0	0.0	5280.0
+WTF/AquaChar	chr215	wtf	75	90	3300.0	0.0	2640.0
+WTF/AquaChar	chr216	wtf	80	96	5280.0	0.0	5280.0
+WTF/AquaChar	chr217	wtf	65	78	2640.0	0.0	2640.0
+WTF/AquaChar	chr218	wtf	40	48	5280.0	0.0	5280.0
+WTF/AquaChar	chr219	wtf	130	156	2640.0	0.0	5280.0
+WTF/AquaChar	chr22	wtf	145	174	4620.0	0.0	5280.0
+WTF/AquaChar	chr220	wtf	110	132	5280.0	0.0	3300.0
+WTF/AquaChar	chr221	wtf	110	132	3300.0	0.0	5280.0
+WTF/AquaChar	chr222	wtf	80	96	3300.0	0.0	3300.0
+WTF/AquaChar	chr223	wtf	80	96	3300.0	0.0	3300.0
+WTF/AquaChar	chr224	wtf	80	96	2640.0	0.0	2640.0
+WTF/AquaChar	chr225	wtf	120	144	5280.0	0.0	5280.0
+WTF/AquaChar	chr226	wtf	120	144	2640.0	0.0	5280.0
+WTF/AquaChar	chr227	wtf	180	216	5280.0	0.0	5280.0
+WTF/AquaChar	chr228	wtf	100	120	5280.0	0.0	3300.0
+WTF/AquaChar	chr229	wtf	160	192	5280.0	0.0	5280.0
+WTF/AquaChar	chr23	wtf	140	168	5280.0	0.0	4620.0
+WTF/AquaChar	chr230	wtf	160	192	5280.0	0.0	5280.0
+WTF/AquaChar	chr231	wtf	220	264	5280.0	0.0	5280.0
+WTF/AquaChar	chr232	wtf	100	120	2640.0	0.0	3300.0
+WTF/AquaChar	chr233	wtf	160	192	5280.0	0.0	5280.0
+WTF/AquaChar	chr234	wtf	160	192	2640.0	0.0	5280.0
+WTF/AquaChar	chr235	wtf	220	264	5280.0	0.0	5280.0
+WTF/AquaChar	chr236	wtf	140	168	5280.0	0.0	3300.0
+WTF/AquaChar	chr237	wtf	200	240	5280.0	0.0	5280.0
+WTF/AquaChar	chr238	wtf	200	240	5280.0	0.0	5280.0
+WTF/AquaChar	chr239	wtf	260	312	5280.0	0.0	5280.0
+WTF/AquaChar	chr24	wtf	160	192	5280.0	0.0	4620.0
+WTF/AquaChar	chr240	wtf	120	144	5280.0	0.0	1980.0
+WTF/AquaChar	chr241	wtf	180	216	5280.0	0.0	5280.0
+WTF/AquaChar	chr242	wtf	180	216	5280.0	0.0	5280.0
+WTF/AquaChar	chr243	wtf	240	288	5280.0	0.0	5280.0
+WTF/AquaChar	chr244	wtf	160	192	5280.0	0.0	3300.0
+WTF/AquaChar	chr245	wtf	220	264	5280.0	0.0	5280.0
+WTF/AquaChar	chr246	wtf	220	264	5280.0	0.0	5280.0
+WTF/AquaChar	chr247	wtf	280	336	5280.0	0.0	5280.0
+WTF/AquaChar	chr248	wtf	160	192	5280.0	0.0	3300.0
+WTF/AquaChar	chr249	wtf	220	264	5280.0	0.0	5280.0
+WTF/AquaChar	chr25	wtf	170	204	5280.0	0.0	5280.0
+WTF/AquaChar	chr250	wtf	220	264	5280.0	0.0	5280.0
+WTF/AquaChar	chr251	wtf	280	336	5280.0	0.0	5280.0
+WTF/AquaChar	chr252	wtf	200	240	5280.0	0.0	3300.0
+WTF/AquaChar	chr253	wtf	260	312	5280.0	0.0	5280.0
+WTF/AquaChar	chr254	wtf	260	312	5280.0	0.0	5280.0
+WTF/AquaChar	chr255	wtf	320	384	5280.0	0.0	5280.0
+WTF/AquaChar	chr26	wtf	80	96	2640.0	0.0	2640.0
+WTF/AquaChar	chr27	wtf	80	96	2640.0	0.0	2640.0
+WTF/AquaChar	chr28	wtf	80	96	2640.0	0.0	2640.0
+WTF/AquaChar	chr29	wtf	80	96	2640.0	0.0	2640.0
+WTF/AquaChar	chr3	wtf	85	102	3300.0	0.0	4620.0
+WTF/AquaChar	chr30	wtf	160	192	5280.0	0.0	5280.0
+WTF/AquaChar	chr31	wtf	160	192	5280.0	0.0	2640.0
+WTF/AquaChar	chr32	wtf	0	0	0	0	0
+WTF/AquaChar	chr33	wtf	30	36	660.0	0.0	4620.0
+WTF/AquaChar	chr34	wtf	30	36	1980.0	0.0	1980.0
+WTF/AquaChar	chr35	wtf	100	120	3300.0	0.0	4620.0
+WTF/AquaChar	chr36	wtf	85	102	3300.0	0.0	4620.0
+WTF/AquaChar	chr37	wtf	65	78	3300.0	0.0	4620.0
+WTF/AquaChar	chr38	wtf	70	84	3300.0	0.0	4620.0
+WTF/AquaChar	chr39	wtf	15	18	1320.0	0.0	1980.0
+WTF/AquaChar	chr4	wtf	35	42	3300.0	0.0	3300.0
+WTF/AquaChar	chr40	wtf	35	42	1980.0	0.0	4620.0
+WTF/AquaChar	chr41	wtf	35	42	1980.0	0.0	4620.0
+WTF/AquaChar	chr42	wtf	75	90	3300.0	0.0	4620.0
+WTF/AquaChar	chr43	wtf	45	54	3300.0	0.0	3300.0
+WTF/AquaChar	chr44	wtf	15	18	1320.0	0.0	1980.0
+WTF/AquaChar	chr45	wtf	25	30	3300.0	0.0	660.0
+WTF/AquaChar	chr46	wtf	5	6	660.0	0.0	660.0
+WTF/AquaChar	chr47	wtf	25	30	3300.0	0.0	3300.0
+WTF/AquaChar	chr48	wtf	95	114	3300.0	0.0	4620.0
+WTF/AquaChar	chr49	wtf	50	60	1980.0	0.0	4620.0
+WTF/AquaChar	chr5	wtf	130	156	5280.0	0.0	5280.0
+WTF/AquaChar	chr50	wtf	75	90	3300.0	0.0	4620.0
+WTF/AquaChar	chr51	wtf	75	90	3300.0	0.0	4620.0
+WTF/AquaChar	chr52	wtf	65	78	2640.0	0.0	4620.0
+WTF/AquaChar	chr53	wtf	85	102	3300.0	0.0	4620.0
+WTF/AquaChar	chr54	wtf	80	96	3300.0	0.0	4620.0
+WTF/AquaChar	chr55	wtf	55	66	3300.0	0.0	4620.0
+WTF/AquaChar	chr56	wtf	85	102	3300.0	0.0	4620.0
+WTF/AquaChar	chr57	wtf	80	96	3300.0	0.0	4620.0
+WTF/AquaChar	chr58	wtf	10	12	660.0	0.0	1980.0
+WTF/AquaChar	chr59	wtf	20	24	1320.0	0.0	3300.0
+WTF/AquaChar	chr6	wtf	100	120	5280.0	0.0	3960.0
+WTF/AquaChar	chr60	wtf	35	42	2640.0	0.0	4620.0
+WTF/AquaChar	chr61	wtf	50	60	3300.0	0.0	1980.0
+WTF/AquaChar	chr62	wtf	35	42	2640.0	0.0	4620.0
+WTF/AquaChar	chr63	wtf	45	54	3300.0	0.0	4620.0
+WTF/AquaChar	chr64	wtf	95	114	3300.0	0.0	4620.0
+WTF/AquaChar	chr65	wtf	80	96	3300.0	0.0	4620.0
+WTF/AquaChar	chr66	wtf	100	120	3300.0	0.0	4620.0
+WTF/AquaChar	chr67	wtf	65	78	3300.0	0.0	4620.0
+WTF/AquaChar	chr68	wtf	90	108	3300.0	0.0	4620.0
+WTF/AquaChar	chr69	wtf	90	108	3300.0	0.0	4620.0
+WTF/AquaChar	chr7	wtf	100	120	5280.0	0.0	3960.0
+WTF/AquaChar	chr70	wtf	70	84	3300.0	0.0	4620.0
+WTF/AquaChar	chr71	wtf	80	96	3300.0	0.0	4620.0
+WTF/AquaChar	chr72	wtf	85	102	3300.0	0.0	4620.0
+WTF/AquaChar	chr73	wtf	55	66	1980.0	0.0	4620.0
+WTF/AquaChar	chr74	wtf	50	60	3300.0	0.0	4620.0
+WTF/AquaChar	chr75	wtf	70	84	3300.0	0.0	4620.0
+WTF/AquaChar	chr76	wtf	55	66	3300.0	0.0	4620.0
+WTF/AquaChar	chr77	wtf	90	108	3300.0	0.0	4620.0
+WTF/AquaChar	chr78	wtf	85	102	3300.0	0.0	4620.0
+WTF/AquaChar	chr79	wtf	80	96	3300.0	0.0	4620.0
+WTF/AquaChar	chr8	wtf	100	120	3960.0	0.0	5280.0
+WTF/AquaChar	chr80	wtf	75	90	3300.0	0.0	4620.0
+WTF/AquaChar	chr81	wtf	85	102	3300.0	0.0	4620.0
+WTF/AquaChar	chr82	wtf	90	108	3300.0	0.0	4620.0
+WTF/AquaChar	chr83	wtf	75	90	3300.0	0.0	4620.0
+WTF/AquaChar	chr84	wtf	55	66	3300.0	0.0	4620.0
+WTF/AquaChar	chr85	wtf	75	90	3300.0	0.0	4620.0
+WTF/AquaChar	chr86	wtf	65	78	3300.0	0.0	4620.0
+WTF/AquaChar	chr87	wtf	90	108	3300.0	0.0	4620.0
+WTF/AquaChar	chr88	wtf	65	78	3300.0	0.0	4620.0
+WTF/AquaChar	chr89	wtf	50	60	3300.0	0.0	4620.0
+WTF/AquaChar	chr9	wtf	100	120	3960.0	0.0	5280.0
+WTF/AquaChar	chr90	wtf	75	90	3300.0	0.0	4620.0
+WTF/AquaChar	chr91	wtf	100	120	3300.0	0.0	4620.0
+WTF/AquaChar	chr92	wtf	25	30	3300.0	0.0	3300.0
+WTF/AquaChar	chr93	wtf	100	120	3300.0	0.0	4620.0
+WTF/AquaChar	chr94	wtf	25	30	3300.0	0.0	1980.0
+WTF/AquaChar	chr95	wtf	25	30	3300.0	0.0	660.0
+WTF/AquaChar	chr96	wtf	15	18	1320.0	0.0	1980.0
+WTF/AquaChar	chr97	wtf	70	84	3300.0	0.0	3300.0
+WTF/AquaChar	chr98	wtf	80	96	3300.0	0.0	4620.0
+WTF/AquaChar	chr99	wtf	45	54	2640.0	0.0	3300.0
+WTF/Armor	bullshield	wtf	96	540	250.99	251.34	26.36
+WTF/Armor	hawkshield	wtf	96	540	250.99	251.34	26.36
+WTF/Armor	medusashield	wtf_					
+WTF/Armor	shield76	wtf	50	228	193.13	421.67	24.61
+WTF/Armor	snakeshield	wtf	96	540	250.99	251.34	26.36
+WTF/Billboards	aquariuslogo	wtf	4	6	79999.99	0.0	79999.99
+WTF/Billboards	square	wtf	4	6	79999.99	0.0	79999.99
+WTF/Building_parts	balustrade500	wtf	344	1632	1169.28	381.73	99.99
+WTF/Building_parts	cementsteps3x4x8	wtf	721	4080	2421.74	3097.26	5506.38
+WTF/Building_parts	door172	wtf	94	516	476.01	990.0	96.29
+WTF/Building_parts	door268	wtf	142	804	476.01	990.0	96.29
+WTF/Building_parts	door288	wtf	153	864	476.01	990.0	96.29
+WTF/Building_parts	door432	wtf	202	1314	476.01	990.0	96.29
+WTF/Building_parts	door74	wtf	45	222	474.81	983.27	121.92
+WTF/Building_parts	garagedoor400	wtf	192	900	1330.11	975.57	48.01
+WTF/Building_parts	GarageDoorwall	wtf	84	444	1955.24	966.8	151.46
+WTF/Building_parts	grandarchladefense	wtf	44	168	23331.0	24438.97	22147.97
+WTF/Building_parts	minoancolumn164	wtf	157	582	605.74	1822.64	605.74
+WTF/Building_parts	slatfenceV	wtf	152	684	1351.68	844.8	54.07
+WTF/Building_parts	spiralstaircase	wtf	540	2538	1096.6	2964.81	1026.67
+WTF/Building_parts	stairs1x3x3	wtf	240	1161	667.34	2311.15	2342.97
+WTF/Building_parts	stairs2x2x2	wtf	240	1161	1320.0	1320.0	1320.0
+WTF/Building_parts	stairs3x3x3	wtf	240	1161	2573.82	2311.15	2342.97
+WTF/Building_parts	tunnelforward	wtf	44	168	1166.55	1221.95	1107.4
+WTF/Building_parts	wallbeam	wtf	16	84	2615.18	12975.34	2615.18
+WTF/Building_parts	wallbrazier	wtf	39	198	351.18	103.61	373.56
+WTF/Building_parts	wallconnector	wtf	16	84	2615.18	2615.18	12975.34
+WTF/Building_parts	walllamp	wtf	275	1197	126.51	385.0	140.99
+WTF/Building_parts	windowhipoly	wtf	284	1752	360.94	966.8	1160.16
+WTF/Building_parts	windowLwall	wtf	40	204	2146.16	1933.59	2778.29
+WTF/Buildings	bfbuilding3	wtf	89	288	4680.31	5205.14	5116.99
+WTF/Buildings	bpbuilding1	wtf	89	288	3601.12	4071.22	3401.08
+WTF/Buildings	bpbuilding2	wtf	89	288	4020.31	4545.13	3796.99
+WTF/Buildings	bunker242	wtf	156	786	6371.48	8021.11	5280.0
+WTF/Buildings	castle240	wtf	201	720	10722.36	13286.45	5187.68
+WTF/Buildings	chapel01	wtf	474	2682	13689.67	9603.17	9667.56
+WTF/Buildings	church1357	wtf	1131	4071	7677.33	14304.05	14435.22
+WTF/Buildings	columnedbuilding1K	wtf	788	4071	10709.15	6280.59	21805.37
+WTF/Buildings	empirestatelike	wtf	151	708	6082.72	32219.15	5547.63
+WTF/Buildings	gym2	wtf	4611	22569	23439.43	5746.72	19032.74
+WTF/Buildings	headless1849	wtf	1050	5547	514.56	458.6	99.99
+WTF/Buildings	middletower	wtf	582	3435	10071.09	26525.61	9866.66
+WTF/Buildings	middletower562	wtf	291	1686	10071.09	26525.61	9866.66
+WTF/Buildings	skyscraperA	wtf	854	3264	14025.0	59330.52	14025.0
+WTF/Buildings	smallchurch	wtf	248	537	4842.27	5705.71	6051.13
+WTF/Buildings	temple107	wtf	146	321	9646.56	7120.08	7809.12
+WTF/Buildings	toolshedgeneral	wtf	102	630	1534.01	1380.56	1399.91
+WTF/Buildings	tower236	wtf	151	708	6082.72	32219.15	5547.63
+WTF/Buildings	tower316	wtf	168	948	3054.48	11391.66	2837.87
+WTF/Bump_mesh	bump	wtf	4	5	10560.0	10560.0	0.0
+WTF/Bump_mesh	bump_mesh	wtf	26	144	660.0	858.0	660.0
+WTF/Bump_mesh	bump_mesh2	wtf	242	1440	660.0	660.0	660.0
+WTF/Bump_mesh	bump_mesh3	wtf	4	6	660.0	660.0	0.0
+WTF/Characters	anita1k6	wtf	1026	5025	193.86	629.28	114.99
+WTF/Characters	anita1k6LD	wtf	1026	5025	193.86	629.28	114.99
+WTF/Characters	anita1k7LD	wtf	1068	5256	193.86	629.28	117.09
+WTF/Characters	Anita1kboned	wtf	1038	5025	203.33	660.0	120.6
+WTF/Characters	baby2K	wtf	1055	6102	212.97	242.39	59.82
+WTF/Characters	baby2kboned	wtf	849	4842	360.55	660.0	161.47
+WTF/Characters	ballerina2K	wtf	1688	8706	258.28	628.99	199.04
+WTF/Characters	ballerina2kboned	wtf	1700	8706	271.02	660.0	208.85
+WTF/Characters	BHarbiter	wtf	1255	7536	485.27	958.68	457.27
+WTF/Characters	bharbiterbone	wtf	1267	7536	334.08	660.0	314.8
+WTF/Characters	bobette	wtf	520	1468	293.6	731.83	165.21
+WTF/Characters	boneman	wtf	66	182	7072.15	6612.77	957.98
+WTF/Characters	boner	wtf	125	276	4252.15	3538.38	605.69
+WTF/Characters	bumpywoman	wtf	606	3369	262.62	651.29	95.91
+WTF/Characters	bumpywoman2	wtf	572	3258	262.62	651.29	95.91
+WTF/Characters	copguy	wtf	868	5055	977.37	776.82	168.87
+WTF/Characters	copguyboned	wtf	880	5055	830.39	660.0	143.47
+WTF/Characters	devil836	wtf	510	2508	293.55	691.72	103.33
+WTF/Characters	devil836boned	wtf	522	2508	280.06	660.0	99.47
+WTF/Characters	draft	wtf	560	4955	166.49	660.0	112.47
+WTF/Characters	fighterMan	wtf	598	3396	323.66	723.55	137.38
+WTF/Characters	fleshbeast	wtf	519	3030	249.83	660.0	236.17
+WTF/Characters	flyman420	wtf	366	2184	1226.8	990.86	344.03
+WTF/Characters	flymanboned	wtf	378	2184	817.16	660.0	229.16
+WTF/Characters	greenalien	wtf	324	1860	480.78	660.0	222.59
+WTF/Characters	greenalien620	wtf	324	1860	480.78	660.0	222.59
+WTF/Characters	hannah1k8	wtf	1122	5412	203.79	675.07	132.67
+WTF/Characters	hannah1k8boned	wtf	1134	5412	199.24	660.0	129.71
+WTF/Characters	head770	wtf	391	2280	117.29	151.42	120.55
+WTF/Characters	henry1p5k	wtf	1000	4644	293.03	643.66	161.83
+WTF/Characters	henry1p5kboned	wtf	1012	4644	300.47	660.0	165.94
+WTF/Characters	henry2K	wtf	1246	5796	293.03	641.51	161.83
+WTF/Characters	human_bones	wtf	12	0	157.7	410.55	5.12
+WTF/Characters	human_man1K	wtf	503	3006	530.16	676.31	115.53
+WTF/Characters	human_man1kboned	wtf	515	3006	517.38	660.0	112.74
+WTF/Characters	human_man2K	wtf	1006	6036	530.16	678.51	116.74
+WTF/Characters	human_man500	wtf	251	1494	530.16	675.49	115.27
+WTF/Characters	humanoid200	wtf	125	732	524.52	674.35	115.27
+WTF/Characters	jacky	wtf	1489	8526	190.63	660.0	132.82
+WTF/Characters	jacky2	wtf	1439	8522	190.63	660.0	132.82
+WTF/Characters	jacky_orig	wtf	1488	8526	595.98	660.0	132.82
+WTF/Characters	knight1k4	wtf	821	3978	325.17	657.37	156.3
+WTF/Characters	knight1k4boned	wtf	833	3978	326.65	660.0	158.2
+WTF/Characters	knight2K	wtf	1374	6114	325.17	657.37	332.19
+WTF/Characters	lara524f	wtf	1252	2172	298.93	651.28	158.42
+WTF/Characters	laraboned	wtf	1264	2172	303.69	660.0	160.54
+WTF/Characters	legodude	wtf	715	3642	590.31	866.31	622.27
+WTF/Characters	legodudeboned	wtf	727	3642	474.46	660.0	452.14
+WTF/Characters	man	wtf	873	5098	515.7	626.32	112.11
+WTF/Characters	masterchief	wtf	3205	17325	304.93	660.0	204.76
+WTF/Characters	mechanic	wtf	1051	5724	671.82	660.0	207.96
+WTF/Characters	mrchief	wtf	1022	11922	288.23	660.0	195.54
+WTF/Characters	mrchief2	wtf	818	9626	288.23	669.26	195.54
+WTF/Characters	Officer	wtf	392	1902	242.8	802.62	140.72
+WTF/Characters	officerboned	wtf	404	1902	199.62	660.0	115.71
+WTF/Characters	orc3K	wtf	1971	9762	373.88	370.64	192.6
+WTF/Characters	poorkid	wtf	497	2610	432.29	413.82	154.43
+WTF/Characters	ragdoll	wtf	44	90	8627.37	12364.62	5293.07
+WTF/Characters	robothead	wtf	245	777	350.38	844.1	208.73
+WTF/Characters	sackman	wtf	226	1344	501.88	407.26	87.09
+WTF/Characters	schwertkaempfer	wtf	1000	6000	659.67	1217.89	584.8
+WTF/Characters	seuchenschleuderer	wtf	1000	5934	541.08	1056.26	767.9
+WTF/Characters	skeleton	wtf	2296	12963	166.99	660.0	112.93
+WTF/Characters	smoothbot	wtf	132	576	806.4	1267.2	259.2
+WTF/Characters	soldiercw2K	wtf	1299	5961	284.39	663.6	136.18
+WTF/Characters	Squigboned	wtf	1013	0	788.37	946.89	723.18
+WTF/Characters	Squiggy	wtf	1001	0	788.37	946.89	723.18
+WTF/Characters	sueasian2K	wtf	1323	6549	124.35	575.04	97.46
+WTF/Characters	terrorist	wtf	321	1836	250.32	717.67	137.46
+WTF/Characters	terrorist_orig	wtf	320	1836	793.67	717.67	137.46
+WTF/Characters	TRON	wtf	516	3006	530.16	676.31	115.53
+WTF/Characters	vincent2K	wtf	1070	5415	309.43	690.04	143.2
+WTF/Characters	zombie	wtf	939	5013	2344.17	2535.12	559.17
+WTF/Characters	zombieTobi	wtf	426	2100	339.97	784.94	160.21
+WTF/Clothing	dress	wtf	750	2180	293.6	731.83	167.34
+WTF/Containers	antiquevase	wtf	179	1074	334.63	227.88	224.74
+WTF/Containers	attache40	wtf	24	120	139.79	101.83	20.62
+WTF/Containers	barrel1	wtf	176	648	36753.69	39150.35	36027.44
+WTF/Containers	bucket440	wtf	167	990	215.18	157.86	211.72
+WTF/Containers	cargobox524	wtf	600	2772	660.0	660.0	660.0
+WTF/Containers	vase330	wtf	173	978	370.26	356.07	238.59
+WTF/Containers	YBIN	wtf	120	708	1094.52	1425.69	1905.92
+WTF/Cubes	ac3doneunit	wtf	8	36	660.0	660.0	660.0
+WTF/Cubes	acube	wtf	26	144	29506.44	21313.16	27885.96
+WTF/Cubes	crate0001	wtf	8	36	660.0	660.0	660.0
+WTF/Cubes	crate076	wtf	8	36	50.29	50.29	50.29
+WTF/Cubes	crate3x3x3	wtf	8	36	1980.0	1980.0	1980.0
+WTF/Cubes	crate99	wtf	8	36	641.82	681.75	641.82
+WTF/Cubes	cratemeter	wtf	8	36	198.0	198.0	198.0
+WTF/Cubes	cratesx4	wtf	32	144	2492.72	1806.08	2700.88
+WTF/Cubes	cube	wtf	8	36	800.0	800.0	800.0
+WTF/Cubes	kiste	wtf	8	18	167.82	660.0	160.03
+WTF/DeadDays	bbquad	wtf	4	5	3300.0	3300.0	0.0
+WTF/DeadDays	cross0	png					
+WTF/DeadDays	Deaddays1mesh	wtf	2531	10707	102035.95	16011.6	120383.99
+WTF/DeadDays	fire	png					
+WTF/DeadDays	human	wtf	429	1107	302.29	818.47	165.12
+WTF/DeadDays	human0	png					
+WTF/DeadDays	human1	png					
+WTF/DeadDays	human10	png					
+WTF/DeadDays	human2	png					
+WTF/DeadDays	human3	png					
+WTF/DeadDays	human4	png					
+WTF/DeadDays	human5	png					
+WTF/DeadDays	human7	png					
+WTF/DeadDays	lifestretch	wtf	17	32	679.8	52.8	0.0
+WTF/DeadDays	null	wtf	1	0	0.0	0.0	0.0
+WTF/DeadDays	officer	wtf	395	1902	242.8	802.62	140.72
+WTF/DeadDays	rifle	wtf	28	101	47.52	99.79	425.04
+WTF/DeadDays	robothead	wtf	245	777	350.38	844.1	208.73
+WTF/DeadDays	robotheadgun	wtf	275	878	350.38	844.1	208.73
+WTF/DeadDays	sand	png					
+WTF/DeadDays	tree	wtf	4	5	3300.0	3300.0	0.0
+WTF/DeadDays	UncleUndead mesh	wtf	12	27	3300.0	3300.0	4620.0
+WTF/DeadDays	undeadInterface mesh	wtf	16	45	6765.01	6600.0	6600.01
+WTF/DeadDays	undeadpanel	wtf	26	65	330.0	660.0	0.0
+WTF/DeadDays	undeadtraining mesh	wtf	141	435	16499.98	3300.0	16500.12
+WTF/DeadDays	upselector	wtf	4	5	287.19	72.6	0.0
+WTF/DeadDays	zombieforest mesh	wtf	1113	3223	81686.63	17753.6	89966.45
+WTF/DeadDays	zombiepolice mesh	wtf	932	2609	31166.58	3656.45	42562.52
+WTF/DeadDays	zombietobi	wtf	440	2100	339.97	784.94	160.21
+WTF/DungeonPack	arch1dp	wtf	324	324	10740.99	7936.25	3311.71
+WTF/DungeonPack	arch2	wtf	852	852	10740.99	8026.68	3311.71
+WTF/DungeonPack	block1dp	wtf	78	78	2640.0	2640.0	2640.0
+WTF/DungeonPack	block2dp	wtf	93	93	2640.0	2640.0	2640.0
+WTF/DungeonPack	block3dp	wtf	168	168	4597.15	4371.12	4597.15
+WTF/DungeonPack	bridgedp	wtf	276	324	12053.88	8607.56	48922.5
+WTF/DungeonPack	coordior5	wtf	540	648	36750.18	7936.25	22497.67
+WTF/DungeonPack	cooridor2dp	wtf	288	288	12885.36	17527.39	13200.0
+WTF/DungeonPack	cooridor3	wtf	288	288	13200.0	9425.63	8068.66
+WTF/DungeonPack	cooridor4dp	wtf	144	144	8518.12	5341.88	6414.38
+WTF/DungeonPack	cooridor6dp	wtf	324	324	12993.75	7053.75	14313.75
+WTF/DungeonPack	cooridordp	wtf	288	288	13200.0	9425.63	16046.25
+WTF/DungeonPack	crossing1dp	wtf	828	1044	19053.29	9717.52	20427.12
+WTF/DungeonPack	crossing2dp4way	wtf	1368	1800	21493.51	9704.12	20524.85
+WTF/DungeonPack	crossing3dp	wtf	1044	1368	18514.18	9717.52	21493.51
+WTF/DungeonPack	floor1dp	wtf	30	30	17841.74	288.75	16571.09
+WTF/DungeonPack	platform1dp	wtf	252	252	11325.86	1611.77	11325.86
+WTF/DungeonPack	platform2dp	wtf	108	108	10206.89	660.0	10560.0
+WTF/DungeonPack	platform3dp	wtf	84	84	11325.86	825.0	11325.86
+WTF/DungeonPack	room1dp	wtf	2556	3006	39515.66	9704.12	21493.51
+WTF/DungeonPack	room3dp	wtf	3002	3564	41800.12	38795.62	54469.2
+WTF/DungeonPack	room4dp	wtf	1440	1872	36603.7	9704.12	21493.5
+WTF/DungeonPack	room5dp	wtf	648	756	36750.18	9604.32	22497.67
+WTF/DungeonPack	room6	wtf	360	360	12993.75	10520.32	14895.63
+WTF/DungeonPack	rooom2dp	wtf	216	216	11096.25	7451.14	7433.01
+WTF/DungeonPack	stcoordidor1dp	wtf	180	180	15963.75	5944.4	13200.0
+WTF/DungeonPack	stroom4dp	wtf	1332	1764	21493.51	7936.25	36603.71
+WTF/DungeonPack	wall1dp	wtf	84	108	6600.0	3618.8	1225.28
+WTF/Equipment	computermonitor401	wtf	424	1203	201.17	199.42	244.31
+WTF/Floors	bigplane	wtf	4	5	2000000.0	0.0	2000000.0
+WTF/Floors	floor180x180	wtf	20	84	118800.0	5280.0	118800.0
+WTF/Floors	floor180x180b	wtf	57	195	118800.0	10560.0	120458.58
+WTF/Floors	floor180x180c	wtf	77	261	118800.0	5280.0	118800.0
+WTF/Floors	sandplane	wtf	44	108	72000.0	50292.2	79000.01
+WTF/Floors	shaderPlane	wtf	4	5	660.0	660.0	0.0
+WTF/Floors	trongrid	wtf	11	36	92546.05	0.0	70768.34
+WTF/Floors	waterplane	wtf	44	108	72000.0	50292.2	79000.01
+WTF/Foliage	grass2	wtf	1137	6432	66365.95	3262.45	66627.04
+WTF/Foliage	leaf20	wtf	27	60	263.01	35.91	257.23
+WTF/Foliage	oaktree	wtf	386	840	2409.51	2446.45	2269.98
+WTF/Foliage	oaktreedead	wtf	122	444	1802.6	2074.62	1459.69
+WTF/Foliage	palmtree	wtf	349	1938	2360.95	2690.1	2425.14
+WTF/Foliage	pottedplantL416	wtf	224	948	8.02	10.13	8.44
+WTF/Foliage	tallgrass440	wtf	769	1326	648.59	217.26	654.81
+WTF/Foliage	tree300poly	wtf	304	1152	2833.69	3315.73	2651.08
+WTF/Foliage	tree462	wtf	235	1386	6361.35	5645.98	4706.62
+WTF/Foliage	treeblob	wtf	83	474	1666.05	1549.84	1571.34
+WTF/Furniture	bed406	wtf	254	1218	857.43	492.88	1207.29
+WTF/Furniture	bed990	wtf	510	2940	849.42	340.9	901.4
+WTF/Furniture	bench416	wtf	290	1248	2354.36	918.27	746.49
+WTF/Furniture	bookshelf	wtf	338	1920	483.36	887.93	267.84
+WTF/Furniture	bookshelf380	wtf	218	1140	315.58	976.27	227.06
+WTF/Furniture	bookshelf498	wtf	342	1494	608.75	1120.49	204.07
+WTF/Furniture	cabinet124	wtf	70	372	461.01	387.25	335.23
+WTF/Furniture	chair172	wtf	125	516	11050.67	20103.56	13210.31
+WTF/Furniture	chair178	wtf	148	534	138.6	320.1	141.9
+WTF/Furniture	chair188	wtf	147	564	138.6	326.7	141.9
+WTF/Furniture	chair212	wtf	171	636	132.0	290.4	138.6
+WTF/Furniture	chair330	wtf	250	990	274.01	301.32	262.43
+WTF/Furniture	chair352	wtf	272	1056	160.78	344.41	159.53
+WTF/Furniture	chair416	wtf	290	1248	673.2	918.27	746.49
+WTF/Furniture	chair454	wtf	388	1362	258.08	352.5	245.81
+WTF/Furniture	commodenightstand1	wtf	255	1074	385.29	410.28	355.7
+WTF/Furniture	commodenightstand2	wtf	491	2154	396.4	228.94	210.47
+WTF/Furniture	commodenightstand3	wtf	386	1800	227.98	456.27	210.47
+WTF/Furniture	conferencetable	wtf	763	2292	1134.38	319.97	515.62
+WTF/Furniture	couch548	wtf	379	1644	980.92	378.05	400.29
+WTF/Furniture	desk108	wtf	64	324	500.37	326.47	325.5
+WTF/Furniture	desk598	wtf	379	1794	469.0	206.59	230.62
+WTF/Furniture	dresserwmirror	wtf	531	2490	467.51	736.72	183.41
+WTF/Furniture	loveseat528	wtf	369	1584	988.54	472.57	500.37
+WTF/Furniture	nightstand	wtf	536	3108	446.88	353.46	284.68
+WTF/Furniture	office249	wtf	252	813	1096.19	520.66	730.82
+WTF/Furniture	officechair440	wtf	235	1218	10766.23	14714.85	10766.03
+WTF/Furniture	safe990	wtf	567	2754	649.61	812.01	802.21
+WTF/Furniture	table126	wtf	72	378	886.38	330.69	886.38
+WTF/Furniture	table182	wtf	102	546	247.3	241.08	247.3
+WTF/Furniture	table52	wtf	40	156	951.16	334.81	532.65
+WTF/Furniture	tablechair752	wtf	483	2256	405.16	345.26	271.42
+WTF/Furniture	tablenchairs268	wtf	256	864	667.39	425.53	800.87
+WTF/Furniture	tablenchairs378	wtf	344	1134	667.39	425.53	800.87
+WTF/Furniture	tablesetting429	wtf	178	936	198.0	69.95	148.5
+WTF/Furniture	TV70	wtf	48	228	625.43	510.52	514.99
+WTF/Furniture	TVtubed1	wtf	572	2949	150.59	152.9	141.87
+WTF/Houses	beachouse	wtf	1449	7782	3515.15	2994.15	4487.47
+WTF/Houses	bungalow3k	wtf	2481	10572	17028.07	9351.99	9718.5
+WTF/Houses	domicile	wtf	104	552	2055.57	1456.81	1849.51
+WTF/Houses	estate21K	wtf	11357	64170	66082.34	6770.63	40310.79
+WTF/Houses	fwHouse12	wtf	831	2937	6834.4	11332.2	7409.94
+WTF/Houses	fwHouse33	wtf	328	1077	7953.0	4355.04	4781.67
+WTF/Houses	hanshaus1k	wtf	1115	5538	8230.63	8424.48	4792.86
+WTF/Houses	hanshouse2k	wtf	1448	7248	8230.63	8424.48	4792.86
+WTF/Houses	HauntHouse1062	wtf	443	3186	10528.92	10472.32	8237.23
+WTF/Houses	HausBurk10K	wtf	6797	31908	4307.81	7267.08	5539.8
+WTF/Houses	HausBurk2k	wtf	1877	7002	4307.81	7003.26	5539.8
+WTF/Houses	house02	wtf	878	2712	2543.77	5156.73	3344.46
+WTF/Houses	house02b	wtf	878	2712	2543.77	5156.73	3344.46
+WTF/Houses	house32poly	wtf	22	96	1237.66	1492.15	1596.56
+WTF/Houses	house5K	wtf	2949	17790	4692.51	2272.29	5673.49
+WTF/Houses	house700	wtf	456	2268	5496.02	5796.07	5341.79
+WTF/Houses	house963x3x3	wtf	73	288	1980.0	1980.0	1980.0
+WTF/Houses	house96long	wtf	73	288	10734.62	5205.14	5116.99
+WTF/Houses	houseLR	wtf	391	1098	11010.52	1393.06	10815.2
+WTF/Houses	hovel	wtf	544	2484	7528.12	5568.75	8971.88
+WTF/Houses	lowpolyneighborhood	wtf	827	4263	32170.14	3326.61	7209.49
+WTF/Houses	m12shack	wtf	14	72	2622.59	2583.2	1812.42
+WTF/Houses	m13shack	wtf	60	324	2622.59	2930.8	2583.2
+WTF/Houses	m15shack	wtf	22	126	2622.59	2583.2	1812.42
+WTF/Houses	potionshop	wtf	102	543	3603.73	2570.67	3012.51
+WTF/Houses	RuinedHouse584	wtf	470	2076	6736.32	7042.08	9490.68
+WTF/Houses	sdhouse	wtf	414	2328	8049.16	5047.78	6408.07
+WTF/Houses	shack99	wtf	423	2178	3727.45	2127.53	2275.39
+WTF/Houses	tenamenthouse	wtf	2292	9894	1473.42	2659.34	3469.38
+WTF/Houses	townhouse	wtf	393	2160	5863.87	9753.45	11304.09
+WTF/Houses	villahouse	wtf	1833	8625	9892.65	2001.79	20298.46
+WTF/Houses	weaponshop	wtf	102	543	3243.36	2313.6	2711.26
+WTF/Locations	airport	wtf	308	1062	94387.8	63953.93	215110.84
+WTF/Locations	cage	wtf	16	49	38720.0	6600.0	36071.29
+WTF/Locations	city1test1100p	wtf	2555	10002	255755.83	79401.2	244497.02
+WTF/Locations	city2test2	wtf	2555	10002	255755.82	79401.03	244497.02
+WTF/Locations	Dawnofthederby	wtf	1431	4539	632249.38	222978.82	638750.69
+WTF/Locations	DeadDaysCity	wtf	2238	9222	99000.0	12091.2	52931.19
+WTF/Locations	fencedyard	wtf	427	1908	65888.51	3199.35	40310.79
+WTF/Locations	gatetohell	wtf	256	1440	3025.71	2983.1	4455.0
+WTF/Locations	greenisland	wtf	2048	11526	80500.41	14014.43	81059.05
+WTF/Locations	groundmeshy7	wtf	441	2400	93471.9	4726.97	67637.38
+WTF/Locations	hills	wtf	1024	2945	3196875.0	471059.5	3196875.0
+WTF/Locations	MCP2008ACD	wtf	1929	10091	134354.01	94309.93	133603.55
+WTF/Locations	PoliceStation	wtf	1001	4602	23753.02	3656.45	19449.68
+WTF/Locations	respawntool	wtf	1334	1404	2375.31	2031.46	2374.91
+WTF/Locations	stickyplace	wtf	2038	4824	453528.17	70977.22	535817.94
+WTF/Locations	TrainingRoom	wtf	142	690	16499.98	3300.0	16500.12
+WTF/Locations	wiese	wtf	289	800	122227.5	2475.0	84138.29
+WTF/Locations	world	wtf	128	576	3300.0	800.0	2700.0
+WTF/Locations	ZombieForest	wtf	1112	6246	81686.63	17753.6	89966.45
+WTF/Misc	BassGitamps260	wtf	128	648	460.0	671.22	262.86
+WTF/Misc	BHcdbox	wtf	24	72	267.3	376.2	29.7
+WTF/Misc	grave1	wtf	219	1062	914.81	651.66	369.03
+WTF/Misc	OpenBook	wtf	198	852	772.25	92.94	455.72
+WTF/Misc	propanetank	wtf	546	2538	979.77	1482.12	726.47
+WTF/Misc	propanetankH582	wtf	530	2334	2616.9	939.74	880.29
+WTF/Misc	slide	wtf	919	5244	389.73	1526.49	2508.38
+WTF/Misc	spotlight321	wtf	268	1143	155.43	291.17	250.34
+WTF/Misc	starsolid	wtf	12	60	205.59	40.97	196.04
+WTF/Misc	swingswet	wtf	469	2670	21128.31	44660.39	21373.55
+WTF/Misc	tractorbeam	wtf	18	128	1086.96	26405.33	1116.45
+WTF/Misc	transparento	wtf	24	54	47540.28	26400.0	29254.76
+WTF/Misc	turbine525	wtf	298	1587	660.0	107.05	660.0
+WTF/Misc	woodpallet	wtf	144	648	142.07	18.59	116.08
+WTF/PathSources	cloudpath	wtf	0	0	0	0	0
+WTF/Powerups	powerup	wtf	163	780	1000.41	1331.7	1000.41
+WTF/Reticule	crosshair	wtf	4	5	6.6	6.6	0.0
+WTF/Shapes	boulder1	wtf	39	222	7083.87	4689.97	6905.46
+WTF/Shapes	boulder2	wtf	39	222	4173.48	2914.89	4354.33
+WTF/Shapes	brick_4x2	wtf	280	786	5280.0	3349.5	10560.0
+WTF/Shapes	brick_4x2lo	wtf	176	750	5280.0	3168.0	10560.0
+WTF/Shapes	brokering	wtf	2562	12911	151228.53	358230.22	360176.09
+WTF/Shapes	concave	wtf	12	30	5316.97	1320.0	5383.9
+WTF/Shapes	cylanderarea	wtf	146	864	113257.32	194133.72	129154.08
+WTF/Shapes	legoground	wtf	4	5	31680.0	0.0	31680.0
+WTF/Shapes	legostein	wtf	280	786	5280.0	3349.5	10560.0
+WTF/Shapes	nxt_brick	wtf	8	18	4752.0	3128.4	7359.0
+WTF/Shapes	pointersign	wtf	18	78	1924.25	2916.46	445.78
+WTF/Shapes	quartzCrystal	wtf	32	150	1493.41	3040.59	1570.26
+WTF/Shapes	tobislego	wtf	8	18	5280.0	2640.0	10560.0
+WTF/Skybox	newsky	wtf	8	36	60.0	60.0	60.0
+WTF/Skybox	newskydesert	wtf	8	36	60.0	60.0	60.0
+WTF/Skybox	newskysunset	wtf	8	36	60.0	60.0	60.0
+WTF/Spheres	Dstarball	wtf	3102	13266	16500.0	16500.0	16500.0
+WTF/Spheres	kugel	wtf	242	1440	1320.0	1320.0	1320.0
+WTF/Street	bwspeedsign	wtf	66	324	247.09	996.51	36.68
+WTF/Street	lampost1	wtf	54	276	7917.29	88935.0	7920.0
+WTF/Street	parkinglamp	wtf	304	1146	2206.07	7714.11	2118.89
+WTF/Street	pavement	wtf	4	6	2000.0	0.0	2000.0
+WTF/Street	road15x78	wtf	12	30	10393.7	103.94	51968.5
+WTF/Street	road780x3k	wtf	12	30	519685.06	5196.85	2598425.25
+WTF/Street	road78x393	wtf	12	30	51968.51	519.69	259842.52
+WTF/Street	roadblock	wtf	34	192	40.28	33.78	27.98
+WTF/Street	roadwaytest1	wtf	306	1584	127565.06	2640.0	141613.56
+WTF/Street	rollfield	wtf	8	13	95893.94	0.0	64357.49
+WTF/Street	trafficcone	wtf	127	450	20.21	19.49	20.66
+WTF/Tools	ladder1x6	wtf	231	1254	797.57	4445.1	137.99
+WTF/Tools	mallet410	wtf	211	1230	423.16	159.43	995.52
+WTF/Tools	shovel102	wtf	94	327	3168.0	395.72	14079.96
+WTF/Vehicles_air	afterburner	wtf	16	48	619.91	97.47	805.18
+WTF/Vehicles_air	airfrigatep1	wtf	2183	2940	64000.0	31815.11	111999.98
+WTF/Vehicles_air	airfrigatep1shadow	wtf	53	150	64232.98	69959.92	112691.32
+WTF/Vehicles_air	alienship	wtf	254	1488	6600.0	6600.0	6600.0
+WTF/Vehicles_air	apparition	wtf	815	4524	19487.14	11601.62	30134.01
+WTF/Vehicles_air	avatar	wtf	558	1701	1911.63	720.27	1782.44
+WTF/Vehicles_air	avatarbits	wtf	559	1701	1911.63	720.27	1782.44
+WTF/Vehicles_air	avatarp1	wtf	812	1074	1645.42	566.76	1784.07
+WTF/Vehicles_air	avatarp1a	wtf	534	1701	1798.92	720.27	1782.44
+WTF/Vehicles_air	avatarp1shadow	wtf	34	78	1885.46	574.63	1677.55
+WTF/Vehicles_air	BHbanshee	wtf	334	1974	119410.29	100982.26	147639.89
+WTF/Vehicles_air	BHbumblebee	wtf	1058	6006	11342.69	8762.95	22847.55
+WTF/Vehicles_air	BHinamberclad	wtf	1621	3459	49923.49	21982.87	129849.84
+WTF/Vehicles_air	BHpelican	wtf	2116	10851	19188.25	6053.39	13912.81
+WTF/Vehicles_air	BHpillarofautumn	wtf	5123	11145	261974.22	174817.72	604251.88
+WTF/Vehicles_air	boss	wtf	1846	2304	48990.15	18925.65	53085.22
+WTF/Vehicles_air	enemyfighter	wtf	701	714	2487.06	988.27	3256.71
+WTF/Vehicles_air	enemyfighterbits	wtf	136	666	2487.06	988.27	2845.01
+WTF/Vehicles_air	enemyturret	wtf	1848	2304	2493.69	963.35	2702.13
+WTF/Vehicles_air	enemyturret(test)	wtf	794	1050	1645.42	566.76	1485.46
+WTF/Vehicles_air	enemyturretshadow	wtf	32	78	2554.28	960.4	2810.56
+WTF/Vehicles_air	fighterbits	wtf	1850	2304	2493.69	963.35	2702.13
+WTF/Vehicles_air	fighterMan	wtf	598	3396	323.66	723.55	137.38
+WTF/Vehicles_air	gunshiponesurface	wtf	1451	5670	5141.26	1246.67	5280.0
+WTF/Vehicles_air	gunshiprotablade	wtf	60	288	5143.73	242.28	5144.41
+WTF/Vehicles_air	gunshiptailblade	wtf	20	96	2.59	51.44	339.23
+WTF/Vehicles_air	gunshipwhole	wtf	1457	5706	5144.41	1192.14	5203.77
+WTF/Vehicles_air	halfBoss	wtf	1846	2304	5205.2	2010.85	5640.3
+WTF/Vehicles_air	helicopter99	wtf	374	1572	1666.79	1790.65	6112.91
+WTF/Vehicles_air	horten18	wtf	366	1884	36537.7	1831.81	9357.03
+WTF/Vehicles_air	marauderbomber	wtf	1252	5304	3117.88	952.05	2885.75
+WTF/Vehicles_air	midboss	wtf	1846	2304	12247.54	4731.41	13271.3
+WTF/Vehicles_air	newavatarbits	wtf	797	1050	1645.42	566.76	1485.46
+WTF/Vehicles_air	p51b	wtf	629	2841	3528.76	830.13	3231.12
+WTF/Vehicles_air	recognizerlwo	wtf	166	756	2851.2	2815.4	495.0
+WTF/Vehicles_air	RecognizerT	wtf	482	708	4143.15	3477.29	769.44
+WTF/Vehicles_air	shadow	wtf	60	150	1718.86	568.2	1647.68
+WTF/Vehicles_air	shadow2	wtf	58	144	1781.92	347.23	1890.23
+WTF/Vehicles_air	thunderboltfighter	wtf	759	3012	6521.41	1767.21	5673.99
+WTF/Vehicles_air	thunderhawkgunship	wtf	1218	4929	6108.36	1977.21	5811.64
+WTF/Vehicles_air	tiefighter	wtf	1955	9864	1759.62	2032.4	2221.98
+WTF/Vehicles_air	tinyboss	wtf	1846	2304	2493.69	963.35	2702.13
+WTF/Vehicles_air	tractorbeam	wtf	18	128	1086.96	26405.33	1116.45
+WTF/Vehicles_air	ufo	wtf	242	1515	1821.6	326.44	1247.4
+WTF/Vehicles_air	ufo3x2x3	wtf	32	180	1980.0	252.7	1980.0
+WTF/Vehicles_air	xshuttle	wtf	150	1596	3590.48	2176.63	2390.8
+WTF/Vehicles_land	ambulance	wtf	376	2052	1184.31	1127.26	2740.74
+WTF/Vehicles_land	BHghost	wtf	551	3102	780.24	382.31	911.14
+WTF/Vehicles_land	BHwarthog	wtf	3886	23082	1851.18	1820.86	3187.72
+WTF/Vehicles_land	BHWarthog1k7	wtf	1240	5517	1851.18	1992.95	3161.66
+WTF/Vehicles_land	BHwarthoghi	wtf	2046	11022	10113.34	5466.38	5148.37
+WTF/Vehicles_land	BHwraith	wtf	566	3258	7527.95	3169.47	7966.95
+WTF/Vehicles_land	bluerumbler	wtf	1770	10161	643.74	563.71	1498.8
+WTF/Vehicles_land	camaro1000	wtf	520	3020	1032.67	721.57	2549.73
+WTF/Vehicles_land	car806	wtf	561	2514	593.63	526.17	1522.84
+WTF/Vehicles_land	fueltanker	wtf	338	1722	743.4	753.42	1239.51
+WTF/Vehicles_land	lightcycle2008	wtf	1035	5136	327.46	535.14	1136.06
+WTF/Vehicles_land	lightcyclewbase	wtf	1036	5136	327.46	535.14	1136.06
+WTF/Vehicles_land	peoplemover	wtf	347	1902	470.46	411.27	786.11
+WTF/Vehicles_land	primeracar	wtf	550	1983	797.79	598.56	1908.47
+WTF/Vehicles_land	recognizerwbase	wtf	483	708	4143.15	3477.29	769.44
+WTF/Vehicles_land	RedRumbler	wtf	1770	10161	643.74	563.71	1498.8
+WTF/Vehicles_land	riocar520s	wtf	412	1560	721.62	551.09	1469.4
+WTF/Vehicles_land	rockettank	wtf	602	3252	5810.17	2207.04	7873.93
+WTF/Vehicles_land	rsxcar112	wtf	92	336	636.61	584.65	1624.02
+WTF/Vehicles_land	skateboard	wtf	184	1092	18.13	11.27	66.05
+WTF/Vehicles_land	tank1K	wtf	747	3654	2130.1	996.6	3443.1
+WTF/Vehicles_land	tire	wtf	511	3072	136.1	462.6	462.61
+WTF/Vehicles_land	trontank1K	wtf	759	2478	2545.62	1109.41	4193.03
+WTF/Vehicles_land	trontankwbase	wtf	760	2478	2545.62	1109.41	4193.02
+WTF/Vehicles_land	vehicle	wtf	416	2500	935.0	653.32	2308.57
+WTF/Vehicles_land	vehicleshadow	wtf	241	1258	843.08	652.74	2312.46
+WTF/Walls	10ftwall	wtf	374	2040	34980.02	54780.0	16335.0
+WTF/Walls	1AWallBrokenL	wtf	127	726	650.23	655.05	643.79
+WTF/Walls	40ftwall	wtf	374	2040	34980.02	79530.0	19635.0
+WTF/Walls	50ftwall	wtf	374	2028	34980.02	104280.0	22935.0
+WTF/Walls	slatfenceV	wtf	152	684	1351.68	844.8	54.07
+WTF/Walls	windowLwall	wtf	40	204	2146.16	1933.59	2778.29
+WTF/Walls	woodfence	wtf	32	144	2615.49	1399.92	233.93
+WTF/Weapons	abomb	wtf	8	18	1157.46	3551.88	985.02
+WTF/Weapons	bazooka884	wtf	413	2466	29.62	29.2	131.27
+WTF/Weapons	bf109Abomb	wtf	126	720	1021.0	1003.96	6847.95
+WTF/Weapons	BFGrlds	wtf	1544	7308	300.71	339.59	758.69
+WTF/Weapons	BHesword	wtf	83	384	273.89	101.95	20.01
+WTF/Weapons	BHshade	wtf	526	2772	1595.9	963.13	1134.39
+WTF/Weapons	bigbomb	wtf	153	858	396.28	397.66	2051.09
+WTF/Weapons	bullet	wtf	4	6	22.0	13.04	33.14
+WTF/Weapons	colt1911_1202	wtf	641	3606	6306.75	39059.77	63263.23
+WTF/Weapons	coltpistol	wtf	154	963	29.0	179.03	297.77
+WTF/Weapons	crescentdagger124	wtf	151	372	895.02	480.93	2932.64
+WTF/Weapons	dagger238	wtf	300	714	1188.02	488.3	2880.66
+WTF/Weapons	dagger98	wtf	86	294	481.93	338.93	3147.72
+WTF/Weapons	G3A3Rifle	wtf	222	1176	374.62	433.77	2534.78
+WTF/Weapons	gloc	wtf	208	1242	29.0	179.03	297.77
+WTF/Weapons	grenade	wtf	48	276	21.44	45.56	21.44
+WTF/Weapons	gunshipmissile	wtf	97	282	96.84	96.84	485.08
+WTF/Weapons	gunshipmissilelauncher	wtf	16	84	118.08	118.45	555.85
+WTF/Weapons	halberd292	wtf	153	876	4945.72	521.27	19597.78
+WTF/Weapons	hk53Submachingun	wtf	224	1104	32.61	199.84	499.14
+WTF/Weapons	icepick144	wtf	106	432	188.94	191.33	1224.54
+WTF/Weapons	identitydisc	wtf	37	180	66.1	4.69	63.7
+WTF/Weapons	kunaidagger	wtf	73	414	384.97	246.26	2249.61
+WTF/Weapons	lazerrifle	wtf	256	1560	10.87	28.66	87.42
+WTF/Weapons	longsword	wtf	1254	6894	6492.05	1116.41	5546.54
+WTF/Weapons	luger140	wtf	76	420	14.47	107.01	180.52
+WTF/Weapons	m16980	wtf	559	2940	21.94	131.85	513.71
+WTF/Weapons	M16A524	wtf	350	1572	21.94	131.85	513.71
+WTF/Weapons	m98_158	wtf	95	462	19.43	105.39	617.33
+WTF/Weapons	marinerifle	wtf	337	1716	36.33	215.38	599.58
+WTF/Weapons	marinerifle350	wtf	211	1050	25.7	112.46	391.35
+WTF/Weapons	marinerifle370	wtf	219	1110	34.26	149.94	567.96
+WTF/Weapons	mg34_146	wtf	78	438	27.81	116.03	548.97
+WTF/Weapons	mp40_186	wtf	108	558	19.78	158.63	362.92
+WTF/Weapons	mp5_1254	wtf	671	3762	70.64	438.84	830.12
+WTF/Weapons	ninjastar1	wtf	151	906	8.02	105.16	101.5
+WTF/Weapons	phaser	wtf	456	2319	34.66	192.2	267.52
+WTF/Weapons	q2shotgun2	wtf	115	606	42.48	96.75	262.83
+WTF/Weapons	quadspear406	wtf	402	1218	442.02	584.13	5565.28
+WTF/Weapons	remingtonm31shotgun	wtf	533	2547	51.83	256.47	894.14
+WTF/Weapons	rpgempty	wtf	486	2322	64.32	170.96	597.46
+WTF/Weapons	rpgloaded	wtf	602	2994	64.32	170.96	828.84
+WTF/Weapons	rpgrocket	wtf	336	2004	50.49	55.31	560.37
+WTF/Weapons	sheathedsword236	wtf	145	708	93.72	40.64	528.87
+WTF/Weapons	sheathedsword526	wtf	290	1578	93.72	40.64	529.31
+WTF/Weapons	shotgun341	wtf	215	1023	26.3	108.63	464.11
+WTF/Weapons	shuriken2	wtf	110	549	25.12	1064.22	1064.22
+WTF/Weapons	shuriken3	wtf	75	450	53.54	1351.6	1241.43
+WTF/Weapons	shuriken4	wtf	128	642	37.75	1205.21	1205.21
+WTF/Weapons	shuriken5	wtf	48	288	28.08	1134.03	1309.47
+WTF/Weapons	sniperrifle	wtf	459	2232	47.14	145.5	780.78
+WTF/Weapons	socom	wtf	122	648	19.97	179.78	304.03
+WTF/Weapons	spear388	wtf	331	1164	359.34	359.35	5688.63
+WTF/Weapons	spear58	wtf	39	174	78.25	29.12	650.25
+WTF/Weapons	submachinegun484	wtf	217	1302	5.41	20.68	52.52
+WTF/Weapons	sword126	wtf	81	378	117.55	29.4	816.48
+WTF/Weapons	sword170	wtf	93	510	180.75	29.4	998.26
+WTF/Weapons	sword174	wtf	95	522	285.76	29.4	1261.14
+WTF/Weapons	sword198	wtf	111	594	117.15	50.8	661.64
+WTF/Weapons	sword346	wtf	185	1038	117.15	50.8	661.64
+WTF/Weapons	tracer	wtf	4	12	0.0	139.42	1980.0
+WTF/Weapons	turret	wtf	10	18	175.67	123.38	627.08
+WTF/Weapons	type95_1554	wtf	805	4662	48.63	315.96	838.83
+WTF/Weapons	UMP1380	wtf	765	3996	3043.86	39073.59	82887.45
