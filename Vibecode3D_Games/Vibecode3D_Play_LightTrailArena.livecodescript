@@ -5,6 +5,10 @@
 ## every round. Spark's concept and level numbers
 ## (LIB_SPARK/arcade/out/897_Light_Trail_Arena), script by Claude.
 ## CONTROLS  Arrows (or WASD): turn    Space: use a speed boost    Escape: pause
+## CAMERA    the straight top-down view is the game. Hold the right button and drag to swing
+##           the camera into 3D (it stops at the set angles on the way); let go and it comes
+##           back. C: the next set angle (round to top-down again), hold 1-4 for one of them,
+##           0: top-down. The camera never changes the play.
 ## RULES     10 points for every 10 cells you ride. Two yellow BITS are always out: ride
 ##           past one (beside it counts) for 20 points and one boost to spend (Space:
 ##           double speed for a few seconds), and the walls near it break, so a bit in a
@@ -13,16 +17,20 @@
 ##           moves. Touching any wall or trail costs a life and the round starts over.
 ##           When every rival has crashed you win the round: the next arena is smaller
 ##           and has one more rival. 5 rounds.
-## (owner's notes of 15 Nov 3:18: bigger reach, walls break, rivals hunt, two bits, a timer)
+## (owner's notes of 15 Nov 3:18: bigger reach, walls break, rivals hunt, two bits, a timer;
+##  8:08 PM: 3D camera on the right button and set angles, top-down stays the default)
 ######################################################################################
 
 global gObjectTransforms, gSceneObjects
 global bPaused, bPlaying
+global gCameraYaw, gCameraPitch, gNoMouse, gViewBottom
 
 local sBike, sBikeN, sGrid, sCols, sRows, sSegN, sBoost, sBoosts, sBit, sCellsRidden
 local sSeg, sLenDef, sRivalBits, sTestHold
 local sLevel, sLives, sScore, sOver, sWon, sMsg, sMsgT, sEndT, sX0, sY0
 local sKeysWas, sTestKeys, sHUDWas, sTicks
+local sCamT, sCamS, sCamGoT, sCamGoS, sCamDrag, sCamH0, sCamV0, sCamT0, sCamS0
+local sCamPick, sCamHeld, sCamCycle, sCamFlat, sCamUsed, sCamHUDWas, sTestCamMouse
 
 constant kZ = 300            -- screen scale 300/z: 1 unit = 1 pixel
 constant kCell = 10
@@ -32,6 +40,7 @@ constant kBits = 2           -- bits out at once
 constant kBitLife = 360      -- steps a bit stays (12 seconds), then it moves
 constant kReach = 1          -- a bike this many cells away (beside it) takes the bit
 constant kBreakR = 5         -- taking a bit breaks the trail cells this near it
+constant kCamSets = 4        -- set camera angles (Light.CamSet)
 
 on Game.OnStart
    focus on nothing
@@ -48,6 +57,7 @@ on Game.OnStart
    put 0 into sSegN
    put 0 into sBoosts
    put 0 into sRivalBits
+   Light.CamReset
    Light.StartLevel 1
 end Game.OnStart
 
@@ -432,6 +442,7 @@ on Game.OnUpdate
    local tKeys, i, tAlive, tSteps
    put Light.Keys() into tKeys
    add 1 to sTicks
+   Light.Camera tKeys
    if sOver then
       if Light.Down(32, tKeys) and not (32 is among the items of sKeysWas) then
          put 0 into sScore
@@ -690,6 +701,190 @@ on Light.ShowHUD
    end if
    HUD.Set "Light.Msg", tLine, 20, 56, 12
 end Light.ShowHUD
+
+-------------------------------------------------------------------- the camera
+-- Top-down (tilt 0) is the engine's own plain camera. Tilted, the camera sits on a sphere
+-- round the arena's middle and looks back at it: tilt from straight down, spin round the
+-- arena (0 = from the bottom of the screen). Look-at as in the iGame3D editor remake.
+
+on Light.CamReset
+   put 0 into sCamT
+   put 0 into sCamS
+   put 0 into sCamGoT
+   put 0 into sCamGoS
+   put false into sCamDrag
+   put 0 into sCamPick
+   put 0 into sCamHeld
+   put 0 into sCamCycle
+   put true into sCamFlat
+   put empty into sCamHUDWas
+end Light.CamReset
+
+-- the set angles: tilt, spin, name
+function Light.CamSet pN
+   switch pN
+      case 1
+         return "1.0,0,LOW SOUTH"
+      case 2
+         return "0.62,0.6,SOUTH EAST"
+      case 3
+         return "0.62,-0.6,SOUTH WEST"
+      case 4
+         return "1.22,0.25,DOWN ON THE FLOOR"
+   end switch
+   return "0,0,TOP DOWN"
+end Light.CamSet
+
+on Light.CamGoal pN
+   put item 1 of Light.CamSet(pN) into sCamGoT
+   put item 2 of Light.CamSet(pN) into sCamGoS
+   put pN into sCamPick
+   if pN > 0 then put true into sCamUsed
+end Light.CamGoal
+
+-- the right button, the C, 0 and 1-4 keys; then the camera eases to its goal
+on Light.Camera pKeys
+   local tM, tT, tS, tN, i, tSet
+   put Light.RightMouse() into tM
+   if tM is not empty then
+      if not sCamDrag then
+         put true into sCamDrag
+         put true into sCamUsed
+         put item 1 of tM into sCamH0
+         put item 2 of tM into sCamV0
+         put sCamT into sCamT0
+         put sCamS into sCamS0
+      end if
+      -- drag down to tilt, sideways to swing round
+      put max(0, min(1.3, sCamT0 + (item 2 of tM - sCamV0) * 0.006)) into tT
+      put max(-1.3, min(1.3, sCamS0 - (item 1 of tM - sCamH0) * 0.006)) into tS
+      put 0 into sCamPick
+      repeat with i = 1 to kCamSets
+         put Light.CamSet(i) into tSet
+         if abs(tT - item 1 of tSet) < 0.09 and abs(tS - item 2 of tSet) < 0.14 then
+            -- it stops at a set angle on the way
+            put item 1 of tSet into tT
+            put item 2 of tSet into tS
+            put i into sCamPick
+         end if
+      end repeat
+      put tT into sCamT
+      put tS into sCamS
+      put tT into sCamGoT
+      put tS into sCamGoS
+   else
+      if sCamDrag then
+         -- let go: back to top-down
+         put false into sCamDrag
+         put 0 into sCamCycle
+         Light.CamGoal 0
+      end if
+      if (Light.Down(99, pKeys) or Light.Down(67, pKeys)) and not (99 is among the items of sKeysWas or 67 is among the items of sKeysWas) then
+         put (sCamCycle + 1) mod (kCamSets + 1) into sCamCycle
+         put 0 into sCamHeld
+         Light.CamGoal sCamCycle
+      end if
+      if Light.Down(48, pKeys) then
+         put 0 into sCamCycle
+         put 0 into sCamHeld
+         Light.CamGoal 0
+      end if
+      put 0 into tN
+      repeat with i = 1 to kCamSets
+         if Light.Down(48 + i, pKeys) then put i into tN
+      end repeat
+      if tN > 0 then
+         put tN into sCamHeld
+         Light.CamGoal tN
+      else if sCamHeld > 0 then
+         -- a number key let go: back to top-down
+         put 0 into sCamHeld
+         put 0 into sCamCycle
+         Light.CamGoal 0
+      end if
+      add (sCamGoT - sCamT) * 0.12 to sCamT
+      add (sCamGoS - sCamS) * 0.12 to sCamS
+      if abs(sCamGoT - sCamT) < 0.002 then put sCamGoT into sCamT
+      if abs(sCamGoS - sCamS) < 0.002 then put sCamGoS into sCamS
+   end if
+   Light.ApplyCam
+   Light.CamHUD
+end Light.Camera
+
+on Light.ApplyCam
+   local tW, tR, tPY, tOX, tOY, tOZ
+   if sCamT is 0 or sCamT < 0.002 then
+      put 0 into sCamT
+      if sCamFlat then exit Light.ApplyCam
+      -- exactly the plain top-down camera
+      Engine.SetCam 0, 0, 0
+      put 0 into gCameraYaw
+      put 0 into gCameraPitch
+      put true into sCamFlat
+      exit Light.ApplyCam
+   end if
+   put false into sCamFlat
+   -- tilting, the pivot moves to the arena's middle and the camera backs off a little
+   put min(1, sCamT / 0.35) into tW
+   put kZ * (1 + 0.5 * tW) into tR
+   put kCY * tW into tPY
+   put tR * sin(sCamT) * sin(sCamS) into tOX
+   put tR * sin(sCamT) * cos(sCamS) into tOY
+   put -tR * cos(sCamT) into tOZ
+   Engine.SetCam -tOX, -(tPY + tOY), -(kZ + tOZ)
+   put atan2(-tOX, -tOZ) into gCameraYaw
+   put -atan2(-tOY, sqrt(tOX ^ 2 + tOZ ^ 2)) into gCameraPitch
+end Light.ApplyCam
+
+on Light.CamHUD
+   local tLine
+   if sCamT is 0 and sCamGoT is 0 then
+      if sCamUsed is true then
+         put empty into tLine
+      else
+         put "RIGHT DRAG, C OR HOLD 1 TO 4: SEE THE ARENA IN 3D" into tLine
+      end if
+   else if sCamPick > 0 then
+      put "VIEW:" && item 3 of Light.CamSet(sCamPick) & ".  C: NEXT   0: TOP DOWN" into tLine
+   else
+      put "VIEW: FREE.  LET GO FOR TOP DOWN" into tLine
+   end if
+   if tLine is sCamHUDWas then exit Light.CamHUD
+   put tLine into sCamHUDWas
+   if tLine is empty then
+      HUD.Remove "Light.Cam"
+   else
+      HUD.Set "Light.Cam", tLine, 20, gViewBottom - 30, 11
+   end if
+end Light.CamHUD
+
+-- the right button's point "h,v" while it is down, or empty
+function Light.RightMouse
+   local tErr
+   if sTestCamMouse is not empty then
+      if sTestCamMouse is "up" then return empty
+      return sTestCamMouse
+   end if
+   if gNoMouse is true then return empty
+   try
+      if mouse(3) is "down" then return the mouseH & comma & the mouseV
+   catch tErr
+   end try
+   return empty
+end Light.RightMouse
+
+-- tilt, spin, set angle, yaw, pitch (for the tests)
+function Light.CamState
+   return round(sCamT, 3) & comma & round(sCamS, 3) & comma & sCamPick & comma & round(gCameraYaw, 3) & comma & round(gCameraPitch, 3)
+end Light.CamState
+
+on Light.TestCamMouse pH, pV
+   if pH is empty then
+      put "up" into sTestCamMouse
+   else
+      put pH & comma & pV into sTestCamMouse
+   end if
+end Light.TestCamMouse
 
 function Light.State
    local i, tS
