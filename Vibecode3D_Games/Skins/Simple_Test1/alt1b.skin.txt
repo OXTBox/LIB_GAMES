@@ -1,0 +1,3 @@
+# Skin for Simple_Test1: mesh name TAB model file (relative to projects). Made by Replace With Model (A-86).
+Cube.Box	LIB_GAMES/igame3D_2008_Texts/WTF/Vehicles_land/trontank1K.wtf
+Cube.Floor	LIB_GAMES/igame3D_2008_Texts/WTF/Animals/whale653.wtf
