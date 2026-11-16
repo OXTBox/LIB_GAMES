@@ -5,17 +5,22 @@
 ## every round. Spark's concept and level numbers
 ## (LIB_SPARK/arcade/out/897_Light_Trail_Arena), script by Claude.
 ## CONTROLS  Arrows (or WASD): turn    Space: use a speed boost    Escape: pause
-## RULES     10 points for every 10 cells you ride. A yellow boost is 20 points and one
-##           boost to spend (Space: double speed for a few seconds). Touching any wall
-##           or trail costs a life and the round starts over. When every rival has
-##           crashed you win the round: the next arena is smaller and has one more rival.
-##           5 rounds.
+## RULES     10 points for every 10 cells you ride. Two yellow BITS are always out: ride
+##           past one (beside it counts) for 20 points and one boost to spend (Space:
+##           double speed for a few seconds), and the walls near it break, so a bit in a
+##           trap is a way out. The rivals hunt the bits too (a bit speeds a rival up). A
+##           bit's ring is its clock: one tick a second, it flashes at the end, then it
+##           moves. Touching any wall or trail costs a life and the round starts over.
+##           When every rival has crashed you win the round: the next arena is smaller
+##           and has one more rival. 5 rounds.
+## (owner's notes of 15 Nov 3:18: bigger reach, walls break, rivals hunt, two bits, a timer)
 ######################################################################################
 
 global gObjectTransforms, gSceneObjects
 global bPaused, bPlaying
 
-local sBike, sBikeN, sGrid, sCols, sRows, sSegN, sBoost, sBoosts, sPickup, sCellsRidden
+local sBike, sBikeN, sGrid, sCols, sRows, sSegN, sBoost, sBoosts, sBit, sCellsRidden
+local sSeg, sLenDef, sRivalBits, sTestHold
 local sLevel, sLives, sScore, sOver, sWon, sMsg, sMsgT, sEndT, sX0, sY0
 local sKeysWas, sTestKeys, sHUDWas, sTicks
 
@@ -23,6 +28,10 @@ constant kZ = 300            -- screen scale 300/z: 1 unit = 1 pixel
 constant kCell = 10
 constant kCY = 45            -- the arena's middle on screen
 constant kPiece = 4          -- cells in a trail piece before it is drawn
+constant kBits = 2           -- bits out at once
+constant kBitLife = 360      -- steps a bit stays (12 seconds), then it moves
+constant kReach = 1          -- a bike this many cells away (beside it) takes the bit
+constant kBreakR = 5         -- taking a bit breaks the trail cells this near it
 
 on Game.OnStart
    focus on nothing
@@ -38,6 +47,7 @@ on Game.OnStart
    put 0 into sTicks
    put 0 into sSegN
    put 0 into sBoosts
+   put 0 into sRivalBits
    Light.StartLevel 1
 end Game.OnStart
 
@@ -59,6 +69,12 @@ on Light.StartLevel pLevel
    Mesh.Define "Light.Bike", Light.BikeMesh()
    Mesh.Define "Light.Boost", MeshPyramid(4, 10, 14)
    Mesh.Define "Light.Piece", Light.LineMesh(kPiece * kCell)
+   Mesh.Define "Light.Dot", Light.LineMesh(6)
+   repeat with i = 0 to 12
+      Mesh.Define "Light.Ring" & i, Light.RingMesh(i)
+   end repeat
+   put empty into sLenDef
+   put empty into sSeg
    -- the grid: walls all round
    put empty into sGrid
    repeat with i = 0 to sCols + 1
@@ -96,8 +112,10 @@ on Light.StartLevel pLevel
    end repeat
    put 0 into sBoost
    put 0 into sCellsRidden
-   put empty into sPickup
-   Light.NewPickup
+   put empty into sBit
+   repeat with i = 1 to kBits
+      Light.NewBit i
+   end repeat
    put 0 into sEndT
    put "ROUND" && pLevel & ":" && pLevel && "RIVAL" & Light.S(pLevel) into sMsg
    put 60 into sMsgT
@@ -122,6 +140,7 @@ on Light.PlaceBike pB, pCX, pCY, pDX, pDY
    put pCY into sBike[pB]["segy"]
    put empty into sBike[pB]["pieces"]
    put 0 into sBike[pB]["run"]
+   put 0 into sBike[pB]["boost"]
    put pB into sGrid[pCX & "," & pCY]
    put Entity.Spawn("Light.Bike", Light.PX(pCX), Light.PY(pCY), kZ, sBike[pB]["color"]) into sBike[pB]["key"]
    SetObjectRotation sBike[pB]["key"], 0, 0, atan2(pDY, pDX)
@@ -197,18 +216,204 @@ function Light.LineMesh pLen
    return tM
 end Light.LineMesh
 
-on Light.NewPickup
-   local tCX, tCY, tTries
-   if sPickup["key"] is not empty then Entity.Kill sPickup["key"]
-   repeat with tTries = 1 to 60
+-- a bit's clock: pN ticks of twelve round it
+function Light.RingMesh pN
+   local tM, j, tA
+   put Mesh.New() into tM
+   repeat with j = 1 to pN
+      put (j - 1) * 3.14159 / 6 - 1.5708 into tA
+      Mesh.AddVertex tM, 14 * cos(tA), 14 * sin(tA), 0
+      put tA + 0.4 into tA
+      Mesh.AddVertex tM, 14 * cos(tA), 14 * sin(tA), 0
+      Mesh.AddLine tM, tM["count"] - 1, tM["count"]
+   end repeat
+   if pN is 0 then
+      Mesh.AddVertex tM, 0, 0, 0
+      Mesh.AddVertex tM, 0, 0, 0
+      Mesh.AddLine tM, 1, 2
+   end if
+   return tM
+end Light.RingMesh
+
+-- bit pWhich (re)appears on an open cell, away from the other bits and the bikes
+on Light.NewBit pWhich
+   local tCX, tCY, tTries, tOK, j
+   if sBit[pWhich]["key"] is not empty then Entity.Kill sBit[pWhich]["key"]
+   if sBit[pWhich]["ring"] is not empty then Entity.Kill sBit[pWhich]["ring"]
+   repeat with tTries = 1 to 80
       put 3 + random(sCols - 6) into tCX
       put 3 + random(sRows - 6) into tCY
-      if sGrid[tCX & "," & tCY] is empty then exit repeat
+      put sGrid[tCX & "," & tCY] is empty into tOK
+      repeat with j = 1 to kBits
+         if j is not pWhich and sBit[j]["cx"] is not empty and abs(sBit[j]["cx"] - tCX) + abs(sBit[j]["cy"] - tCY) < 16 then put false into tOK
+      end repeat
+      repeat with j = 1 to sBikeN
+         if sBike[j]["alive"] and abs(sBike[j]["cx"] - tCX) + abs(sBike[j]["cy"] - tCY) < 6 then put false into tOK
+      end repeat
+      if tOK then exit repeat
    end repeat
-   put tCX into sPickup["cx"]
-   put tCY into sPickup["cy"]
-   put Entity.Spawn("Light.Boost", Light.PX(tCX), Light.PY(tCY), kZ, "255,255,0") into sPickup["key"]
-end Light.NewPickup
+   Light.PutBit pWhich, tCX, tCY
+end Light.NewBit
+
+on Light.PutBit pWhich, pCX, pCY
+   if sBit[pWhich]["key"] is not empty then Entity.Kill sBit[pWhich]["key"]
+   if sBit[pWhich]["ring"] is not empty then Entity.Kill sBit[pWhich]["ring"]
+   put pCX into sBit[pWhich]["cx"]
+   put pCY into sBit[pWhich]["cy"]
+   put kBitLife into sBit[pWhich]["t"]
+   put 12 into sBit[pWhich]["ticks"]
+   put Entity.Spawn("Light.Boost", Light.PX(pCX), Light.PY(pCY), kZ, "255,255,0") into sBit[pWhich]["key"]
+   put Entity.Spawn("Light.Ring12", Light.PX(pCX), Light.PY(pCY), kZ, "255,220,0") into sBit[pWhich]["ring"]
+end Light.PutBit
+
+-- the bits spin, their clocks run down, the last three seconds flash, then they move
+on Light.Bits
+   local i, tTicks
+   repeat with i = 1 to kBits
+      subtract 1 from sBit[i]["t"]
+      if sBit[i]["t"] <= 0 then
+         FX.Sparks Light.PX(sBit[i]["cx"]), Light.PY(sBit[i]["cy"]), kZ, 6, "120,120,0"
+         Light.NewBit i
+         next repeat
+      end if
+      put ceiling(sBit[i]["t"] / 30) into tTicks
+      if tTicks is not sBit[i]["ticks"] then
+         Entity.Kill sBit[i]["ring"]
+         put Entity.Spawn("Light.Ring" & tTicks, Light.PX(sBit[i]["cx"]), Light.PY(sBit[i]["cy"]), kZ, "255,220,0") into sBit[i]["ring"]
+         put tTicks into sBit[i]["ticks"]
+      end if
+      if sBit[i]["t"] < 90 and (sTicks div 4) mod 2 is 0 then
+         SetObjectPosition sBit[i]["key"], 0, -900, kZ
+      else
+         SetObjectPosition sBit[i]["key"], Light.PX(sBit[i]["cx"]), Light.PY(sBit[i]["cy"]), kZ
+      end if
+      SetObjectRotation sBit[i]["key"], 0, 0, sTicks / 6
+   end repeat
+end Light.Bits
+
+-- pB took bit pWhich: the walls near it break; you get points and a boost, a rival gets speed
+on Light.TakeBit pB, pWhich
+   local tCX, tCY
+   put sBit[pWhich]["cx"] into tCX
+   put sBit[pWhich]["cy"] into tCY
+   FX.Sparks Light.PX(tCX), Light.PY(tCY), kZ, 24, "255,255,0"
+   Light.Break tCX, tCY
+   if pB is 1 then
+      add 20 to sScore
+      add 1 to sBoosts
+      Light.Say "BIT! THE WALLS NEAR IT BREAK.  +1 BOOST"
+   else
+      add 1 to sRivalBits
+      put 150 into sBike[pB]["boost"]
+      Light.Say "A RIVAL GRABBED A BIT!"
+   end if
+   Light.NewBit pWhich
+end Light.TakeBit
+
+on Light.Say pText
+   put pText into sMsg
+   put 45 into sMsgT
+   put empty into sHUDWas
+end Light.Say
+
+-- the trail cells near pCX,pCY go (the arena's edge and the bikes stay); the trails
+-- there are redrawn from what is left
+on Light.Break pCX, pCY
+   local i, tX, tY, tHeads, tBroke
+   repeat with i = 1 to sBikeN
+      if sBike[i]["alive"] then
+         Light.CloseSegment i
+         put sBike[i]["cx"] & "," & sBike[i]["cy"] & cr after tHeads
+      end if
+   end repeat
+   put false into tBroke
+   repeat with tX = max(1, pCX - kBreakR) to min(sCols, pCX + kBreakR)
+      repeat with tY = max(1, pCY - kBreakR) to min(sRows, pCY + kBreakR)
+         if sGrid[tX & "," & tY] is empty or sGrid[tX & "," & tY] is 9 then next repeat
+         if (tX & "," & tY) is among the lines of tHeads then next repeat
+         put empty into sGrid[tX & "," & tY]
+         put true into tBroke
+      end repeat
+   end repeat
+   if not tBroke then exit Light.Break
+   repeat for each key i in sSeg
+      if Light.SegNear(i, pCX, pCY) then Light.DrawSeg i
+   end repeat
+end Light.Break
+
+function Light.SegNear pN, pCX, pCY
+   local tX1, tY1, tX2, tY2
+   put sSeg[pN]["ex"] into tX2
+   put sSeg[pN]["ey"] into tY2
+   put tX2 - sSeg[pN]["dx"] * sSeg[pN]["len"] into tX1
+   put tY2 - sSeg[pN]["dy"] * sSeg[pN]["len"] into tY1
+   if max(tX1, tX2) < pCX - kBreakR or min(tX1, tX2) > pCX + kBreakR then return false
+   if max(tY1, tY2) < pCY - kBreakR or min(tY1, tY2) > pCY + kBreakR then return false
+   return true
+end Light.SegNear
+
+-- a straight trail is drawn as the runs of its cells still standing
+on Light.DrawSeg pN
+   local tKey, k, tRun, tB, tCX, tCY, tDX, tDY
+   repeat for each line tKey in sSeg[pN]["keys"]
+      Entity.Kill tKey
+   end repeat
+   put empty into sSeg[pN]["keys"]
+   put sSeg[pN]["b"] into tB
+   put sSeg[pN]["dx"] into tDX
+   put sSeg[pN]["dy"] into tDY
+   put -1 into tRun
+   repeat with k = sSeg[pN]["len"] down to -1
+      put sSeg[pN]["ex"] - tDX * k into tCX
+      put sSeg[pN]["ey"] - tDY * k into tCY
+      if k >= 0 and sGrid[tCX & "," & tCY] is tB then
+         if tRun < 0 then
+            put k into tRun
+         end if
+      else if tRun >= 0 then
+         -- cells tRun down to k + 1 stand
+         Light.DrawRun pN, tRun, k + 1
+         put -1 into tRun
+      end if
+   end repeat
+end Light.DrawSeg
+
+on Light.DrawRun pN, pFrom, pTo
+   local tKey, tSX, tSY, tB
+   put sSeg[pN]["b"] into tB
+   put Light.PX(sSeg[pN]["ex"] - sSeg[pN]["dx"] * pFrom) into tSX
+   put Light.PY(sSeg[pN]["ey"] - sSeg[pN]["dy"] * pFrom) into tSY
+   if pFrom is pTo then
+      put Entity.Spawn("Light.Dot", tSX - 3 * sSeg[pN]["dx"], tSY - 3 * sSeg[pN]["dy"], kZ, sBike[tB]["color"]) into tKey
+   else
+      put Entity.Spawn(Light.LenName(pFrom - pTo), tSX, tSY, kZ, sBike[tB]["color"]) into tKey
+   end if
+   SetObjectRotation tKey, 0, 0, atan2(sSeg[pN]["dy"], sSeg[pN]["dx"])
+   put tKey & cr after sSeg[pN]["keys"]
+end Light.DrawRun
+
+-- one trail mesh for each length, made when first needed
+function Light.LenName pLen
+   if sLenDef[pLen] is empty then
+      Mesh.Define "Light.Len" & pLen, Light.LineMesh(pLen * kCell)
+      put true into sLenDef[pLen]
+   end if
+   return "Light.Len" & pLen
+end Light.LenName
+
+-- the nearest bit to bike pB, as "cx,cy"
+function Light.NearBit pB
+   local i, tD, tBest, tOut
+   put 1e9 into tBest
+   repeat with i = 1 to kBits
+      put abs(sBit[i]["cx"] - sBike[pB]["cx"]) + abs(sBit[i]["cy"] - sBike[pB]["cy"]) into tD
+      if tD < tBest then
+         put tD into tBest
+         put sBit[i]["cx"] & "," & sBit[i]["cy"] into tOut
+      end if
+   end repeat
+   return tOut
+end Light.NearBit
 
 function Light.Keys
    if sTestKeys is not empty then return sTestKeys
@@ -260,9 +465,16 @@ on Game.OnUpdate
    repeat with i = 1 to sBikeN
       if not sBike[i]["alive"] then next repeat
       if i > 1 then Light.Think i
+      if i is 1 and sTestHold is true then next repeat
       put 0.5 into tSteps
       if i is 1 and sBoost > 0 then put 1 into tSteps
-      if i > 1 then put 0.42 + sLevel * 0.02 into tSteps
+      if i > 1 then
+         put 0.42 + sLevel * 0.02 into tSteps
+         if sBike[i]["boost"] > 0 then
+            subtract 1 from sBike[i]["boost"]
+            put tSteps * 1.6 into tSteps
+         end if
+      end if
       add tSteps to sBike[i]["sub"]
       repeat while sBike[i]["sub"] >= 1 and sBike[i]["alive"]
          subtract 1 from sBike[i]["sub"]
@@ -276,7 +488,7 @@ on Game.OnUpdate
       subtract 1 from sBoost
       if sBoost is 0 then put empty into sHUDWas
    end if
-   SetObjectRotation sPickup["key"], 0, 0, sTicks / 6
+   Light.Bits
    -- the round's end
    put 0 into tAlive
    repeat with i = 2 to sBikeN
@@ -284,7 +496,7 @@ on Game.OnUpdate
    end repeat
    if not sBike[1]["alive"] then
       put 45 into sEndT
-      put "DEREZZED!" into sMsg
+      put "CRASHED!" into sMsg
       put 45 into sMsgT
    else if tAlive is 0 then
       put 45 into sEndT
@@ -305,7 +517,7 @@ end Light.Want
 
 -- one cell forward: turn first if one is waiting, then check the cell
 on Light.Step pB
-   local tNX, tNY, tCell
+   local tNX, tNY, tCell, tI
    if sBike[pB]["wantx"] is not sBike[pB]["dx"] or sBike[pB]["wanty"] is not sBike[pB]["dy"] then
       Light.CloseSegment pB
       put sBike[pB]["wantx"] into sBike[pB]["dx"]
@@ -331,14 +543,14 @@ on Light.Step pB
          add 10 to sScore
          put empty into sHUDWas
       end if
-      if tNX is sPickup["cx"] and tNY is sPickup["cy"] then
-         add 20 to sScore
-         add 1 to sBoosts
-         FX.Sparks Light.PX(tNX), Light.PY(tNY), kZ, 10, "255,255,0"
-         Light.NewPickup
-         put empty into sHUDWas
-      end if
    end if
+   -- any bike beside a bit takes it
+   repeat with tI = 1 to kBits
+      if abs(tNX - sBit[tI]["cx"]) <= kReach and abs(tNY - sBit[tI]["cy"]) <= kReach then
+         Light.TakeBit pB, tI
+         exit repeat
+      end if
+   end repeat
 end Light.Step
 
 on Light.AddPiece pB
@@ -362,22 +574,48 @@ on Light.CloseSegment pB
    put 0 into sBike[pB]["run"]
    if tLen <= 0 then exit Light.CloseSegment
    add 1 to sSegN
-   Mesh.Define "Light.Seg" & sSegN, Light.LineMesh(tLen * kCell)
+   put pB into sSeg[sSegN]["b"]
+   put sBike[pB]["cx"] into sSeg[sSegN]["ex"]
+   put sBike[pB]["cy"] into sSeg[sSegN]["ey"]
+   put sBike[pB]["dx"] into sSeg[sSegN]["dx"]
+   put sBike[pB]["dy"] into sSeg[sSegN]["dy"]
+   put tLen into sSeg[sSegN]["len"]
    put Light.PX(sBike[pB]["cx"] - sBike[pB]["dx"] * tLen) into tSX
    put Light.PY(sBike[pB]["cy"] - sBike[pB]["dy"] * tLen) into tSY
-   put Entity.Spawn("Light.Seg" & sSegN, tSX, tSY, kZ, sBike[pB]["color"]) into tKey
+   put Entity.Spawn(Light.LenName(tLen), tSX, tSY, kZ, sBike[pB]["color"]) into tKey
    SetObjectRotation tKey, 0, 0, atan2(sBike[pB]["dy"], sBike[pB]["dx"])
+   put tKey & cr into sSeg[sSegN]["keys"]
 end Light.CloseSegment
 
 -- the rivals look a few cells ahead and turn toward the more open side
 on Light.Think pB
-   local tAhead, tL, tR, tLX, tLY, tRX, tRY
+   local tAhead, tL, tR, tLX, tLY, tRX, tRY, tT, tBX, tBY, tPL, tPR
    put Light.Free(pB, sBike[pB]["dx"], sBike[pB]["dy"], 6) into tAhead
-   if tAhead >= 6 and random(40) > 1 then exit Light.Think
    put sBike[pB]["dy"] into tLX
    put -sBike[pB]["dx"] into tLY
    put -sBike[pB]["dy"] into tRX
    put sBike[pB]["dx"] into tRY
+   -- hunting: once the nearest bit is level or behind, turn toward it if that way is open
+   put Light.NearBit(pB) into tT
+   if tT is not empty and tAhead >= 3 and random(100) <= 60 + sLevel * 8 then
+      put item 1 of tT - sBike[pB]["cx"] into tBX
+      put item 2 of tT - sBike[pB]["cy"] into tBY
+      if sBike[pB]["dx"] * tBX + sBike[pB]["dy"] * tBY <= 0 then
+         put tLX * tBX + tLY * tBY into tPL
+         put tRX * tBX + tRY * tBY into tPR
+         if tPL > 0 and Light.Free(pB, tLX, tLY, 4) >= 4 then
+            Light.Want pB, tLX, tLY
+            exit Light.Think
+         end if
+         if tPR > 0 and Light.Free(pB, tRX, tRY, 4) >= 4 then
+            Light.Want pB, tRX, tRY
+            exit Light.Think
+         end if
+      else
+         exit Light.Think
+      end if
+   end if
+   if tAhead >= 6 and random(40) > 1 then exit Light.Think
    put Light.Free(pB, tLX, tLY, 30) into tL
    put Light.Free(pB, tRX, tRY, 30) into tR
    if tAhead >= 6 and max(tL, tR) < 10 then exit Light.Think
@@ -442,13 +680,13 @@ on Light.ShowHUD
    else if sOver and sWon then
       put "LAST ARENA SURVIVED (500 POINTS TO MASTER IT).  SPACE" into tLine
    else if sOver then
-      put "END OF LINE.  SPACE TO RIDE AGAIN" into tLine
+      put "GAME OVER.  SPACE TO RIDE AGAIN" into tLine
    else if sMsg is not empty then
       put sMsg into tLine
    else if sBoost > 0 then
       put "BOOST!" into tLine
    else
-      put "TURN WITH THE ARROWS.  YELLOW = BOOST" into tLine
+      put "ARROWS: TURN.  RIDE BY A YELLOW BIT: ITS WALLS BREAK, +1 BOOST (SPACE)" into tLine
    end if
    HUD.Set "Light.Msg", tLine, 20, 56, 12
 end Light.ShowHUD
@@ -459,8 +697,44 @@ function Light.State
    repeat with i = 1 to sBikeN
       put "|bike" & i && sBike[i]["cx"] & "," & sBike[i]["cy"] && sBike[i]["alive"] after tS
    end repeat
+   put "|bits" after tS
+   repeat with i = 1 to kBits
+      put " " & sBit[i]["cx"] & "," & sBit[i]["cy"] & "," & round(sBit[i]["t"] / 30) after tS
+   end repeat
+   put "|rival bits " & sRivalBits after tS
    return tS
 end Light.State
+
+-- test hooks: a bit put here, its clock, a wall cell, your bike held still, a cell's owner
+on Light.TestBit pWhich, pCX, pCY
+   Light.PutBit pWhich, pCX, pCY
+end Light.TestBit
+
+on Light.TestBitTime pWhich, pT
+   put pT into sBit[pWhich]["t"]
+end Light.TestBitTime
+
+on Light.TestWall pCX, pCY, pOwner
+   put pOwner into sGrid[pCX & "," & pCY]
+end Light.TestWall
+
+on Light.TestHold pFlag
+   put pFlag into sTestHold
+end Light.TestHold
+
+on Light.TestPlace pB, pCX, pCY, pDX, pDY
+   put empty into sGrid[sBike[pB]["cx"] & "," & sBike[pB]["cy"]]
+   Entity.Kill sBike[pB]["key"]
+   Light.PlaceBike pB, pCX, pCY, pDX, pDY
+end Light.TestPlace
+
+function Light.Cell pCX, pCY
+   return sGrid[pCX & "," & pCY]
+end Light.Cell
+
+function Light.Size
+   return sCols & "," & sRows
+end Light.Size
 
 on Game.OnStop
    HUD.Clear
