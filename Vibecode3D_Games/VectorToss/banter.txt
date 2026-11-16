@@ -1,0 +1,83 @@
+# VECTOR TOSS BANTER (Opus 15 Nov 2026). Edit freely: the game reads this file each start.
+# One exchange a line: event TAB who TAB turns.  who = PROMPT, GLAZE or * (either hero).
+# Turns are separated by | and start with P (PROMPT speaks) or G (GLAZE speaks).
+# The HUD letters are A-Z 0-9 and : - + . ! / ? , '   Anything else is skipped.
+# PROMPT gets the job done no matter what: short, blunt, keeps score.
+# GLAZE barters, charms and influences: deals, flattery, never quite serious.
+# Events: start level crack fall hang over catch_good catch_big catch_flat drop wild easy easy_caught rally swap idle
+#   catch_*, drop, wild, easy, easy_caught, swap: who = the hero it happened to.
+
+start	*	P Ball. Floor. Each other. Catch it before the floor does. | G You make everything sound like a chore list. | P It is a chore list.
+start	*	G Isn't it pretty? All this light and nobody keeping score. | P The game keeps score. | G Then let's give it something nice to write down.
+start	*	P Up, off the roof, down to me. That's the whole game. | G Up, he says. Like it's easy. | P It is easy. Watch.
+
+catch_good	PROMPT	P Got it. | G You're welcome.
+catch_good	PROMPT	G Nice hands, Prompt. | P They came with the arms.
+catch_good	PROMPT	P Off the roof, into the hand. That's how it works. | G Show-off.
+catch_good	GLAZE	G Mine! | P It was always yours. I aimed it. | G Let me have this.
+catch_good	GLAZE	G Did you see that reach? Tell me you saw that reach. | P I saw it.
+catch_good	GLAZE	P Clean. | G Clean and gorgeous. You can say gorgeous.
+
+catch_big	PROMPT	G That one bounced all over the place! | P Every bounce is a point. | G Then I'm throwing you pinballs from now on.
+catch_big	GLAZE	G Three bounces, one hand! Somebody write that down. | P The board wrote it down. | G A board is not a fan club.
+catch_big	*	P That's the throw. Again. | G Again? I'm still admiring that one.
+
+catch_flat	PROMPT	P Flat. Zero. | G A catch is a catch! | P A catch is a catch. A score is a bounce.
+catch_flat	GLAZE	G Zero? I caught it! | P You caught a straight line. Lines are free.
+catch_flat	*	G Nothing for a flat one? Who wrote these rules? | P Nobody we've met yet.
+
+drop	PROMPT	P Missed. | G Happens to the best of us. | P It just happened to me. | G Like I said.
+drop	PROMPT	G Ooh. That floor really wanted it. | P The floor can have it. Once.
+drop	GLAZE	G I meant to do that. | P You meant to drop it? | G I meant to make you feel good about your throw.
+drop	GLAZE	P Watch the shadow, not the ball. | G I was watching you. You looked so serious.
+drop	*	G Down it goes. Lucky the floor holds. | P For now.
+
+wild	PROMPT	G Prompt. The other way. The other side. | P I know where the other side is.
+wild	GLAZE	G Whoops. Home delivery. | P Throw it to me, not to you.
+wild	*	P That didn't even get over the middle. | G The middle is a state of mind.
+
+easy	PROMPT	P Here. Easy one. | G Aww. You do care.
+easy	PROMPT	G Is that a lob? From you? | P Don't get used to it.
+easy	GLAZE	G Special delivery, nice and slow. | P I can catch them fast. | G I know. Humor me.
+easy	GLAZE	G One on the house. You'll owe me. | P I always owe you. | G That's the business model.
+
+easy_caught	*	P Easy ones don't score. | G They score with me.
+easy_caught	*	G See? Nobody has to lose for it to be fun. | P Somebody always loses. | G Not today.
+
+rally	*	G Look at us! We never drop it! | P Don't say never.
+rally	*	P Five in a row. Keep it going. | G I am keeping it going so hard right now.
+rally	*	G Best game anyone's ever played. | P Only game we've ever played. | G Exactly.
+rally	*	P Long rally. Something's going to change. | G Change is good. Change brings customers.
+
+swap	PROMPT	P My turn. | G Fine. I'll supervise.
+swap	GLAZE	G Ooh, my turn! I'll do the talking AND the throwing. | P You always do the talking.
+swap	*	G Switching? Don't wear out my legs. | P They're your legs. | G They're on loan.
+
+idle	*	G Do you ever feel like the sky is watching? | P It's a ceiling. | G A ceiling with opinions.
+idle	*	P Are we throwing or chatting? | G Why not both?
+idle	*	G I could sell tickets to this. | P To who? | G Give it time.
+idle	*	P The ball's not going to throw itself. | G Have you asked it nicely?
+
+level	*	G Is it me, or is the floor growing fences? | P Walls. Bounce it off the inside. | G A wall I can work with.
+level	*	P The walls moved in. | G Closer every time. Like a party that won't end. | P Like a test.
+level	*	G Who keeps moving the furniture? | P Someone who wants us closer together. | G Sweet. Suspicious, but sweet.
+level	*	P Jump the wall if it drops short. | G In these shoes? | P You don't have shoes. | G Exactly my point.
+
+crack	*	G Did the floor just... open? | P Don't drop it, then. | G Thank you, that's very helpful.
+crack	*	P That's a hole. | G That's a hole with a view. | P Of nothing. | G Of nothing, beautifully lit.
+crack	*	G So the floor holds... until it doesn't. | P Told you. For now.
+
+hang	PROMPT	P Got the edge. | G Look at you, dangling heroically.
+hang	PROMPT	G Hold on! | P What do you think I'm doing?
+hang	GLAZE	G Still here! Still gorgeous! | P Climb, Glaze.
+hang	GLAZE	P You okay? | G Never better. Don't look down. I did. Don't.
+
+fall	PROMPT	G Prompt! ...Prompt? | P I'm back. Cost me three. | G Worth it for the scream.
+fall	PROMPT	P That one's on me. | G It's on the floor, technically. Well. Under it.
+fall	GLAZE	G Okay. That was a lot of down. | P You came back. | G I always come back. It's my best quality.
+fall	GLAZE	P Watch the holes! | G I watched one. Very closely. From the inside.
+
+over	PROMPT	G Prompt? ...Prompt! | P Still falling. Start again without me. | G Never. Press the button.
+over	PROMPT	P Three's too many holes. | G We'll get a new floor. We always get a new floor.
+over	GLAZE	G Well. That's all the down I can take today. | P Again? | G Again.
+over	GLAZE	P Glaze! | G Tell them I went out gorgeous.
