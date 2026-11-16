@@ -1,0 +1,46 @@
+group	files	size	what it is	ship (owner: own / free / generate / no)	note
+2008 Data/Emitters	76	336K	.emt particle emitters		
+2008 Data/Exporters	6	124K	exporter scripts		
+2008 Data/Fluid	158	3.1M	.fl fluid files		
+2008 Data/Help	20	556K	2008 help pages		
+2008 Data/Levels	145	2.5M	levels (.txt/.lua)		
+2008 Data/OBJ	51	3.8M	OBJ models + materials		
+2008 Data/Scripts	135	1.3M	Lua scripts		
+2008 Data/Shaders	34	612K	shaders		
+2008 Data/WTF/Animals	10	992K	.wtf models (Library > Models)		
+2008 Data/WTF/AquaChar	256	3.0M	.wtf models (Library > Models)		
+2008 Data/WTF/Armor	5	96K	.wtf models (Library > Models)		
+2008 Data/WTF/Billboards	2	12K	.wtf models (Library > Models)		
+2008 Data/WTF/Building_parts	23	888K	.wtf models (Library > Models)		
+2008 Data/WTF/Buildings	19	2.2M	.wtf models (Library > Models)		
+2008 Data/WTF/Bump_mesh	4	72K	.wtf models (Library > Models)		
+2008 Data/WTF/Characters	74	13M	.wtf models (Library > Models)		
+2008 Data/WTF/Clothing	1	144K	.wtf models (Library > Models)		
+2008 Data/WTF/Containers	7	280K	.wtf models (Library > Models)		
+2008 Data/WTF/Cubes	10	52K	.wtf models (Library > Models)		
+2008 Data/WTF/DeadDays	29	1.6M	.wtf models (Library > Models)		
+2008 Data/WTF/DungeonPack	28	1.4M	.wtf models (Library > Models)		
+2008 Data/WTF/Equipment	1	56K	.wtf models (Library > Models)		
+2008 Data/WTF/Floors	8	60K	.wtf models (Library > Models)		
+2008 Data/WTF/Foliage	10	604K	.wtf models (Library > Models)		
+2008 Data/WTF/Furniture	37	2.0M	.wtf models (Library > Models)		
+2008 Data/WTF/Houses	32	8.2M	.wtf models (Library > Models)		
+2008 Data/WTF/Locations	19	3.9M	.wtf models (Library > Models)		
+2008 Data/WTF/Misc	14	744K	.wtf models (Library > Models)		
+2008 Data/WTF/PathSources	1	8.0K	.wtf models (Library > Models)		
+2008 Data/WTF/Powerups	1	32K	.wtf models (Library > Models)		
+2008 Data/WTF/Reticule	1	8.0K	.wtf models (Library > Models)		
+2008 Data/WTF/Shapes	13	752K	.wtf models (Library > Models)		
+2008 Data/WTF/Skybox	3	16K	.wtf models (Library > Models)		
+2008 Data/WTF/Spheres	2	636K	.wtf models (Library > Models)		
+2008 Data/WTF/Street	11	184K	.wtf models (Library > Models)		
+2008 Data/WTF/Tools	3	112K	.wtf models (Library > Models)		
+2008 Data/WTF/Vehicles_air	46	5.3M	.wtf models (Library > Models)		
+2008 Data/WTF/Vehicles_land	26	4.2M	.wtf models (Library > Models)		
+2008 Data/WTF/Walls	7	312K	.wtf models (Library > Models)		
+2008 Data/WTF/Weapons	64	3.2M	.wtf models (Library > Models)		
+LIB_MOCAP/library/iGame3D_*	938	262M	iGame3D motion clips		262 MB in all: pick a handful
+LIB_MOCAP/library/Animazoo_*	41	4.2M	Animazoo-derived clips		rights unsettled (LAYOUT 6)
+LIB_MOCAP/library/FreeBVH_*	19	4.3M	free BVH clips		check each licence
+LIB_MOCAP/library/Video_*	1	572K	made from video by MoCapAnything	generate	ours
+LIB_MOCAP/library/proc_*	1	24K	procedural clip	generate	ours
