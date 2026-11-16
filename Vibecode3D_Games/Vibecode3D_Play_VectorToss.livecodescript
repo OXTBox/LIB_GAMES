@@ -11,6 +11,10 @@
 ##           C  swap to the companion    E  an easy one    TAB  landing ring on or off
 ## SCORING   a catch is worth one point for the roof and one for each side bound the ball
 ##           struck. A ball that touches your floor first is a drop, not a catch.
+## LEVELS    (phase 2) every 10 catches a level: from level 2 a wall rises in each half, in
+##           front of its hero, and closes in towards the centre level by level. A bounce
+##           off the INSIDE of a wall +1, and from one wall's inside straight to the other's
+##           +2 more. Heroes can't walk through a wall: SPACE jumps it, into the middle.
 ## BANTER    the heroes talk: VectorToss/banter.txt (event, who, then "P line | G line").
 ## MOVES     Animations/VectorToss.anims.txt (throw, lob, catch), cut from LIB_MOCAP clips
 ##           with the editor's Window > Inspector > Animation page.
@@ -43,7 +47,8 @@ constant kReach = 78          -- and up
 constant kHandH = 44          -- the ball sits here while held
 constant kRoofPower = 3.2     -- full power adds this much upward speed: off the roof faster
 constant kHeroGrav = 0.3      -- the heroes' jumps
-constant kJumpV = 4.6
+constant kJumpV = 4.6         -- a jump peaks about 35 high: the walls stay lower
+constant kLevelCatches = 10   -- catches a level
 constant kAIWait = 40         -- the companion holds the ball this many steps
 constant kCamUp = 230         -- camera height
 constant kCamBack = 170       -- behind the front bound
@@ -63,7 +68,10 @@ local sClip          -- [key][frames|fps|travel]; meshes "VT.<key>.<n>"; keys id
 local sHero          -- [PROMPT|GLAZE][key|x|z|yaw|speed|mdx|mdz|anim|frame|act|side|idle|score|catches|color]
 local sActive        -- the hero you play
 local sBall          -- [key|shadow|state (held|loose)|by|x|h|z|vx|vh|vz|air|age|thrower|crossed|banks|tops|backs|floors|peak|touched|easy|hit]
-local sCharging, sPower, sAimX, sAimZ, sLandX, sLandZ, sShowLand, sTestAim, sTestMouse, sIntroUntil
+local sCharging, sPower, sAimX, sAimZ, sLandX, sLandZ, sShowLand, sTestAim, sTestMouse
+local sLevel, sLevelCatches, sTosses   -- tosses finished this level: the instructions stay for two
+local sWallX, sWallH, sWallXTo, sWallHTo, sWall, sWallMesh   -- the walls: x of each (+/-), height
+local sGhostKey, sGhostAt
 local sKeyWas, sTestKeys, sTestAuto
 local sRally, sBestRally, sPlayerDrops, sHoldUntil
 local sPlan          -- the companion's plan: [name][at|x|z]
@@ -99,6 +107,7 @@ end Game.OnStart
 on Game.OnUpdate
    if sError is not empty then exit Game.OnUpdate
    add 1 to sTicks
+   VT.Levels
    VT.Controls
    VT.Companion
    VT.BallStep
@@ -248,7 +257,17 @@ on VT.NewMatch
    put false into sCharging
    put 0 into sPower
    put true into sShowLand
-   put sTicks + round(12000 / sStepMS) into sIntroUntil
+   put 1 into sLevel
+   put 0 into sLevelCatches
+   put 0 into sTosses
+   put 0 into sWallH
+   put 0 into sWallHTo
+   put kHalfW into sWallX
+   put kHalfW into sWallXTo
+   put empty into sWallMesh
+   put empty into sGhostKey
+   put Entity.Spawn("VT.Ball", 0, 0, -100000, "#8090FF") into sWall[-1]
+   put Entity.Spawn("VT.Ball", 0, 0, -100000, "#8090FF") into sWall[1]
    put empty into sPlan
    put empty into sTalk
    put 0 into sLastTalk
@@ -355,6 +374,14 @@ on VT.Move pName, pDX, pDZ
       put max(kMid, min(kHalfW - kHeroR, tX)) into tX
    end if
    put max(-kHalfD + kHeroR, min(kHalfD - kHeroR, tZ)) into tZ
+   -- a wall stops you, unless you are over it
+   if sWallH > 1 and sHero[pName]["h"] < sWallH then
+      if abs(sHero[pName]["x"]) >= sWallX then
+         put tSide * max(abs(tX), sWallX + kHeroR) into tX
+      else
+         put tSide * max(kMid, min(abs(tX), sWallX - kHeroR)) into tX
+      end if
+   end if
    put tX - sHero[pName]["x"] into sHero[pName]["mdx"]
    put tZ - sHero[pName]["z"] into sHero[pName]["mdz"]
    put sqrt(sHero[pName]["mdx"] ^ 2 + sHero[pName]["mdz"] ^ 2) into sHero[pName]["speed"]
@@ -577,6 +604,9 @@ on VT.Launch pName, pVel, pEasy
    put 0 into sBall["banks"]
    put 0 into sBall["tops"]
    put 0 into sBall["backs"]
+   put 0 into sBall["inside"]
+   put 0 into sBall["pingpong"]
+   put empty into sBall["lastWall"]
    put 0 into sBall["floors"]
    put kHandH into sBall["peak"]
    put empty into sBall["touched"]
@@ -617,9 +647,10 @@ end VT.EasyOne
 -- one step of the ball's flight, for the real ball and for every prediction alike.
 -- pB["hit"]: side, top, back or floor when it struck one this step
 on VT.Advance @pB
-   local tAir, tLimZ, tLimX
+   local tAir, tLimZ, tLimX, tOldX, tW
    put pB["air"] into tAir
    put empty into pB["hit"]
+   put pB["x"] into tOldX
    subtract kGrav from pB["vh"]
    add pB["vx"] to pB["x"]
    add pB["vh"] to pB["h"]
@@ -648,6 +679,23 @@ on VT.Advance @pB
       put abs(pB["vx"]) * kBackLoss into pB["vx"]
       add 1 to pB["backs"]
       put "back" into pB["hit"]
+   end if
+   -- the walls: a ball crossing one below its top bounces back
+   if sWallH > 1 and pB["h"] < sWallH + kBallR then
+      repeat for each item tW in "-1,1"
+         if (tOldX - tW * sWallX) * (pB["x"] - tW * sWallX) < 0 then
+            put 2 * tW * sWallX - pB["x"] into pB["x"]
+            put -pB["vx"] * 0.9 into pB["vx"]
+            put "wall" into pB["hit"]
+            if abs(tOldX) < sWallX then
+               -- the inside face: +1, and +2 more straight from the other wall's inside
+               add 1 to pB["inside"]
+               if pB["lastWall"] is -tW then add 1 to pB["pingpong"]
+               put tW into pB["lastWall"]
+            end if
+            exit repeat
+         end if
+      end repeat
    end if
    if pB["h"] > kTop - kBallR then
       put 2 * (kTop - kBallR) - pB["h"] into pB["h"]
@@ -694,6 +742,7 @@ on VT.BallStep
          put empty into sLandX
          if tOwner is sBall["thrower"] and not sBall["crossed"] then
             put 0 into sRally
+            add 1 to sTosses
             VT.Say "wild", tOwner, 70
          else
             VT.Drop tOwner
@@ -723,16 +772,19 @@ end VT.CanCatch
 
 -- what a catch is worth: a bounce off a side bound or the ceiling +1 each, a high lob +1
 -- what a catch is worth: the roof +1, each side bound +1
+-- what a catch is worth: the roof +1, each side bound +1, each wall inside +1, wall to wall +2
 function VT.CatchPoints
    if sBall["easy"] then return 0
-   return sBall["banks"] + sBall["tops"]
+   return sBall["banks"] + sBall["tops"] + sBall["inside"] + 2 * sBall["pingpong"]
 end VT.CatchPoints
 
 function VT.CatchWhy
    local tWhy
    if sBall["easy"] then return "EASY ONES ARE FREE"
    if sBall["tops"] > 0 then put "ROOF  " after tWhy
-   if sBall["banks"] > 0 then put "SIDES " & sBall["banks"] after tWhy
+   if sBall["banks"] > 0 then put "SIDES " & sBall["banks"] & "  " after tWhy
+   if sBall["inside"] > 0 then put "WALL " & sBall["inside"] & "  " after tWhy
+   if sBall["pingpong"] > 0 then put "WALL TO WALL " & sBall["pingpong"] after tWhy
    if tWhy is empty then return "NO ROOF, NO POINTS"
    return word 1 to -1 of tWhy
 end VT.CatchWhy
@@ -748,6 +800,8 @@ on VT.Catch pName
    put VT.CatchPoints() into tP
    add tP to sHero[pName]["score"]
    add 1 to sHero[pName]["catches"]
+   add 1 to sTosses
+   add 1 to sLevelCatches
    add 1 to sRally
    put max(sBestRally, sRally) into sBestRally
    if pName is sActive then put 0 into sPlayerDrops
@@ -768,6 +822,7 @@ on VT.Catch pName
 end VT.Catch
 
 on VT.Drop pName
+   add 1 to sTosses
    put 0 into sRally
    if pName is sActive then add 1 to sPlayerDrops
    VT.Message pName & " DROPPED IT"
@@ -815,6 +870,10 @@ on VT.Think pName
    end if
    if sPlan[pName]["x"] is a number then
       VT.MoveToward pName, sPlan[pName]["x"], sPlan[pName]["z"], tSpeed
+      if sWallH > 1 and sHero[pName]["h"] is 0 and abs(abs(sHero[pName]["x"]) - sWallX) < kHeroR + 3 and \
+            (abs(sPlan[pName]["x"]) - sWallX) * (abs(sHero[pName]["x"]) - sWallX) < 0 then
+         VT.Jump pName
+      end if
    else
       VT.MoveToward pName, tHomeX, 0, tSpeed * 0.5
    end if
@@ -952,11 +1011,14 @@ end VT.Catchable
 -- and a ring where it lands
 -- the ghost ball where your throw will come down (while you hold the ball); the landing
 -- ring under it, and under where a loose ball will first come down (TAB: on or off)
+-- the ghost ball where your throw will come down (while you hold the ball); the landing
+-- ring under it, and under where a loose ball will first come down (TAB: on or off)
 on VT.Preview
-   local tLX, tLZ
+   local tLX, tLZ, tXZ
    if sBall["state"] is "held" and sBall["by"] is sActive and sTestAuto is not true and sAimX is a number then
-      put sAimX into tLX
-      put VT.Fold(sAimZ) into tLZ
+      put VT.GhostLand() into tXZ
+      put item 1 of tXZ into tLX
+      put item 2 of tXZ into tLZ
       SetObjectPosition sGhost, tLX, -kBallR, tLZ
    else
       SetObjectPosition sGhost, 0, 0, -100000
@@ -971,6 +1033,31 @@ on VT.Preview
       SetObjectPosition sMark, tLX, -1, tLZ
    end if
 end VT.Preview
+
+-- where your throw really comes down: with no walls, the aim folded off the sides; with
+-- walls, the flight played out (kept until the aim, the power or the walls change)
+function VT.GhostLand
+   local tKey, tB, tVel, i
+   if sWallH <= 1 then return sAimX & comma & VT.Fold(sAimZ)
+   put round(sAimX) & "," & round(sAimZ) & "," & round(sPower * 20) & "," & round(sWallX) & "," & round(sWallH) & "," & round(sHero[sActive]["x"] / 4) & "," & round(sHero[sActive]["z"] / 4) into tKey
+   if tKey is sGhostKey then return sGhostAt
+   put VT.RoofVelocity(sActive, sAimX, sAimZ, sPower) into tVel
+   put VT.HandX(sActive) into tB["x"]
+   put kHandH into tB["h"]
+   put sHero[sActive]["z"] into tB["z"]
+   put item 1 of tVel into tB["vx"]
+   put item 2 of tVel into tB["vh"]
+   put item 3 of tVel into tB["vz"]
+   put true into tB["air"]
+   put 0 into tB["floors"]
+   repeat with i = 1 to 400
+      VT.Advance tB
+      if tB["floors"] > 0 then exit repeat
+   end repeat
+   put tKey into sGhostKey
+   put tB["x"] & comma & tB["z"] into sGhostAt
+   return sGhostAt
+end VT.GhostLand
 
 -------------------------------------------------------------------- animation
 
@@ -1055,7 +1142,7 @@ end VT.TurnToward
 
 -------------------------------------------------------------------- banter
 -- VectorToss/banter.txt: event TAB who TAB "P line | G line | ..."; who is PROMPT, GLAZE
--- or * (either). P and G say who speaks each turn. Events: start catch_good catch_big
+-- or * (either). P and G say who speaks each turn. Events: start level catch_good catch_big
 -- catch_flat drop wild easy easy_caught rally swap idle. The HUD letters: A-Z 0-9 and
 -- : - + . ! / ? , '  (anything else is skipped).
 
@@ -1168,6 +1255,107 @@ on VT.Bubble pName, pText
    end repeat
 end VT.Bubble
 
+-------------------------------------------------------------------- levels and walls
+
+-- every kLevelCatches catches a level; from level 2 the walls rise, then close in
+on VT.Levels
+   if sLevelCatches >= kLevelCatches then VT.SetLevel sLevel + 1, false
+   -- the walls move towards where the level wants them
+   if sWallH is not sWallHTo or sWallX is not sWallXTo then
+      if abs(sWallHTo - sWallH) <= 0.4 then
+         put sWallHTo into sWallH
+      else
+         add 0.4 * VT.Sign(sWallHTo - sWallH) to sWallH
+      end if
+      if abs(sWallXTo - sWallX) <= 1 then
+         put sWallXTo into sWallX
+      else
+         add VT.Sign(sWallXTo - sWallX) to sWallX
+      end if
+      VT.ShowWalls
+   end if
+end VT.Levels
+
+function VT.Sign pN
+   if pN < 0 then return -1
+   return 1
+end VT.Sign
+
+-- level pLevel: where the walls stand and how tall (pSnap: at once, for tests)
+on VT.SetLevel pLevel, pSnap
+   put pLevel into sLevel
+   put 0 into sLevelCatches
+   put 0 into sTosses
+   if pLevel <= 1 then
+      put 0 into sWallHTo
+      put kHalfW into sWallXTo
+   else
+      put min(32, 10 + 7 * pLevel) into sWallHTo
+      put max(70, 190 - 35 * pLevel) into sWallXTo
+      if sWallX >= kHalfW then put sWallXTo into sWallX    -- a new wall rises where it stands
+   end if
+   if pSnap then
+      put sWallHTo into sWallH
+      put sWallXTo into sWallX
+   end if
+   VT.ShowWalls
+   if pLevel > 1 then
+      VT.Message "LEVEL " & pLevel
+      put empty into sTalk
+      VT.Say "level", "*", 100
+   end if
+end VT.SetLevel
+
+-- the walls drawn at their height (one mesh a 2 units of height, made when first needed)
+on VT.ShowWalls
+   local tH, tName, tSide
+   put 2 * round(sWallH / 2) into tH
+   if tH < 2 then
+      SetObjectPosition sWall[-1], 0, 0, -100000
+      SetObjectPosition sWall[1], 0, 0, -100000
+      exit VT.ShowWalls
+   end if
+   put "VT.Wall." & tH into tName
+   if sWallMesh[tH] is empty then
+      Mesh.Define tName, VT.WallMesh(tH)
+      put true into sWallMesh[tH]
+   end if
+   repeat for each item tSide in "-1,1"
+      VT.SetMesh sWall[tSide], tName
+      SetObjectPosition sWall[tSide], tSide * sWallX, 0, 0
+   end repeat
+end VT.ShowWalls
+
+-- a wall across the arena, pH tall: its outline and an upright every tile
+function VT.WallMesh pH
+   local tM, z, tA
+   put Mesh.New() into tM
+   put VT.Line(tM, 0, 0, -kHalfD, 0, 0, kHalfD) into tA
+   put VT.Line(tM, 0, pH, -kHalfD, 0, pH, kHalfD) into tA
+   repeat with z = -kHalfD to kHalfD step kTile
+      put VT.Line(tM, 0, 0, z, 0, pH, z) into tA
+   end repeat
+   return tM
+end VT.WallMesh
+
+-- tests: go to a level now, walls in place
+on VT.TestLevel pLevel
+   VT.SetLevel pLevel, true
+end VT.TestLevel
+
+function VT.WallState
+   return sLevel & "," & round(sWallX) & "," & round(sWallH)
+end VT.WallState
+
+function VT.BallField pKey
+   return sBall[pKey]
+end VT.BallField
+
+-- tests: the player's ball leaves the hand with this velocity
+on VT.TestLaunch pVX, pVH, pVZ
+   VT.Launch sActive, pVX & comma & pVH & comma & pVZ, false
+end VT.TestLaunch
+
 -------------------------------------------------------------------- HUD
 
 on VT.Message pText
@@ -1180,7 +1368,7 @@ on VT.ShowHUD
    HUD.Set "VT.P", "PROMPT " & sHero["PROMPT"]["score"], gViewLeft + 20, gViewTop + 16, 20
    put "GLAZE " & sHero["GLAZE"]["score"] into tScoreG
    HUD.Set "VT.G", tScoreG, gViewRight - 20 - the number of chars of tScoreG * 20, gViewTop + 16, 20
-   HUD.Set "VT.Rally", "RALLY " & sRally & "  BEST " & sBestRally, (gViewLeft + gViewRight) / 2 - 80, gViewTop + 18, 13
+   HUD.Set "VT.Rally", "LEVEL " & sLevel & "   RALLY " & sRally & "  BEST " & sBestRally, (gViewLeft + gViewRight) / 2 - 130, gViewTop + 18, 13
    if sMsgUntil is a number and sTicks < sMsgUntil then
       HUD.Set "VT.Msg", sMsg, (gViewLeft + gViewRight) / 2 - the number of chars of sMsg * 7, gViewTop + 150, 14
    else
@@ -1203,17 +1391,36 @@ on VT.ShowHUD
    else
       HUD.Set "VT.Help", "RUN UNDER THE BALL: WATCH ITS SHADOW   W A S D: RUN   SPACE: JUMP", gViewLeft + 20, gViewBottom - 30, 12
    end if
-   -- the round's instructions, at the start
-   if sTicks < sIntroUntil then
-      HUD.Set "VT.Intro1", "LEVEL 1: PLAY CATCH", (gViewLeft + gViewRight) / 2 - 190, gViewTop + 200, 20
-      HUD.Set "VT.Intro2", "THROW IT OFF THE ROOF: +1   OFF A SIDE TOO: +1 EACH", (gViewLeft + gViewRight) / 2 - 300, gViewTop + 236, 12
-      HUD.Set "VT.Intro3", "AIM PAST A SIDE TO BANK IT   A BALL ON YOUR FLOOR IS A DROP", (gViewLeft + gViewRight) / 2 - 300, gViewTop + 256, 12
+   -- the level's instructions stay until two tosses have come down
+   if sTosses < 2 then
+      VT.Intro
    else
       HUD.Remove "VT.Intro1"
       HUD.Remove "VT.Intro2"
       HUD.Remove "VT.Intro3"
    end if
 end VT.ShowHUD
+
+on VT.Intro
+   local tA, tB, tC, tMid
+   if sLevel <= 1 then
+      put "LEVEL 1: PLAY CATCH" into tA
+      put "THROW IT OFF THE ROOF: +1   OFF A SIDE TOO: +1 EACH" into tB
+      put "AIM PAST A SIDE TO BANK IT   A BALL ON YOUR FLOOR IS A DROP" into tC
+   else
+      if sLevel is 2 then
+         put "LEVEL 2: THE WALLS RISE" into tA
+      else
+         put "LEVEL " & sLevel & ": THE WALLS CLOSE IN" into tA
+      end if
+      put "OFF THE INSIDE OF A WALL: +1   WALL TO WALL: +2 MORE" into tB
+      put "SPACE: JUMP A WALL TO REACH THE MIDDLE" into tC
+   end if
+   put (gViewLeft + gViewRight) / 2 into tMid
+   HUD.Set "VT.Intro1", tA, tMid - the number of chars of tA * 10, gViewTop + 200, 20
+   HUD.Set "VT.Intro2", tB, tMid - the number of chars of tB * 6, gViewTop + 236, 12
+   HUD.Set "VT.Intro3", tC, tMid - the number of chars of tC * 6, gViewTop + 256, 12
+end VT.Intro
 
 -------------------------------------------------------------------- helpers
 

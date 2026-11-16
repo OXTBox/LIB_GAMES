@@ -4,7 +4,7 @@
 # The HUD letters are A-Z 0-9 and : - + . ! / ? , '   Anything else is skipped.
 # PROMPT gets the job done no matter what: short, blunt, keeps score.
 # GLAZE barters, charms and influences: deals, flattery, never quite serious.
-# Events: start catch_good catch_big catch_flat drop wild easy easy_caught rally swap idle
+# Events: start level catch_good catch_big catch_flat drop wild easy easy_caught rally swap idle
 #   catch_*, drop, wild, easy, easy_caught, swap: who = the hero it happened to.
 
 start	*	P Ball. Floor. Each other. Catch it before the floor does. | G You make everything sound like a chore list. | P It is a chore list.
@@ -57,3 +57,8 @@ idle	*	G Do you ever feel like the sky is watching? | P It's a ceiling. | G A ce
 idle	*	P Are we throwing or chatting? | G Why not both?
 idle	*	G I could sell tickets to this. | P To who? | G Give it time.
 idle	*	P The ball's not going to throw itself. | G Have you asked it nicely?
+
+level	*	G Is it me, or is the floor growing fences? | P Walls. Bounce it off the inside. | G A wall I can work with.
+level	*	P The walls moved in. | G Closer every time. Like a party that won't end. | P Like a test.
+level	*	G Who keeps moving the furniture? | P Someone who wants us closer together. | G Sweet. Suspicious, but sweet.
+level	*	P Jump the wall if it drops short. | G In these shoes? | P You don't have shoes. | G Exactly my point.
