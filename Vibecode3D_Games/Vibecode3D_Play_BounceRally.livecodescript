@@ -16,11 +16,11 @@ global bPaused, bPlaying
 local sCar, sX, sY, sVX, sJump, sDist, sStageLen, sSlice, sThing, sThingN, sNextSpawn, sRivers
 local sLevel, sLives, sScore, sOver, sWon, sHurt, sScroll, sBusy, sKeysWas, sTestKeys, sHUDWas, sTicks
 
-constant kZ = 380            -- the play plane, seen from above (screen scale is 300/z: 0.8 px a unit)
-constant kCarY = 170         -- where your car sits on the screen when centred
+constant kZ = 480            -- the play plane, seen from above (screen scale is 300/z: 0.63 px a unit; owner: camera out a little)
+constant kCarY = 220         -- where your car sits on the screen when centred
 constant kHalfW = 210        -- the road's half width
 constant kSliceGap = 60
-constant kSlices = 13
+constant kSlices = 18
 constant kJumpSteps = 26
 
 on Game.OnStart
@@ -140,7 +140,7 @@ on Rally.StartLevel pLevel
    local tRow, tK, i
    put pLevel into sLevel
    put line pLevel of ("120,3,3" & cr & "130,4,3" & cr & "140,5,2" & cr & "150,6,2" & cr & "160,7,1") into tRow
-   put (item 1 of tRow) / 24 into sScroll
+   put (item 1 of tRow) / 18 into sScroll      -- owner: more speed (was / 24)
    put item 2 of tRow into sBusy
    if pLevel is 1 then put item 3 of tRow into sLives
    put 7000 + pLevel * 1000 into sStageLen
@@ -245,7 +245,7 @@ on Game.OnUpdate
    -- the road
    put sDist mod kSliceGap into tFrac
    repeat with i = 0 to kSlices
-      put sDist - 140 + i * kSliceGap - tFrac into tW
+      put sDist - 280 + i * kSliceGap - tFrac into tW
       SetObjectPosition sSlice[i], Rally.RoadX(tW), Rally.ScreenY(tW) - kSliceGap, kZ
    end repeat
    -- new cars ahead
@@ -269,7 +269,7 @@ end Game.OnUpdate
 -- a red road car, a purple enemy, or a rock
 on Rally.Spawn
    local tN, tCX, tW
-   put sDist + 640 into tW
+   put sDist + 780 into tW
    put Rally.RoadX(tW) into tCX
    put random(100) into tN
    if tN <= 55 then
@@ -356,7 +356,7 @@ on Rally.Things pInAir, pLand
          delete variable sThing[tT]
          next repeat
       end if
-      if tY < -420 then
+      if tY < -580 then
          SetObjectPosition sThing[tT]["key"], 0, -900, kZ
       else
          SetObjectPosition sThing[tT]["key"], sThing[tT]["x"], tY, kZ
