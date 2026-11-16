@@ -116,6 +116,15 @@ function MeshGrid
    return Mesh.New()
 end MeshGrid
 
+-- an object's transform: 12 items, the last three its camera-space position (here: in front, centred)
+function Xform.Object pKey
+   return "1,0,0,0,1,0,0,0,1,0,0,300"
+end Xform.Object
+
+function MeshLathe
+   return Mesh.New()
+end MeshLathe
+
 on SetObjectRotationSpeed
 end SetObjectRotationSpeed
 
