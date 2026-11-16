@@ -1145,8 +1145,14 @@ on VT.Animate pName
    VT.SetMesh tKey, "VT." & tClip & "." & max(1, trunc(sHero[pName]["frame"]))
    VT.HeroFall pName
    if sHero[pName]["state"] is "hang" and sClip["catch"]["frames"] >= 12 then VT.SetMesh tKey, "VT.catch.12"
-   SetObjectPosition tKey, sHero[pName]["x"], -sHero[pName]["h"], sHero[pName]["z"]
-   put VT.Euler(sHero[pName]["yaw"], 0) into tE
+   if sHero[pName]["state"] is "hang" then
+      -- dangling: a little sway and swing, nothing under the feet
+      SetObjectPosition tKey, sHero[pName]["x"] + sin(sTicks * 0.17) * 3, -(sHero[pName]["h"] - abs(sin(sTicks * 0.085)) * 2), sHero[pName]["z"]
+      put VT.Euler(sHero[pName]["yaw"], sin(sTicks * 0.17) * 0.14) into tE
+   else
+      SetObjectPosition tKey, sHero[pName]["x"], -sHero[pName]["h"], sHero[pName]["z"]
+      put VT.Euler(sHero[pName]["yaw"], 0) into tE
+   end if
    SetObjectRotation tKey, item 1 of tE, item 2 of tE, item 3 of tE
 end VT.Animate
 
@@ -1560,21 +1566,22 @@ function VT.CrackMesh
    return tM
 end VT.CrackMesh
 
--- a hole: the tile's edge and its walls running down into nothing
+-- a hole: a shallow box, the tile's edge and 5 units down (owner: tall pit walls cluttered
+-- the view and drew below the arena)
 function VT.HoleMesh
    local tM, tA, k, tY
-   put kTile / 2 into k
+   put kTile / 2 - 1 into k
    put Mesh.New() into tM
-   repeat for each item tY in "0,-60,-200"
+   repeat for each item tY in "0,-5"
       put VT.Line(tM, -k, tY, -k, k, tY, -k) into tA
       put VT.Line(tM, k, tY, -k, k, tY, k) into tA
       put VT.Line(tM, k, tY, k, -k, tY, k) into tA
       put VT.Line(tM, -k, tY, k, -k, tY, -k) into tA
    end repeat
-   put VT.Line(tM, -k, 0, -k, -k, -400, -k) into tA
-   put VT.Line(tM, k, 0, -k, k, -400, -k) into tA
-   put VT.Line(tM, k, 0, k, k, -400, k) into tA
-   put VT.Line(tM, -k, 0, k, -k, -400, k) into tA
+   put VT.Line(tM, -k, 0, -k, -k, -5, -k) into tA
+   put VT.Line(tM, k, 0, -k, k, -5, -k) into tA
+   put VT.Line(tM, k, 0, k, k, -5, k) into tA
+   put VT.Line(tM, -k, 0, k, -k, -5, k) into tA
    return tM
 end VT.HoleMesh
 
@@ -1622,13 +1629,13 @@ on VT.ShowHUD
    HUD.Set "VT.P", "PROMPT " & sHero["PROMPT"]["score"] & " " & VT.Hangs("PROMPT"), gViewLeft + 20, gViewTop + 16, 20
    put VT.Hangs("GLAZE") & " GLAZE " & sHero["GLAZE"]["score"] into tScoreG
    HUD.Set "VT.G", tScoreG, gViewRight - 20 - the number of chars of tScoreG * 20, gViewTop + 16, 20
-   HUD.Set "VT.Rally", "LEVEL " & sLevel & "   RALLY " & sRally & "  BEST " & sBestRally, (gViewLeft + gViewRight) / 2 - 130, gViewTop + 18, 13
+   HUD.Set "VT.Rally", "LEVEL " & sLevel & "   RALLY " & sRally & "  BEST " & sBestRally, gViewRight - 20 - (34 + the number of chars of (sRally & sBestRally & sLevel)) * 12, gViewBottom - 54, 12
    if sMsgUntil is a number and sTicks < sMsgUntil then
-      HUD.Set "VT.Msg", sMsg, (gViewLeft + gViewRight) / 2 - the number of chars of sMsg * 7, gViewTop + 150, 14
+      HUD.Set "VT.Msg", sMsg, (gViewLeft + gViewRight) / 2 - the number of chars of sMsg * 7, gViewBottom - 84, 14
    else
       HUD.Remove "VT.Msg"
    end if
-   HUD.Set "VT.Who", "YOU ARE " & sActive & "   C: SWAP TO " & VT.Other(sActive) & "   TAB: LANDING RING", gViewLeft + 20, gViewBottom - 54, 12
+   HUD.Set "VT.Who", "YOU: " & sActive & "   C: SWAP", gViewLeft + 20, gViewBottom - 54, 12
    if sBall["state"] is "held" and sBall["by"] is sActive then
       if sCharging then
          repeat with i = 1 to 16
@@ -1643,7 +1650,7 @@ on VT.ShowHUD
          HUD.Set "VT.Help", "MOUSE: AIM THE GHOST BALL   HOLD THE BUTTON, LET GO: THROW   E: AN EASY ONE", gViewLeft + 20, gViewBottom - 30, 12
       end if
    else
-      HUD.Set "VT.Help", "RUN UNDER THE BALL: WATCH ITS SHADOW   W A S D: RUN   SPACE: JUMP", gViewLeft + 20, gViewBottom - 30, 12
+      HUD.Set "VT.Help", "RUN UNDER THE BALL: WATCH ITS SHADOW   W A S D: RUN   SPACE: JUMP   TAB: LANDING RING", gViewLeft + 20, gViewBottom - 30, 12
    end if
    -- the level's instructions stay until two tosses have come down
    if sTosses < 2 then
