@@ -1,0 +1,35 @@
+# data file for the Fltk User Interface Designer (fluid)
+version 1.0108 
+header_name {.h} 
+code_name {.cxx}
+Function {make_window()} {open
+} {
+  code {function getXPM(w)
+imagename=w:value()
+xpmbrowser:clear()
+fltk.fl_register_images()
+ my_image=Fl_Shared_Image.get(imagename)
+my_image_data=my_image:data()
+for i,v in pairs(my_image_data) do
+	if i == 1 then 
+ someinfo:label(string.find(v,"%d+%s",3))
+ end
+ xpmbrowser:add(v)
+ end
+end} {}
+  Fl_Window XPMBrowserWindow {open selected
+    xywh {427 110 412 530} type Double visible
+  } {
+    Fl_Browser xpmbrowser {
+      xywh {0 5 395 445} textsize 8
+    }
+    Fl_File_Input {} {
+      label {file:}
+      callback getXPM
+      xywh {30 461 355 34} labelsize 11 textsize 11
+    }
+    Fl_Button someinfo {
+      xywh {20 505 365 20}
+    }
+  }
+} 

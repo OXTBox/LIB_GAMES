@@ -1,0 +1,193 @@
+# data file for the Fltk User Interface Designer (fluid)
+version 1.0108 
+header_name {.h} 
+code_name {.cxx}
+Function {make_window()} {open
+} {
+  code {-- globals_and_functions_codeblock
+counter=95 
+
+function color_cycle(baseColor,counterLimit,counterStep)
+counter=counter+counterStep
+if counter > counterLimit then counter=counterStep end
+fltk.fl_color(baseColor+counter)
+end ---color_cycle
+
+function drawBox(w)
+
+
+
+mx,my=Fl:event_x(),Fl:event_y()
+DWindow:make_current();
+print( mx.. " - " ..my )
+bx,by= -192+w:x(),-192+w:y()
+print(bx+mx,by+my)
+color_cycle(1,255,5)
+fltk.fl_rectf(mx-12,my-12,mx+12,my+12)
+--DWindow:redraw()
+end
+
+function drawrectF(qx,qy,qs)
+color_cycle(1,255,5)
+quadHalf=math.floor(qs/2)
+l,t =qx-quadHalf,qy-quadHalf
+fltk.fl_rectf(l,t,qs,qs)
+end} {selected
+  }
+  Fl_Window DWindow {
+    callback drawBox open
+    xywh {196 123 430 452} type Double when 6 visible
+  } {
+    Fl_Group {} {
+      xywh {-1 -1 386 381}
+    } {
+      Fl_Button x1y1 {
+        callback drawBox
+        xywh {0 0 64 64} box NO_BOX labelsize 11
+      }
+      Fl_Button x2y1 {
+        callback drawBox
+        xywh {64 0 64 64} box NO_BOX labelsize 11
+      }
+      Fl_Button x3y1 {
+        callback drawBox
+        xywh {128 0 64 64} box NO_BOX labelsize 11
+      }
+      Fl_Button x4y1 {
+        callback drawBox
+        xywh {192 0 64 64} box NO_BOX labelsize 11
+      }
+      Fl_Button x5y1 {
+        callback drawBox
+        xywh {256 0 64 64} box NO_BOX labelsize 11
+      }
+      Fl_Button x6y1 {
+        callback drawBox
+        xywh {320 0 64 64} box NO_BOX labelsize 11
+      }
+      Fl_Button x1y1 {
+        callback drawBox
+        xywh {0 64 64 64} box NO_BOX labelsize 11
+      }
+      Fl_Button x2y2 {
+        callback drawBox
+        xywh {64 64 64 64} box NO_BOX labelsize 11
+      }
+      Fl_Button x3y2 {
+        callback drawBox
+        xywh {128 64 64 64} box NO_BOX labelsize 11
+      }
+      Fl_Button x4y2 {
+        callback drawBox
+        xywh {192 64 64 64} box NO_BOX labelsize 11
+      }
+      Fl_Button x5y2 {
+        callback drawBox
+        xywh {256 64 64 64} box NO_BOX labelsize 11
+      }
+      Fl_Button x6y2 {
+        callback drawBox
+        xywh {320 64 64 64} box NO_BOX labelsize 11
+      }
+      Fl_Button x1y3 {
+        callback drawBox
+        xywh {0 128 64 64} box NO_BOX labelsize 11
+      }
+      Fl_Button x2y3 {
+        callback drawBox
+        xywh {64 128 64 64} box NO_BOX labelsize 11
+      }
+      Fl_Button x3y3 {
+        callback drawBox
+        xywh {128 128 64 64} box NO_BOX labelsize 11
+      }
+      Fl_Button x4y3 {
+        callback drawBox
+        xywh {192 128 64 64} box NO_BOX labelsize 11
+      }
+      Fl_Button x5y3 {
+        callback drawBox
+        xywh {256 128 64 64} box NO_BOX labelsize 11
+      }
+      Fl_Button x6y3 {
+        callback drawBox
+        xywh {320 128 64 64} box NO_BOX labelsize 11
+      }
+      Fl_Button x1y4 {
+        callback drawBox
+        xywh {0 192 64 64} box NO_BOX labelsize 11
+      }
+      Fl_Button x2y4 {
+        callback drawBox
+        xywh {64 192 64 64} box NO_BOX labelsize 11
+      }
+      Fl_Button x3y4 {
+        callback drawBox
+        xywh {128 192 64 64} box NO_BOX labelsize 11
+      }
+      Fl_Button x4y4 {
+        callback drawBox
+        xywh {192 192 64 64} box NO_BOX labelsize 11
+      }
+      Fl_Button x5y4 {
+        callback drawBox
+        xywh {256 192 64 64} box NO_BOX labelsize 11
+      }
+      Fl_Button x6y4 {
+        callback drawBox
+        xywh {320 192 64 64} box NO_BOX labelsize 11
+      }
+      Fl_Button x1y5 {
+        callback drawBox
+        xywh {0 256 64 64} box NO_BOX labelsize 11
+      }
+      Fl_Button x2y5 {
+        callback drawBox
+        xywh {64 256 64 64} box NO_BOX labelsize 11
+      }
+      Fl_Button x3y5 {
+        callback drawBox
+        xywh {128 256 64 64} box NO_BOX labelsize 11
+      }
+      Fl_Button x4y5 {
+        callback drawBox
+        xywh {192 256 64 64} box NO_BOX labelsize 11
+      }
+      Fl_Button x5y5 {
+        callback drawBox
+        xywh {256 256 64 64} box NO_BOX labelsize 11
+      }
+      Fl_Button x6y5 {
+        callback drawBox
+        xywh {320 256 64 64} box NO_BOX labelsize 11
+      }
+      Fl_Button x1y6 {
+        callback drawBox
+        xywh {0 320 64 64} box NO_BOX labelsize 11
+      }
+      Fl_Button x2y6 {
+        callback drawBox
+        xywh {64 320 64 64} box NO_BOX labelsize 11
+      }
+      Fl_Button x3y6 {
+        callback drawBox
+        xywh {128 320 64 64} box NO_BOX labelsize 11
+      }
+      Fl_Button x4y6 {
+        callback drawBox
+        xywh {192 320 64 64} box NO_BOX labelsize 11
+      }
+      Fl_Button x5y6 {
+        callback drawBox
+        xywh {256 320 64 64} box NO_BOX labelsize 11
+      }
+      Fl_Button x6y6 {
+        callback drawBox
+        xywh {320 320 64 64} box NO_BOX labelsize 11
+      }
+    }
+  }
+  code {DWindow:show();
+DWindow:make_current();
+DWindow:do_callback();} {}
+} 

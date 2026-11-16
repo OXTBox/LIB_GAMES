@@ -1,0 +1,19 @@
+# data file for the Fltk User Interface Designer (fluid)
+version 1.0108 
+header_name {.h} 
+code_name {.cxx}
+Function {make_window()} {open
+} {
+  Fl_Window {} {open selected
+    xywh {400 251 574 479} type Double visible
+  } {
+    Fl_Box {} {
+      label label
+      image {/AQAURIUS8x8PBM/aquarius_chr_066.pbm} xywh {30 19 125 62}
+    }
+    Fl_Box {} {
+      label label
+      image {../AquaScreensPBM/screenshot_0005.pbm} xywh {55 118 270 152}
+    }
+  }
+} 

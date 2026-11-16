@@ -1,0 +1,60 @@
+# data file for the Fltk User Interface Designer (fluid)
+version 1.0108 
+header_name {.h} 
+code_name {.cxx}
+Function {make_window()} {open
+} {
+  Fl_Window {} {
+    label TabbedWindow
+    xywh {101 187 490 310} type Double visible
+  } {
+    Fl_Tabs TabbedGroup1 {
+      xywh {5 5 478 300} labelsize 10
+    } {
+      Fl_Group camera {
+        label Camera
+        xywh {7 29 469 265} labelsize 10 hide
+      } {}
+      Fl_Group colors {
+        label Colors
+        xywh {7 29 469 265} labelsize 10 hide
+      } {}
+      Fl_Group console {
+        label Console
+        xywh {7 29 469 265} labelsize 10 hide
+      } {}
+      Fl_Group objects {
+        label Objects
+        xywh {7 29 469 265} labelsize 10 hide
+      } {}
+      Fl_Group lights {
+        label Lights
+        xywh {7 29 469 265} labelsize 10 hide
+      } {}
+      Fl_Group mesh {
+        label Mesh
+        xywh {7 29 469 265} labelsize 10 hide
+      } {}
+      Fl_Group particles {
+        label Particles
+        xywh {7 29 469 265} labelsize 10 hide
+      } {}
+      Fl_Group script {
+        label Script
+        xywh {7 29 469 265} labelsize 10 hide
+      } {}
+      Fl_Group sounds {
+        label Sounds
+        xywh {7 29 469 265} labelsize 10 hide
+      } {}
+      Fl_Group text {
+        label Text
+        xywh {7 29 469 265} labelsize 10 hide
+      } {}
+      Fl_Group view {
+        label View selected
+        xywh {7 29 469 265} labelsize 10
+      } {}
+    }
+  }
+} 

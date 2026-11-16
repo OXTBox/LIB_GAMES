@@ -1,0 +1,723 @@
+# data file for the Fltk User Interface Designer (fluid)
+version 1.0108 
+header_name {.h} 
+code_name {.cxx}
+Function {make_window()} {open
+} {
+  code {if gameroot==nil then dofile(getSceneInfo(IG3D_ROOT).."Data/game script.lua") end} {}
+  code {-- Menu Globals
+mainMenuIndex={}
+menuIndexCount=1
+LibStartVal=1
+
+oldChar=" "} {}
+  code {-- Fast FilePaths, creates directories
+
+function fastFilePaths(ft,whatExt)
+fastPath=gameroot.."Data/"..ft
+ig3d_CreateDirectory_s(fastPath)
+fastFile=fastPath.."/"..os.time()..whatExt
+return fastFile
+end} {}
+  code {-- nameLevel
+function nameLevel(levelName)
+ig3d_SetLevelName_s(gameroot.."Data/Levels/"..levelName)
+end} {}
+  code {-- wClose
+function wClose(w)
+w:hide()
+w=nil
+end} {}
+  code {--Exit
+function exittomenu()
+game_func=nil
+loadLevel("Data/Levels/default")
+end} {}
+  code {--Edit
+function editbutton()
+EditModeToggle()
+UIUpdate()
+end} {}
+  code {--restart
+function restartbutton()
+tLevel=ig3d_GetLevelName__s()
+delete(ig3d_scene)
+loadLevel(tLevel)
+end} {}
+  code {--Cancel
+function canceldialog()
+--beep()
+--dialogWindow:hide();
+end} {}
+  code {-- lookbutton
+function lookbutton()
+editingModeSwitch("lookaround")
+end} {}
+  code {-- Clear scene
+function clearsceneClicked(w)
+	delete(ig3d_scene)
+	--game_func=nil
+end} {}
+  code {-- new level
+function newLevel()
+
+if not askLevel then OPEN_UI_WINDOWS("askLevel") end
+end} {}
+  code {-- open level
+function openLevel()
+fileName = fltk.fl_file_chooser("Choose a picture", "Image Files (*.{bmp,gif,jpg,png})", nil, nil)
+end} {}
+  code {-- loadObject
+function loadObject(tfile)
+gNumObjects=gNumObjects+1
+myWtf = item(-1,tfile,"/")
+gObjects[gNumObjects]={cObj=make(ig3d_object, myWtf)}
+gCurObject=gObjects[gNumObjects].cObj
+end} {}
+  code {-- wButtonProperties
+function wButtonProperties(w)
+local wimage=w:image()
+local isw=w:image():w()
+local ish=w:image():h()
+local n=w:label()
+local x=w:x()
+local y=w:y()
+local height=w:h()
+local width=w:w()
+end} {}
+  code {-- CHOOSE FILE OR FOLDER
+
+function chooseFolder(title,start_path)
+-- fl_dir_chooser (function)
+-- fltk.fl_dir_chooser(title,start_path,relative)
+-- "relative" is a toggle. Non-zero means the filename returned will be a relative path, and zero returns absolute path. 
+-- Using nil as start path will default to the previously chosen path,
+-- or current directory if this is the first time the function is called
+local relative=0
+ local dirname=fltk.fl_dir_chooser(title,start_path,relative)
+ if dirname then tFolder= replaceText(gameroot,"",dirname) end
+ return tFolder 
+end
+
+
+function chooseFile(title,filename_filter,start_path)
+-- fl_file_chooser (function)
+-- fltk.fl_file_chooser(title,filename_filter,start_path,relative)
+-- "relative" is a toggle. Non-zero means the filename returned will be a relative path, and zero returns absolute path. 
+local relative=0
+local filename=fltk.fl_file_chooser(title,filename_filter,start_path,relative)
+ if filename then tFile= replaceText(gameroot,"",filename) end
+ return tFile 
+end} {}
+  code {-- Save Functions --
+-- save_levelState
+function save_levelState()
+levelStateFile=gameroot..ig3d_GetLevelName__s().."/savedstate.lua"
+levelState=ig3d_GetStateScript__s()
+io.output(levelStateFile)
+io.write(levelState)
+end
+-- save_levelMesh
+
+function save_levelMesh()
+levelPath=ig3d_GetLevelName__s()
+levelPathAsWords = string.gsub(levelPath, "/", " ")
+wordList=extractWords(levelPathAsWords)
+lastWord=wordList[\#wordList]
+levelMeshFile= (levelPath.."/"..lastWord.."_level_mesh.wtf")
+setSceneInfo(IG3D_LEVEL_MESH, levelMeshFile) 
+savelevelMesh = ig3d_SaveMeshAsWTF_sf(gameroot..levelMeshFile,100)
+
+end
+
+-- save level
+function save_level()
+save_levelMesh();
+tLevel=ig3d_GetLevelName__s();
+saveLevel(tLevel);
+ -- ig3d_SaveLevel_s(tLevel); -- broken?
+end
+
+-- save screenshot
+function save_screenshot()
+screenShotPath=gameroot..ig3d_GetLevelName__s().."/"..os.time()..".png"
+ig3d_SaveScreenshot_s2bi(screenShotPath,false,false,16)
+end
+-- save as WTF OBJ  3DS Meshwork
+function save_asWTF()
+wtfsaveFile=fastFilePaths("WTF",".wtf")
+ig3d_SaveMeshAsWTF_sf(wtfsaveFile,100)
+end
+
+function save_asOBJ()
+objsaveFile=fastFilePaths("OBJ",".obj")
+ig3d_SaveMeshAsOBJ_sf(objsaveFile,100)
+end
+
+function save_as3DS()
+threedsavefile=fastFilePaths("3DS",".3ds")
+ig3d_SaveMeshAs3DS_sf(threedsavefile,100)
+end
+
+function save_asMeshWork()
+meshworksavefile=fastFilePaths("Meshwork",".mesh")
+ig3d_SaveMeshAsMeshwork_sf(meshworksavefile,100)
+end
+
+
+-- save script requires script editor, should make dynamic
+function saveScript()
+	if fileName == nil then
+		fileName = fltk.fl_file_chooser("Please enter the filename:", "Lua Files (*.{lua, ig3d})", nil, nil)
+		if fileName == nil then
+			return false
+		else
+			path:label(fileName)
+			closer:activate()
+		end
+	end
+	
+	local f=io.open(fileName, "w")
+	f:write(editor:value())
+	f:close()
+	changed=false
+	saver:deactivate()
+	return true
+end} {selected
+  }
+  code {-- save files from menus
+function savefile(yPick)
+local tDir=gameroot.."Data/"
+local tFile="empty"
+   if yPick=="Level" then save_level() 
+   elseif yPick=="Level Mesh" then save_levelMesh()
+   elseif yPick=="Level State" then save_levelState()
+   elseif yPick=="Screenshot" then save_screenshot()
+   elseif yPick=="WTF" then save_asWTF()
+   elseif yPick=="OBJ" then save_asOBJ()
+   elseif yPick=="3ds" then save_as3DS()
+   elseif yPick=="Meshwork" then save_asMeshwork()
+   end 
+ print("saveFile"..yPick)
+end} {}
+  code {-- open file from menus 
+ function openfile(yPick)
+ local tDir=gameroot.."Data/"
+local tFile="empty"
+      if yPick=="default" then action = exittomenu()
+   	elseif yPick=="Level" then tFile = chooseFolder(tTitle,tDir.."Levels")  
+   	elseif yPick=="Script" then tFile =  chooseFile(tTitle,"*.lua",tDir.."Scripts") 
+   	elseif yPick=="Fluid" then tFile =  chooseFolder(tTitle,tDir.."Fluid") 
+   	elseif yPick=="Mesh" then tFile =  chooseFile(tTitle,"*.wtf",tDir.."WTF")
+   	elseif yPick=="Shader" then tFile =  chooseFolder(tTitle,tDir.."Shaders") 
+   	elseif yPick=="Object" then tFile =  chooseFile(tTitle,"*.wtf",tDir.."WTF")
+   	elseif yPick=="Sound" then tFile =  chooseFile(tTitle,"*.ogg",tDir.."Sounds") 
+   	elseif yPick=="Font" then tFile =  chooseFile(tTitle,"*.png",tDir.."FontPngs") 
+   	elseif yPick=="Texture" then tFile =  chooseFile(tTitle,"*.png",tDir.."Images") 
+   	end
+   	
+  	 if tFile ~= "empty" or tFile ~= nil then 
+  	 tFile = string.gsub(tFile,"//","") 
+  	 	if yPick=="Level" then loadLevel(tFile);
+   		elseif yPick=="Fluid" then  OPEN_UI_WINDOWS(item(-2,tFile,"/"))
+   		elseif yPick=="Shader" then print(tFile);
+   		elseif yPick=="Mesh" then loadMesh(tFile);
+   		elseif yPick=="Texture" then loadTexture(tFile);
+   		elseif yPick=="Sound" then loadSound(tFile);
+   		elseif yPick=="Object" then loadObject(tFile);
+   		end
+   			
+   		if yPick=="Script" then 
+   		OPEN_UI_WINDOWS("script_editor");
+  			if scriptEditor ~=nil then openScript(tFile) end
+   		end
+   		
+   		 if yPick=="Font" then
+   		firstFont=item(1,tFile,"_").."_1.png"
+   		secondFont=item(1,tFile,"_").."_2.png"
+   		loadTexture(firstFont)
+   		loadTexture(secondFont)
+   		loadFont(firstFont,secondFont)
+   		print(firstFont.."/n"..secondFont)
+   		end
+   	end
+ 
+   end} {}
+  code {-- FILL THE FLUID MENU
+FluidsMenuText={}
+
+function fill_FluidsMenu()
+local i=0;FluidsPath=getSceneInfo(IG3D_ROOT).."Data/Fluid";
+n=menuIndexCount
+n=n+2
+mainMenuIndex[n]="Fluid/"
+n=n-1
+for file in lfs.dir(FluidsPath) do
+if string.sub(file,1,1) ~="." then
+if string.sub(file,-4,-4)~="." and string.sub(file,-3,-3) ~="." then
+firstChar=string.upper(string.sub(file,1,1))
+
+if firstChar~=oldChar then
+oldChar=firstChar
+n=n+2
+mainMenuIndex[n]="Fluid/"..firstChar.."/"
+
+end
+n=n+1
+menuLine="Fluid/"..firstChar.."/"..file
+menuBar:add(menuLine);
+mainMenuIndex[n]=menuLine
+print(n, " menuline="..menuLine)
+end
+end
+end
+menuBar:value(0)
+menuIndexCount=n
+
+end} {}
+  code {-- FILL THE FILE MENU
+fileMenuText={}
+fileMenuText.Save={"Save/Level","Save/Level Mesh","Save/Level State","Save/Screenshot"}
+fileMenuText.Export={"Export/WTF","Export/OBJ","Export/3DS","Export/Path"}
+fileMenuText.Open={"Open/default","Open/Level","Open/Script","Open/Mesh","Open/Fluid","Open/Emitter","Open/Shader"}
+fileMenuText.Load={"Load/Object","Load/Sound","Load/Font","Load/Texture","Load/Mesh"}
+fileMenuIndex={}
+
+function fill_FileMenu()
+n=\#mainMenuIndex+1
+mainMenuIndex[n]="Open"
+for i=1,table.getn(fileMenuText.Open),1 do
+n=n+1
+menuLine="File/"..fileMenuText.Open[i]
+menuBar:add(menuLine);
+mainMenuIndex[n]=menuLine
+end
+
+n=n+2
+mainMenuIndex[n]="Save"
+for i=1,table.getn(fileMenuText.Save),1 do
+n=n+1 
+menuLine="File/"..fileMenuText.Save[i]
+menuBar:add(menuLine);
+mainMenuIndex[n]=menuLine
+end
+
+n=n+2
+mainMenuIndex[n]="Load"
+for i=1,table.getn(fileMenuText.Load),1 do
+n=n+1 
+menuLine="File/"..fileMenuText.Load[i]
+menuBar:add(menuLine);
+mainMenuIndex[n]=menuLine
+end
+
+n=n+2
+mainMenuIndex[n]="Export"
+for i=1,table.getn(fileMenuText.Export),1 do
+n=n+1 
+menuLine="File/"..fileMenuText.Export[i]
+menuBar:add(menuLine);
+mainMenuIndex[n]=menuLine
+end
+
+menuIndexCount=n
+print("n="..n)
+end} {}
+  code {-- FILL THE EDIT MENU
+editMenuText={"Undo","Copy","Paste","Delete","Select All","-","Clear Scene"}
+
+function fill_EditMenu()
+n=menuIndexCount+3
+mainMenuIndex[n]="Edit"
+for i=1,table.getn(editMenuText),1 do
+n=n+1
+menuLine="Edit/"..editMenuText[i]
+menuBar:add(menuLine);
+mainMenuIndex[n]=menuLine
+end
+menuIndexCount=n
+end} {}
+  code {-- FILL THE LEVEL MENU
+levelMenuText={"Play","Save","Reset","New Level","Clear Scene"}
+
+function fill_LevelMenu()
+mainMenuIndex[menuIndexCount+1]="Level"
+n=menuIndexCount+2
+mainMenuIndex[n]="Level"
+for i=1,\#levelMenuText,1 do
+n=n+1
+menuLine="Level/"..levelMenuText[i]
+menuBar:add(menuLine);
+mainMenuIndex[n]=menuLine
+end
+menuIndexCount=n
+end} {}
+  code {-- FILL THE Objects MENU
+ObjectsMenuText={}
+ObjectsMenuText.Scene={"Scene"}
+function fill_ObjectsMenu()
+local i=0;
+n=menuIndexCount+3
+LibStartVal=n
+mainMenuIndex[n]="Objects"
+n=n+1
+mainMenuIndex[n]="Objects/Add/"
+n=n-1
+wtfPath=getSceneInfo(IG3D_ROOT).."Data/WTF"
+
+for file in lfs.dir(wtfPath) do
+if string.sub(file,-4,-1)==".wtf" then
+
+
+firstChar=string.upper(string.sub(file,1,1))
+
+if oldChar~=firstChar then
+n=n+2
+oldChar=firstChar
+mainMenuIndex[n]="Objects/Add/"..firstChar.."/"
+end
+
+n=n+1
+
+wtfalphabetical="Objects/Add/"..firstChar.."/"..string.sub(file,1,-5)
+menuLine=wtfalphabetical
+Library_menuBar:add(menuLine);
+mainMenuIndex[n]=menuLine
+end
+end
+
+menuIndexCount=n
+
+n=n+2
+ObjectsMenuIndex[n]="Scene"
+for i=1,table.getn(ObjectsMenuText.Scene),1 do
+n=n+1
+menuLine="Objects/"..ObjectsMenuText.Scene[i]
+Library_menuBar:add(menuLine);
+mainMenuIndex[n]=menuLine
+end
+menuIndexCount=n
+Library_menuBar:value(0)
+print("n="..n)
+end} {}
+  code {-- FILL THE LEVELS MENU
+LevelsMenuText={}
+function fill_LevelsMenu()
+local i=0;
+local LevelsPath=getSceneInfo(IG3D_ROOT).."Data/Levels/"
+
+n=menuIndexCount+3
+mainMenuIndex[n]="Levels"
+
+print("Levelsmenu",n)
+n=n-1
+
+for file in lfs.dir(LevelsPath) do
+
+if string.sub(file,1,1) ~="." then
+if string.sub(file,-4,-4)~="." and string.sub(file,-3,-3) ~="." then
+firstChar=string.upper(string.upper(string.sub(file,1,1)))
+
+if firstChar~=oldChar then
+oldChar=firstChar
+n=n+2
+mainMenuIndex[n]="Levels/"..firstChar.."/"
+end
+
+n=n+1
+menuLine="Levels/"..firstChar.."/"..file
+menuBar:add(menuLine);
+mainMenuIndex[n]=menuLine
+end
+end
+end
+menuBar:value(0)
+menuIndexCount=n
+end} {}
+  code {-- FILL THE LIBRARY MENU
+LibraryMenuText={"Emitters","Levels","Models","Materials","Scripts","Sounds","Images","FontPngs","Text","Fluid","Shaders"}
+
+function fill_LibraryMenu()
+n=menuIndexCount+3
+mainMenuIndex[n]="Library"
+for i=1,table.getn(LibraryMenuText),1 do
+  n=n+1
+  menuLine="Library/"..LibraryMenuText[i]
+  menuBar:add(menuLine);
+mainMenuIndex[n]=menuLine
+end
+menuIndexCount=n
+end} {}
+  code {-- Fill Menu Bar
+function FillMenuBar()
+fill_FileMenu();
+fill_EditMenu();
+fill_LevelMenu();
+	--fill_FluidsMenu();
+	--fill_LevelsMenu();
+fill_LibraryMenu();
+	--fill_MeshMenu();
+	--fill_ObjectsMenu();
+end} {}
+  code {-- file Menu Pick
+function fileMenuPick(tPick)
+local xPick=item(-2,tPick,"/")
+local yPick=item(-1,tPick,"/")
+local mPick=xPick.."/"..yPick
+local tTitle=xPick.." "..yPick
+local tDir=gameroot.."Data/"
+local tFile="empty"
+  -- chooseFile(title,filename_filter,start_path)
+ -- chooseFolder(title,start_path)
+print(xPick,yPick)
+print("mPick="..mPick)
+if xPick=="Save" or xPick =="Export" then savefile(yPick)
+elseif   xPick== "Open"  or xPick == "Load" then openfile(yPick)
+  end  
+end} {}
+  code {-- edit Menu Pick
+function editMenuPick(tPick)
+
+local xPick=item(-2,tPick,"/")
+local yPick=item(-1,tPick,"/")
+local mPick=xPick.."/"..yPick
+local tTitle=xPick.." "..yPick
+local tDir=gameroot.."Data/"
+local tFile="empty"
+ 
+print("mPick="..mPick)
+if mPick=="Edit/Clear Scene" then tFile =  clearsceneClicked() end
+end} {}
+  code {-- level Menu Pick
+function levelMenuPick(tPick)
+
+local xPick=item(-2,tPick,"/")
+local yPick=item(-1,tPick,"/")
+local mPick=xPick.."/"..yPick
+local tTitle=xPick.." "..yPick
+local tDir=gameroot.."Data/"
+local tFile="empty"
+ 
+
+
+print("mPick="..mPick)
+if mPick == "Level/Clear Scene" then action =  clearsceneClicked() 
+elseif mPick == "Level/Reset" then action =  restartbutton()
+elseif mPick == "Level/Main Menu" then action =  exittomenu()
+elseif mPick == "Level/Save" then  action =  save_level()
+elseif mPick == "Level/Play" then action = editingModeSwitch("play")
+elseif mPick == "Level/New Level" then action = newLevel()
+
+end
+
+end} {}
+  code {-- Library Menu Callback
+function Library_menu_callback(w)
+tMenu=w:label()
+tVal=w:value()+LibStartVal
+tPick=w:text()
+print(tMenu,tVal,tPick)
+print(tVal,"=",mainMenuIndex[tVal]);
+end} {}
+  code {-- main_menu_callback
+
+function main_menu_callback(w)
+tMenu=w:label()
+tVal=w:value()
+tPick=w:text()
+tIndex=mainMenuIndex[tVal]
+--print(tMenu,tVal,tPick,tIndex)
+if tIndex ~= nil then
+menuHead=item(1,tIndex,"/")
+if string.find(tIndex,"/") then
+if menuHead == "File" then fileMenuPick(tIndex)
+elseif menuHead == "Edit" then editMenuPick(tIndex)
+elseif menuHead == "Level" then levelMenuPick(tIndex)
+end
+end
+end
+end} {}
+  code {-- fix Icons
+function fixIcons()
+
+local sw=UIMainTools:w()
+local sh=UIMainTools:h()
+local sx=UIMainTools:x()
+local sy=UIMainTools:y()
+
+local x=5
+local y=31
+for i=1,\#toolButton.button,1 do
+local w=toolButton.button[i]
+
+local wimage=w:image()
+local isw=w:image():w()
+local ish=w:image():h()
+local n=w:label()
+
+if isw >= 23 or ish  >= 23 then 
+w:image(w:image():copy(22,22));
+end
+if x>=sw-23 then x=5 
+y=y+24 
+end
+
+w:resize(x,y,24,24);
+w:redraw();
+srh=y+32
+x=x+24
+end
+
+menuBar:resize(0,0,UIMainTools:w(),30)
+menuBar:redraw();
+
+if srh>sh then UIMainTools:resize(sx,sy,sw,srh) end
+UIMainTools:redraw();
+
+end} {}
+  code {-- output menu Indices
+function outputMenuIndices(tVal)
+-- fileMenuPick(mainMenuIndex[tVal]);
+--print("+1=",tVal+1,mainMenuIndex[tVal+1])
+ -- print("+2=",tVal+2,mainMenuIndex[tVal+2])
+ print(tVal,"=",mainMenuIndex[tVal]);
+--print("-1=",tVal-1,mainMenuIndex[tVal-1])
+ -- print("-2=",tVal-2,mainMenuIndex[tVal-2])
+ end} {}
+  code {-- UIMainToolsCB  
+function UIMainToolsCB(w)
+UIMainTools:make_current();
+fixIcons()
+fltk_update();
+print(w,os.time())
+
+ if oldgame~=nil then oldgame() end
+end} {}
+  code {-- Main Tools Click --
+function MainToolsClick(w)
+buttonID = w:label();
+print(buttonID)
+
+if buttonID == "edit_mesh" then
+if  mesheditor then
+mesheditor:hide()
+mesheditor=nil
+else
+dofile(gameroot.."Data/Fluid/mesh_editor/mesh_editor.fl")
+end 
+elseif buttonID == "edit_camera" then lookbutton()
+end --buttonID 
+
+if  buttonID == "edit_viewsquad" then 
+  gFourView=not gFourView
+  ig3d_SetFourViews_b(gFourView)    
+    end  
+end --MainToolsClick} {}
+  code {-- UI_MAINTOOLS_WINDOW
+iconFiles={}
+iconPath=getSceneInfo(IG3D_ROOT).."Data/Icons/"
+toolButton={}
+toolButton.button={}
+toolButton.file={}
+
+
+function UI_MAINTOOLS_WINDOW()
+local i=1
+local c=5
+local r=31
+local iconPath=getSceneInfo(IG3D_ROOT).."Data/Icons/MainTools/"
+do UIMainTools= fltk:Fl_Double_Window(100,100,466,166,"")
+UIMainTools:label("UI MAIN TOOLS")
+UIMainTools:callback(UIMainToolsCB)
+UIMainTools:when(2)
+UIMainTools:size_range(100,100,1024,1024)
+--do DivA=fltk:Fl_Box(266, 266, 1, 1, "DivA") end
+--do DivB=fltk:Fl_Box(5, 5, 266, 266, "DivB") end
+--do DivC=fltk:Fl_Box(260, 6, 260, 6, "DivC") end
+
+do buttonGroup= fltk:Fl_Group(5,5,266,266,"") 
+
+for file in lfs.dir(iconPath) do
+local ext=string.sub(file,-3,-1) 
+if string.sub(file, 1, 1) ~= "." and file ~= nil and ext=="png" then 
+ef=string.sub(file,1,string.len(file)-4)
+iconFiles[i]=ef
+if c<=4 then c=5 end
+if r<=4 then r=5 end
+if c >= UIMainTools:w()-24 then 
+c=5
+r=r+26
+end --ifc
+
+do w = fltk:Fl_Button(c,r,24,24,"")
+toolButton.button[i]=w
+w:box(fltk.FL_THIN_UP_BOX)
+w:down_box(fltk.FL_BORDER_BOX)
+toolButton.file[i]=iconPath..file 
+
+local buttonID = string.gsub(file,".png","")
+w:label(buttonID)
+w:labelsize(1)
+w:callback(MainToolsClick)
+w:tooltip(buttonID)
+fltk.fl_register_images()
+imageFile = Fl_Shared_Image.get(toolButton.file[i])
+w:resize(c,r,24,24);
+w:image(imageFile,24,24)
+w:image(imageFile);
+w:redraw();
+Fl_Group:current(Fl_Group:current():parent())
+end --dobutton
+c=c+26
+i=i+1
+
+end --ifstring
+end --forfile
+Fl_Group:current(Fl_Group:current():parent())
+end -- buttongroup
+
+buttonGroup:resize(5,31,c+24,r+24)
+UIMainTools:resize(100,100,c+24,r+24)
+
+
+
+--do menuGroup= fltk:Fl_Group(0,0,365,30,"") end 
+
+do menuBar= fltk:Fl_Menu_Bar(0,0,0,0,"")
+menuBar:callback(main_menu_callback)
+menuBar:resize(0,0,680,30)
+menuBar:labelsize(10)
+menuBar:textsize(11)
+Fl_Group:current(Fl_Group:current():parent())
+end --menubar
+
+--menuGroup:add(menuBar)
+--menuGroup:add(DivB)
+
+--menuGroup:add(DivA)
+--buttonGroup:resizable(DivB)
+--UIMainTools:resizable(DivA)
+--menuGroup:resizable(UIMainTools)
+end --dowindow
+
+UIMainTools:show();
+Fl:scheme("plastic");
+UIMainTools:make_current();
+fixIcons();
+menuBar:global();
+FillMenuBar();
+UIMainToolsCB();
+end --setupIcons} {}
+  code {--[[if UIMainTools then
+FilesLibrary:make_current()
+FilesLibrary:show()
+FilesLibrary_menuBar:global();
+FillMenuBar();
+end]]--
+
+oldgame=game_func} {}
+  code {--RUN
+oldgame=game_func
+
+UI_MAINTOOLS_WINDOW();} {}
+} 

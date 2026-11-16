@@ -1,0 +1,61 @@
+# data file for the Fltk User Interface Designer (fluid)
+version 1.0108 
+header_name {.h} 
+code_name {.cxx}
+Function {make_window()} {open
+} {
+  code {dofile(gameroot.."Data/Scripts/Functions/dungeon_functions.lua")} {}
+  Fl_Window DungeonMapperWindow {
+    label {Click Grid 256}
+    callback wClose open
+    xywh {218 377 330 334} type Double when 1 resizable size_range {260 260 912 854} visible
+  } {
+    Fl_Scroll keeper {open
+      xywh {0 0 328 328} type BOTH_ALWAYS align 5 resizable
+    } {
+      Fl_Group grp {
+        xywh {0 0 325 320} when 1 resizable
+      } {}
+    }
+  }
+  code {DungeonMapperWindow:show()
+DungeonMapperWindow:make_current()
+startGrid()
+resetAllButtons()
+resetDSB()
+
+newbsdtext2Map()
+DungeonMapperWindow:redraw()
+timer = murgaLua.createFltkTimer()
+timer:callback(stackcb)
+timer:do_callback()} {selected
+  }
+  Fl_Window BtnBrowser {
+    callback wClose open
+    xywh {6 50 137 220} type Double visible
+  } {
+    Fl_Menu_Bar MapperMenu {
+      callback Mapper_menu_callback
+      xywh {-5 -2 150 22} color 38 labelsize 10 textsize 10
+    } {}
+    Fl_Browser BtnListBrowser {
+      callback uBtnListBrowserControlClicked
+      xywh {5 30 45 190} type Hold labelsize 10 textsize 10
+    }
+    Fl_Browser AttrListBrowser {
+      xywh {50 30 90 190} type Hold labelsize 10 textsize 10
+    }
+  }
+  Fl_Window MapTextWindow {
+    callback wClose open
+    xywh {214 631 329 263} type Double hide resizable size_range {329 263 331 579}
+  } {
+    Fl_Browser MapTextFld {
+      xywh {0 0 330 576} type Hold labelsize 9 textsize 10 resizable
+    }
+  }
+  code {BtnBrowser:show()
+Mapper_MenuBarFill()
+MapTextWindow:hide()
+BtnBrowser:redraw()} {}
+} 

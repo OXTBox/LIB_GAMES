@@ -1,0 +1,784 @@
+# data file for the Fltk User Interface Designer (fluid)
+version 1.0108 
+header_name {.h} 
+code_name {.cxx}
+Function {make_window()} {open
+} {
+  code {CameraBrowser=nil
+
+gCurrentCameraInfo = ig3d_GetCameraInfo__s()
+gCurrentCameraPosition = getlineof(gCurrentCameraInfo,1)
+gCurrentCameraRotation = getlineof(gCurrentCameraInfo,2)
+
+storedSingleSelect=0
+gSelector=nil
+CameraFileList={}
+gSelectedCamera=0
+gAttributePicked = 1
+gCameraVals={}
+CameraFieldValues={}
+gCameraFileValues={}
+gCameraFileAttributes={}
+gLastBrowserControlClick=time()
+gCameraBrowserFiles={}
+gCameraBrowserFileList={}
+gCameraFilesShortNames={}
+gCameraSource = ""
+gCameraSourcePath = ""
+
+if gCameraNames == nil then 
+	gCameraNames={"Current"}
+	gCamerasPositions={{0,0,0}}
+	gCamerasRotations={{0,0,0}}
+	gCameraMatrix={{}}
+	end
+	
+gNumCameras =\#gCameraNames
+gCameraValues={} ; -- List of current values
+-- gCameraAttributes={} ; --List of current attribute names
+gCameraAttributes={"name","position","rotation","matrix","target","goto","keys","source"}
+gSelCameraData={}  ; --raw input from getInfo
+gBrowserCameraPath = gameroot.."Data/Levels/"
+gCameraBrowserPath = gBrowserCameraPath
+gCatchCameraPath = ""
+gSourceRequest = ""  ;-- mode of selecting Camera source from browser
+gCameraNewName=""  ; -- hold short name of Camera or Camera name for new make
+gNewCameraValueItems={} ;-- multi item list from field values ie x,y,z etc
+gCameraValueItems={};-- multi item list from Camera attriute values ie x,y,z etc
+gOldInfo = ""
+gLastCameraSourceSelection =0
+gLastCameraSourceBrowserControlClick = 0
+gCameraBrowserFiles={}
+gLastSourceDirectory ="Levels"
+gCameraShortPath=""
+gCameraNum = 0
+gCameraInfoAttributes={}
+gCameraDetailsInfo ={}
+gNumHelpedAttributes=1
+gCameraGetInfoTable={}
+gCameraToolTipPicked="translate"
+gSelCameraData={}} {}
+  code {-- CameraBrowserGroupsHide
+function CameraBrowserGroupsHide()
+  		if gCameraToolTipPicked ~="source" then  
+  		CameraSourceGroup:hide() 
+  		ReplaceWTFSourceBtn:hide()
+		ReplaceAllWTFSourceBtn:hide()
+  		end
+  		
+	
+
+	CameraTextureGroup:hide() 
+	CameraSaveAsGroup:hide()
+		
+		if gCameraToolTipPicked ~="translate" or gNumCameras < 1 then
+		CameraInputGroup:hide() 
+		CameraValueGroup:hide()
+		CameraValInputA:value()
+		CameraValInputB:value()
+		CameraValInputC:value()
+		CameraValInputD:value()
+		CameraValInputA:hide()
+		CameraValInputB:hide()
+		CameraValInputC:hide()
+		CameraValInputD:hide()
+		CameraBoolBtn:hide()
+		CameraNameInput:hide()
+		else
+		CameraValueGroup:show()
+		end
+		
+		
+		
+			
+	if gCameraToolTipPicked ~="bones" then	CameraBonesGroup:hide() end
+		
+		if gCameraToolTipPicked ~="materials" then  
+		CameraMaterialsGroup:hide() 	
+		CameraMaterialsInputGroup:hide() 
+		CameraValueGroup:hide()
+		CameraMaterialsValInputA:value()
+		CameraMaterialsValInputB:value()
+		CameraMaterialsValInputC:value()
+		CameraMaterialsValInputD:value()
+		CameraMaterialsValInputA:hide()
+		CameraMaterialsValInputB:hide()
+		CameraMaterialsValInputC:hide()
+		CameraMaterialsValInputD:hide()
+		CameraMaterialsBoolBtn:hide()
+		CameraMaterialsNameInput:hide()
+		end
+		
+	
+end} {}
+  code {--  CameraBrowserValueCatch
+function CameraBrowserValueCatch()
+CameraFieldValues[1]=CameraListBrowser:value()
+CameraFieldValues[2]=CameraAttListBrowser:value()
+CameraFieldValues[3]=CameraAttListBrowser:value()
+CameraFieldValues[5]=CameraBoolBtn:value()
+CameraFieldValues[6]=CameraValInputA:value()
+CameraFieldValues[7]=CameraNameInput:value()
+
+
+
+curValBool = gCameraValueItems[1]
+	if curValBool ~= "true" and curValBool ~= "false" then 	
+	curValBool = nil
+	end	
+	
+gNewCameraValueItems={}	
+for i=1,\#gCameraValueItems,1 do
+  if i == 1 then
+	if curValBool == nil then
+ 	
+ 	table.insert(gNewCameraValueItems,CameraValInputA:value());
+ 	else
+ 	table.insert(gNewCameraValueItems,curValBool);
+ 	end
+ 	end
+ 
+	if i == 2 then 
+	if curValBool == nil then
+ 	table.insert(gNewCameraValueItems,CameraValInputB:value());
+ 	else
+ 	table.insert(gNewCameraValueItems,CameraValInputA:value());
+ 	end
+ 	end
+ 
+	if i == 3 then 
+	if curValBool == nil then
+ 	table.insert(gNewCameraValueItems,CameraValInputC:value());
+ 	else
+ 	table.insert(gNewCameraValueItems,CameraValInputB:value());
+ 	end
+ 	end
+ 	
+	if i == 4 then 
+	if curValBool == nil then
+ 	table.insert(gNewCameraValueItems,CameraValInputD:value());
+	else
+ 	table.insert(gNewCameraValueItems,CameraValInputC:value());
+ 	end
+ 	end		
+end
+
+ fltk_update()
+end} {}
+  code {-- CurCameraInfo
+function CurCameraInfo()
+gCurrentCameraInfo = ig3d_GetCameraInfo__s()
+gCurrentCameraPosition = getlineof(gCurrentCameraInfo,1)
+gCurrentCameraRotation = getlineof(gCurrentCameraInfo,2)
+
+	
+	gSelCameraData={}
+	table.insert(gSelCameraData,gCurrentCameraPosition)
+	table.insert(gSelCameraData,gCamerasRotations)
+	
+return gCurrentCameraInfo
+end} {}
+  code {-- PickedCameraAttribute
+function PickedCameraAttribute(n)
+if CameraBrowser == nil then return end;
+CameraBrowserValueCatch()
+if n == nil then n = CameraFieldValues[2] end
+if n == nil then return end
+
+gSelectedCameraInfo = CurCameraInfo()
+             
+CameraBrowserGroupsHide()		
+--CameraNameInput:value(gCameraValues[1]) 
+
+ 
+
+if gCameraToolTipPicked =="translate" then 
+
+	CameraValueGroup:show()
+	CameraInputGroup:show() 
+	CameraNameInput:hide()
+	CameraValInputA:hide()
+	
+	--if n == 1 or CameraFieldValues[2] == 1 then 
+	-- Camera NAME
+	--CameraInputGroup:show()  
+	--CameraNameInput:show()
+	--CameraNameInput:value(gSelCameraData[1])
+	--CameraValInputA:hide()
+	--end
+
+
+
+	
+--if n > 1 then 
+
+	gCameraValueItems={}
+	curVal = gSelCameraData[n]
+	curValBool=curVal
+	curValF=""
+	sstr = nil
+	print(curVal)
+	-- COMMAS
+	if curVal ~= nil then 
+	fc=string.find(curVal,",")
+		if fc == nil then 
+		
+		table.insert(gCameraValueItems,curVal)
+		else
+			for i = 1, numberofitems(curVal,","), 1 do
+			local va=item(i,curVal,",")
+			
+			table.insert(gCameraValueItems,va)
+			end
+		end
+		
+	end	
+
+
+if \#gCameraValueItems == 1 then 
+		CameraValInputA:hide()
+		CameraValInputB:hide()
+		CameraValInputC:hide()
+		CameraValInputD:hide()
+		end
+-- BOOLS
+curValBool = gCameraValueItems[1]
+	if curValBool == "true" or curValBool == "false" then 	
+	CameraBoolBtn:show()
+	CameraBoolBtn:label(gCameraAttributes[n])
+		if string.len(curValF) >1  then 
+		CameraValInputA:show()
+		CameraValInputA:value(tonumber(curValF))
+		else
+		CameraValInputA:hide()
+		end
+	else
+	if n ~= 1 then 
+	CameraValInputA:value(tonumber(curValBool))
+	CameraValInputA:show()
+	end
+	CameraBoolBtn:hide()
+	curValBool = nil
+	end	
+		
+	if curValBool == "true" then
+	CameraBoolBtn:value(1)
+	else
+	CameraBoolBtn:value(0)
+	end
+	
+for i=1,\#gCameraValueItems,1 do
+cCameraValueItem = tonumber(gCameraValueItems[i])
+  if i == 1 then
+	if curValBool == nil then
+ 	CameraValInputA:show()
+ 	CameraValInputA:value(cCameraValueItem)
+ 	end
+ 	end
+ 
+	if i == 2 then 
+	if curValBool == nil then
+	CameraValInputB:show()
+ 	CameraValInputB:value(cCameraValueItem)
+ 	else
+ 	CameraValInputA:show()
+ 	CameraValInputA:value(cCameraValueItem)
+ 	end
+ 	end
+ 
+	if i == 3 then 
+	if curValBool == nil then
+	CameraValInputC:show()
+ 	CameraValInputC:value(cCameraValueItem)
+ 	else
+ 	CameraValInputB:show()
+ 	CameraValInputB:value(cCameraValueItem)
+ 	end
+ 	end
+ 	
+	if i == 4 then 
+	if curValBool == nil then
+	CameraValInputD:show()
+ 	CameraValInputD:value(cCameraValueItem)
+ 	else
+ 	CameraValInputC:show()
+ 	CameraValInputC:value(cCameraValueItem)
+ 	end
+ 	end
+ 	
+		
+end  -- <5
+--end -- > 1
+end
+
+fltk_update()
+end
+
+-- end PickedCameraAttribute --} {selected
+  }
+  code {-- CameraBrowserWindowUpdate
+function CameraBrowserWindowUpdate(arg)
+ if CameraBrowser == nil then return end
+ CameraBrowser:make_current()
+ CameraBrowserValueCatch()
+  
+ local i = 1
+ local FBn,EBLn,EAn = nil,nil,nil
+ EAn= CameraFieldValues[2]
+CameraBrowserGroupsHide()
+ ---- SourceList 
+		if arg == "SourceList" then
+	local FBn = wtfFileBrowser:value()
+		wtfFileBrowser:clear() 
+  			for i=1,\#gCameraFilesShortNames,1 do
+			wtfFileBrowser:add(gCameraFilesShortNames[i])
+			end
+		end
+---- CurCameraInfo	
+		if arg == "CurCameraInfo" then
+			if gCameraourcePath ~= nil then  
+				local ss,se = string.find(gCameraourcePath,"Data/WTF/")
+				if se ~= nil then 
+				local curCameraName = string.sub(gCameraourcePath,se+1,-1)
+				SourceNameInput:value(curCameraName)
+				SourceNameInput:redraw()
+				end;	
+			end;
+			updateCameraAttributesTables()
+				
+			 if \#gSelCameraData > 1 then 
+			 EAn = CameraFieldValues[2]
+			 EBLn = CameraFieldValues[1]
+				
+				CameraAttListBrowser:clear()
+				CameraValueListBrowser:clear()
+				
+				
+			        local i = 1
+				for i = 1,\#gCameraAttributes,1 do
+				CameraAttListBrowser:add(gCameraAttributes[i])
+				CameraAttListBrowser:redraw()
+				end
+				
+				for i = 1,\#gSelCameraData,1 do
+				CameraValueListBrowser:add(gSelCameraData[i])
+				gOldInfo = gSelectedCameraInfo
+				end
+				
+			end
+			
+	
+	
+			
+				
+		end; -- if_curCamerainfo
+		
+---- updateCameraListBrowser 		
+		if arg == "updateCameraListBrowser" then
+			CameraListBrowser:clear()
+			CameraAttListBrowser:clear()
+			CameraValueListBrowser:clear()
+
+			CameraListBrowser:add("current")
+			CameraAttListBrowser:add("position")
+			CameraAttListBrowser:add("rotation")
+			CameraValueListBrowser:add(gCurrentCameraPosition)
+			CameraValueListBrowser:add(gCurrentCameraRotation)
+		if \#gCameraNames > 0  then
+		 EBLn = CameraFieldValues[1]
+			  CameraListBrowser:clear()
+			  for i=1,\#gCameraNames,1 do 
+			  CameraListBrowser:add(gCameraNames[i])	
+			 	 if gSelectedCamera == gCameraNames[i] then EBLn = i end;
+			  end
+		gSourceRequest = ""
+		else
+		
+		end	
+		end;
+		  
+
+	
+	if arg == "newCamera" then
+		CameraAttListBrowser:value(2)
+		CameraValueListBrowser:value(2)
+		CameraAttListBrowser:select(2)
+		CameraValueListBrowser:select(2)
+		CameraBrowserValueCatch()
+	end
+	
+	if arg == "updateMaterialsBrowser" then
+		
+
+	end
+
+
+
+---- SELECT LINE OF BROWSER  
+				if FBn ~= nil then
+				wtfFileBrowser:selected(FBn,FBn)
+				wtfFileBrowser:value(FBn)
+				wtfFileBrowser:select(FBn)
+				wtfFileBrowser:redraw()
+				end
+		
+				if EBLn ~= nil then
+				CameraFieldValues[1] = EBLn
+				gSelectedCamera = gCameraNames[EBLn] 
+				 CameraListBrowser:select(EBLn,EBLn)
+		 		CameraListBrowser:value(EBLn)
+		 		CameraListBrowser:selected(EBLn)
+				end
+			if EAn ~= nil then 		 
+			CameraAttListBrowser:select(EAn,EAn)
+			CameraAttListBrowser:value(EAn)
+			CameraAttListBrowser:selected(EAn)
+			CameraValueListBrowser:select(EAn,EAn)
+			CameraValueListBrowser:value(EAn)
+			CameraValueListBrowser:selected(EAn) 
+			
+			end
+fltk_update()
+end} {}
+  code {-- CameraValueListCallback
+function CameraValueListCallback(w)
+if CameraBrowser == nil then return end;
+if w:value() == nil then return end
+CameraAttListBrowser:value(w:value())
+CameraAttListBrowser:select(w:value())
+CameraAttListBrowser:selected(w:value(),w:value())
+CameraBrowserValueCatch()
+--PickedCameraAttribute(CameraFieldValues[2])
+end} {}
+  code {-- CameraAttPicked
+function CameraAttPicked(w)
+if CameraBrowser == nil then return end;
+if w:value() == nil then return end
+CameraValueListBrowser:value(w:value())
+CameraValueListBrowser:select(w:value())
+CameraValueListBrowser:selected(w:value(),w:value())
+CameraBrowserValueCatch()
+PickedCameraAttribute(CameraFieldValues[2])
+end} {}
+  code {-- updateCameraListBrowser
+function updateCameraListBrowser()
+--CameraBrowserValueCatch()
+CurCameraInfo()
+
+
+	
+	
+	CameraBrowserWindowUpdate("updateCameraListBrowser")
+	
+end} {}
+  code {-- CameraListBrowserCallback
+function CameraListBrowserCallback(w)
+if CameraBrowser == nil then return end;
+n = w:value()
+--CameraBrowserValueCatch()
+--resetCameraTables()
+gSelectedCamera = w:value()
+CurCameraInfo()		
+--camera_faceObj(gCameraNum)
+--if gCameraToolTipPicked == "translate" then PickedCameraAttribute(CameraFieldValues[2]) end
+--if gCameraToolTipPicked == "materials" then updateMaterialsTables() end
+updateCameraListBrowser()
+CameraValueGroup:show() 			
+end} {}
+  Fl_Window CameraBrowser {
+    callback wClose open
+    xywh {97 177 369 390} type Double color 40 labelsize 10 visible
+  } {
+    Fl_Group mainttoolsgroup {
+      xywh {0 21 645 30}
+    } {
+      Fl_Button cameratool1 {
+        callback cameraToolBtnCallback
+        xywh {3 22 26 26} labelsize 1 align 16
+      }
+      Fl_Button cameratool2 {
+        callback cameraToolBtnCallback
+        xywh {31 22 26 26} labelsize 1 align 16
+      }
+      Fl_Button cameratool3 {
+        callback cameraToolBtnCallback
+        xywh {58 22 26 26} labelsize 11 align 50
+      }
+      Fl_Button cameratool4 {
+        callback cameraToolBtnCallback
+        xywh {86 22 26 26} labelsize 2 align 16
+      }
+      Fl_Button cameratool5 {
+        callback cameraToolBtnCallback
+        xywh {114 22 26 26} labelsize 2 align 16
+      }
+      Fl_Button cameratool6 {
+        callback cameraToolBtnCallback
+        xywh {142 22 26 26} labelsize 1 align 16
+      }
+      Fl_Button cameratool7 {
+        callback cameraToolBtnCallback
+        xywh {170 22 26 26} labelsize 1 align 16
+      }
+    }
+    Fl_Menu_Bar CameraMenu {
+      callback Camera_menu_callback
+      xywh {-2 0 371 22} color 38 labelsize 10 textsize 10
+    } {}
+    Fl_Group CameraSaveAsGroup {
+      xywh {370 370 217 50}
+    } {
+      Fl_Input SourceNameInput {
+        label {Camera Source File }
+        callback CameraSaveButtonClick
+        xywh {370 370 217 25} color 50 labelsize 10 align 1 when 8 textsize 10
+      }
+      Fl_Button PSaveControl {
+        label Save
+        callback CameraSaveButtonClick
+        xywh {537 400 50 20} labelsize 10
+      }
+    }
+    Fl_Group CameraSourceGroup {open
+      xywh {-1 49 361 366} labelsize 10 align 0
+    } {
+      Fl_Group ReplaceSourceGroup {
+        label Replace open
+        xywh {3 333 355 49} box EMBOSSED_BOX color 50 labelsize 10 align 21
+      } {
+        Fl_Button ReplaceWTFSourceBtn {
+          callback ReplaceWTFSourceBtnClick
+          xywh {48 336 140 44} labelsize 10
+        }
+        Fl_Button ReplaceAllWTFSourceBtn {
+          label {Replace All}
+          callback ReplaceAllWTFSourceBtnClick
+          xywh {195 336 140 44} labelsize 10
+        }
+      }
+      Fl_Browser wtfFileBrowser {
+        label {Camera Source}
+        callback CameraSourcebrowserControlClicked
+        xywh {180 63 180 272} type Hold labelsize 10 align 1 when 3 textsize 10
+      }
+      Fl_Button MakeCameraWTFBtn {
+        label make
+        callback CamerawtfAddCameraClicked
+        tooltip {make model} xywh {80 69 95 22} labelsize 10
+      }
+      Fl_Button MakeCameraWTFBtn {
+        label replace
+        callback ReplaceWTFSourceBtnClick
+        tooltip {make model} xywh {80 100 95 22} labelsize 10
+      }
+      Fl_Button MakeCameraWTFBtn {
+        label {replace similiar}
+        callback ReplaceAllWTFSourceBtnClick
+        tooltip {make model} xywh {80 132 95 22} labelsize 10
+      }
+      Fl_Button MakeCameraWTFBtn {
+        label {replace all}
+        callback ReplaceAllWTFSourceBtnClick
+        tooltip {make model} xywh {80 164 95 22} labelsize 10
+      }
+    }
+    Fl_Group CameraMaterialsGroup {open
+      xywh {8 51 355 331} labelsize 10 align 0
+    } {
+      Fl_Browser CameraMaterialsBrowser {
+        label Materials
+        callback CameraMaterialsBrowserCallback
+        xywh {74 61 56 272} type Multi color 50 labelsize 10 align 1 when 4 textsize 10
+      }
+      Fl_Browser CameraMaterialsAttributesBrowser {
+        label {Attributes:}
+        callback CameraMaterialsAttributesBrowserCallback
+        xywh {128 61 56 272} type Multi color 50 labelsize 10 align 1 when 4 textsize 10
+      }
+      Fl_Browser CameraMaterialsValuesBrowser {
+        label {Values:}
+        callback CameraMaterialsAttributesBrowserCallback
+        xywh {182 61 177 272} type Multi color 50 labelsize 10 align 1 when 4 textsize 10
+      }
+      Fl_Group CameraMaterialsInputGroup {
+        xywh {8 338 355 44} box EMBOSSED_BOX color 50
+      } {
+        Fl_Input CameraMaterialsNameInput {
+          label {Name:}
+          callback RenameCameraMaterials
+          xywh {153 344 205 22} color 50 labelsize 10 textsize 10
+        }
+        Fl_Check_Button CameraMaterialsBoolBtn {
+          label button
+          callback changeCameraMaterialsBool
+          xywh {128 344 19 23} down_box DOWN_BOX align 4 when 1
+        }
+        Fl_Value_Input CameraMaterialsValInputA {
+          label x
+          callback CameraMaterialsValInput
+          xywh {153 344 46 22} color 51 labelsize 12 align 2 minimum 0.001 step 0.01 textsize 10
+        }
+        Fl_Value_Input CameraMaterialsValInputB {
+          label y
+          callback CameraMaterialsValInput
+          xywh {206 344 46 22} color 51 labelsize 12 align 2 minimum 0.001 step 0.01 textsize 10
+        }
+        Fl_Value_Input CameraMaterialsValInputC {
+          label z
+          callback CameraMaterialsValInput
+          xywh {259 344 46 22} color 51 labelsize 12 align 2 minimum 0.001 step 0.01 textsize 10
+        }
+        Fl_Value_Input CameraMaterialsValInputD {
+          label a
+          callback CameraMaterialsValInput
+          xywh {313 344 46 22} color 51 labelsize 12 align 2 minimum 0.001 step 0.01 textsize 10
+        }
+      }
+    }
+    Fl_Group CameraTextureGroup {
+      xywh {370 67 217 303} box THIN_DOWN_BOX
+    } {
+      Fl_Group pngPreviewGroup {open
+        xywh {416 204 128 129} align 16 when 6
+      } {
+        Fl_Box pngPreviewBox {
+          callback pngLoad
+          xywh {416 204 128 128} box FLAT_BOX color 40 align 16
+        }
+      }
+      Fl_Browser pngFileBrowser {
+        callback browserControlClicked
+        xywh {370 67 217 132} type Hold color 48 labelsize 10 align 1 when 3 textsize 10
+      }
+    }
+    Fl_Group CameraInputGroup {
+      xywh {3 333 355 44} box EMBOSSED_BOX color 50
+    } {
+      Fl_Input CameraNameInput {
+        label {Name:}
+        callback RenameCamera
+        xywh {148 339 205 22} color 50 labelsize 10 textsize 10
+      }
+      Fl_Check_Button CameraBoolBtn {
+        label button
+        callback changeCameraBool
+        xywh {123 339 19 23} down_box DOWN_BOX align 4 when 1
+      }
+      Fl_Value_Input CameraValInputA {
+        label x
+        callback CameraValInput
+        xywh {148 339 46 22} color 51 labelsize 12 align 2 minimum -10000 maximum 10000 step 0.2 textsize 10
+      }
+      Fl_Value_Input CameraValInputB {
+        label y
+        callback CameraValInput
+        xywh {201 339 46 22} color 51 labelsize 12 align 2 minimum -10000 maximum 10000 step 0.2 textsize 10
+      }
+      Fl_Value_Input CameraValInputC {
+        label z
+        callback CameraValInput
+        xywh {254 339 46 22} color 51 labelsize 12 align 2 minimum -10000 maximum 10000 step 0.2 textsize 10
+      }
+      Fl_Value_Input CameraValInputD {
+        label a
+        callback CameraValInput
+        xywh {308 339 46 22} color 51 labelsize 12 align 2 minimum -10000 maximum 10000 step 0.2 textsize 10
+      }
+    }
+    Fl_Group CameraRootGroup {
+      callback runButton open
+      xywh {3 61 148 272}
+    } {
+      Fl_Browser CameraListBrowser {
+        label Camera
+        callback CameraListBrowserCallback
+        xywh {3 61 74 272} type Hold color 48 labelsize 10 align 1 when 4 textsize 10
+      }
+    }
+    Fl_Group CameraBonesGroup {
+      label Bones open
+      xywh {74 61 286 272} labelsize 10
+    } {
+      Fl_Browser CameraBonesBrowser {
+        callback CameraBonesBrowserCallback
+        xywh {74 61 285 272} type Multi color 50 labelsize 10 when 4 textsize 10
+      }
+    }
+    Fl_Group CameraValueGroup {open
+      xywh {75 47 284 289}
+    } {
+      Fl_Browser CameraValueListBrowser {
+        label {Values:}
+        callback CameraValueListCallback
+        xywh {137 61 222 272} type Multi color 50 labelsize 10 align 1 when 4 textsize 10
+      }
+      Fl_Browser CameraAttListBrowser {
+        label {Attributes:}
+        callback CameraAttPicked
+        xywh {75 62 64 272} type Select color 48 labelsize 10 align 1 when 4 textsize 10
+      }
+    }
+  }
+  code {CameraBrowser:label("")
+CameraBrowser:show()
+CameraBrowser:make_current()
+--resetCameraTables()
+--updateCameraListBrowser()
+--Camera_MenuBarFill()
+CameraBrowserGroupsHide()
+updateCameraListBrowser()} {}
+  code {---- BUTTON ICONS 
+fltk.fl_register_images()
+local iconPath=gameroot.."Data/Icons/ModelsBrowser/Models_"
+gModelsBrowserButtons={"camera","translate","source","bones","anims","views"}
+gModelsBrowserIcons ={}
+for i = 1, \#gModelsBrowserButtons,1 do
+table.insert(gModelsBrowserIcons,Fl_Shared_Image.get(iconPath..gModelsBrowserButtons[i]..".png"))
+end
+
+mtl1 = Fl_Shared_Image.get(iconPath.."source.png")
+mtl2 = Fl_Shared_Image.get(iconPath.."translate.png")
+mtl3 = Fl_Shared_Image.get(iconPath.."camera.png")
+mtl4 = Fl_Shared_Image.get(iconPath.."materials.png")
+mtl5 = Fl_Shared_Image.get(iconPath.."bones.png")
+mtl6 = Fl_Shared_Image.get(iconPath.."anims.png")
+mtl7 = Fl_Shared_Image.get(iconPath.."views.png")
+
+cameratool1:image(gModelsBrowserIcons[1])
+cameratool2:image(gModelsBrowserIcons[2])
+cameratool3:image(gModelsBrowserIcons[3])
+cameratool4:image(gModelsBrowserIcons[4])
+cameratool5:image(gModelsBrowserIcons[5])
+cameratool6:image(gModelsBrowserIcons[6])
+
+
+cameratool1:image(gModelsBrowserIcons[1],22,22)
+cameratool2:image(gModelsBrowserIcons[2],22,22)
+cameratool3:image(gModelsBrowserIcons[3],22,22)
+cameratool4:image(gModelsBrowserIcons[4],22,22)
+cameratool5:image(gModelsBrowserIcons[5],22,22)
+cameratool6:image(gModelsBrowserIcons[6],22,22)
+
+cameratool1:tooltip(gModelsBrowserButtons[1])
+cameratool2:tooltip(gModelsBrowserButtons[2])
+cameratool3:tooltip(gModelsBrowserButtons[3])
+cameratool4:tooltip(gModelsBrowserButtons[4])
+cameratool5:tooltip(gModelsBrowserButtons[5])
+cameratool6:tooltip(gModelsBrowserButtons[6])
+
+
+cameratool1:redraw()
+cameratool2:redraw()
+cameratool3:redraw()
+cameratool4:redraw()
+cameratool5:redraw()
+cameratool6:redraw()
+
+
+cameratool1:when(11)
+cameratool2:when(11)
+cameratool3:when(11)
+cameratool4:when(11)
+cameratool5:when(11)
+cameratool6:when(11)} {}
+} 

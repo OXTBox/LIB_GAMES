@@ -1,0 +1,28 @@
+# data file for the Fltk User Interface Designer (fluid)
+version 1.0108 
+header_name {.h} 
+code_name {.cxx}
+Function {make_window()} {open
+} {
+  code {function save_asOBJ()
+
+objsaveFile = fastFilePaths("OBJ",lastLoadedFile..".obj")
+ig3d_SaveMeshAsOBJ_sf(objsaveFile,100)
+end} {selected
+  }
+  Fl_Window objExport {
+    label objExport open
+    xywh {315 93 370 29} type Double when 6 visible
+  } {
+    Fl_Button {} {
+      label ExportObj
+      callback save_asOBJ
+      xywh {190 0 160 25} labelsize 11
+    }
+    Fl_Choice ObjChoice {
+      label {Import WTF}
+      xywh {50 5 135 20} down_box BORDER_BOX labelsize 11 textsize 11
+    } {}
+  }
+  code {objExport:show();} {}
+} 

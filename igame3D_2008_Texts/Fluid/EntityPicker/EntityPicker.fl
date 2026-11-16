@@ -1,0 +1,30 @@
+# data file for the Fltk User Interface Designer (fluid)
+version 1.0108 
+header_name {.h} 
+code_name {.cxx}
+Function {make_window()} {open
+} {
+  Fl_Window {} {open
+    xywh {511 205 195 482} type Double resizable visible
+  } {
+    Fl_Group {} {open selected
+      xywh {5 10 180 457} resizable
+    } {
+      Fl_Check_Browser {} {
+        xywh {10 35 175 185} labelsize 10 textsize 10
+      }
+      Fl_Value_Input {} {
+        label Copies
+        xywh {125 226 55 19} labelsize 11 textsize 11
+      }
+      Fl_Menu_Button {} {
+        label {Choose Directory} open
+        xywh {5 10 180 20} labelsize 11 textsize 10
+      } {}
+      Fl_Output {} {
+        label {Level Models}
+        xywh {10 268 175 199} labelsize 12 align 1 textfont 4 textsize 11
+      }
+    }
+  }
+} 

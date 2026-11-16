@@ -1,0 +1,332 @@
+# data file for the Fltk User Interface Designer (fluid)
+version 1.0108 
+header_name {.h} 
+code_name {.cxx}
+Function {make_window()} {open
+} {
+  code {-- globals_and_functions_codeblock
+counter=95 
+houseGrid={{32,32}}
+
+objectGrid={}
+col,row = 1,1
+entityColor=5
+esize=2
+ep=0
+
+
+
+
+function mapDrop(mx,my)
+	nx,ny=mx,my
+
+			for i=1,6,1 do
+			
+			if i*64 > mx then 
+				nx=(i*64)-32
+				col=i
+				break
+			 end
+			end
+
+			for i=1,6,1 do
+			
+			 if i*64 > my then 
+				ny=(i*64)-32
+				row=i
+				break
+			 end
+			end
+	put=0
+	fltk.fl_rectf(nx,ny,esize,esize)
+	
+	for i = 1,\#houseGrid,1 do
+	co=houseGrid[i][1]..","..houseGrid[i][2]
+	cn=nx..","..ny
+		if co==cn then
+		print("notempty"..houseGrid[i][1],houseGrid[i][2])
+		put=1
+		break
+		end
+	end
+	
+	if put == 0 then table.insert(houseGrid,{nx,ny}) end	
+	
+end
+
+
+function drawBox(w)
+DWindow:make_current();
+fltk.fl_color(entityColor)
+	if Fl:event()==1  then
+	mx,my=Fl:event_x(),Fl:event_y()
+		if esize ~= 8 then 
+		fltk.fl_rectf(mx,my,esize,esize)  
+		else
+		mapDrop(mx,my)
+		end
+	
+	end
+end
+	
+
+
+
+
+
+
+function drawrectF(qx,qy,qs)
+color_cycle(1,255,5)
+quadHalf=math.floor(qs/2)
+l,t =qx-quadHalf,qy-quadHalf
+fltk.fl_rectf(l,t,qs,qs)
+end} {}
+  code {-- Generate Temporary Grid
+tempGrid={}
+
+function dragGridLong()
+	if Fl:event()==1 or Fl:event()==5 then
+	DWindow:make_current();
+	
+	mx,my=Fl:event_x(),Fl:event_y()
+   
+
+	tempGrid={}
+	for i = 1,384-mx,mx do
+		for ii = 1,384-my,my do
+		table.insert(tempGrid,{i,ii})
+		
+		fltk.fl_color(math.random(1,255))
+		fltk.fl_rectf(i, ii, mx,my)  
+		
+		
+		end
+	end
+	end
+	
+	
+
+end
+
+function idleDrag()
+DWindow:make_current();
+end
+
+function dragGrid(w)
+ 
+	if Fl:event()==1 or Fl:event()==5 then
+	DWindow:make_current();
+	mx,my=Fl:event_x(),Fl:event_y()
+	if w:label() ~= "DragGrid" then
+        rx,ry=w:x()-mx, w:y()-my
+        else
+        rx,ry=mx/6,my/6
+        end
+        
+
+	tempGrid={}
+	for i = 1,384-mx,mx do
+		for ii = 1,384-my,my do
+		table.insert(tempGrid,{i,ii})
+		
+		fltk.fl_color(math.random(1,255))
+		fltk.fl_rectf(i, ii, rx,ry)  
+		
+		
+		end
+	end
+	end
+
+	
+
+end} {selected
+  }
+  Fl_Window DWindow {
+    label DragGrid
+    callback dragGrid
+    xywh {196 123 430 452} type Double when 6 visible
+  } {
+    Fl_Group grp {
+      callback dragGrid open
+      xywh {-1 -1 386 385} when 1
+    } {
+      Fl_Box x1y1 {
+        callback dragGrid
+        xywh {0 0 64 64} box BORDER_FRAME labelsize 11
+      }
+      Fl_Box x2y1 {
+        callback dragGrid
+        xywh {64 0 64 64} box BORDER_FRAME labelsize 11
+      }
+      Fl_Box x3y1 {
+        callback dragGrid
+        xywh {128 0 64 64} box BORDER_FRAME labelsize 11
+      }
+      Fl_Box x4y1 {
+        callback dragGrid
+        xywh {192 0 64 64} box BORDER_FRAME labelsize 11
+      }
+      Fl_Box x5y1 {
+        callback dragGrid
+        xywh {256 0 64 64} box BORDER_FRAME labelsize 11
+      }
+      Fl_Box x6y1 {
+        callback dragGrid
+        xywh {320 0 64 64} box BORDER_FRAME labelsize 11
+      }
+      Fl_Box x1y1 {
+        callback dragGrid
+        xywh {0 64 64 64} box BORDER_FRAME labelsize 11
+      }
+      Fl_Box x2y2 {
+        callback dragGrid
+        xywh {64 64 64 64} box BORDER_FRAME labelsize 11
+      }
+      Fl_Box x3y2 {
+        callback dragGrid
+        xywh {128 64 64 64} box BORDER_FRAME labelsize 11
+      }
+      Fl_Box x4y2 {
+        callback dragGrid
+        xywh {192 64 64 64} box BORDER_FRAME labelsize 11
+      }
+      Fl_Box x5y2 {
+        callback dragGrid
+        xywh {256 64 64 64} box BORDER_FRAME labelsize 11
+      }
+      Fl_Box x6y2 {
+        callback dragGrid
+        xywh {320 64 64 64} box BORDER_FRAME labelsize 11
+      }
+      Fl_Box x1y3 {
+        callback dragGrid
+        xywh {0 128 64 64} box BORDER_FRAME labelsize 11
+      }
+      Fl_Box x2y3 {
+        callback dragGrid
+        xywh {64 128 64 64} box BORDER_FRAME labelsize 11
+      }
+      Fl_Box x3y3 {
+        callback dragGrid
+        xywh {128 128 64 64} box BORDER_FRAME labelsize 11
+      }
+      Fl_Box x4y3 {
+        callback dragGrid
+        xywh {192 128 64 64} box BORDER_FRAME labelsize 11
+      }
+      Fl_Box x5y3 {
+        callback dragGrid
+        xywh {256 128 64 64} box BORDER_FRAME labelsize 11
+      }
+      Fl_Box x6y3 {
+        callback dragGrid
+        xywh {320 128 64 64} box BORDER_FRAME labelsize 11
+      }
+      Fl_Box x1y4 {
+        callback dragGrid
+        xywh {0 192 64 64} box BORDER_FRAME labelsize 11
+      }
+      Fl_Box x2y4 {
+        callback dragGrid
+        xywh {64 192 64 64} box BORDER_FRAME labelsize 11
+      }
+      Fl_Box x3y4 {
+        callback dragGrid
+        xywh {128 192 64 64} box BORDER_FRAME labelsize 11
+      }
+      Fl_Box x4y4 {
+        callback dragGrid
+        xywh {192 192 64 64} box BORDER_FRAME labelsize 11
+      }
+      Fl_Box x5y4 {
+        callback dragGrid
+        xywh {256 192 64 64} box BORDER_FRAME labelsize 11
+      }
+      Fl_Box x6y4 {
+        callback dragGrid
+        xywh {320 192 64 64} box BORDER_FRAME labelsize 11
+      }
+      Fl_Box x1y5 {
+        callback dragGrid
+        xywh {0 256 64 64} box BORDER_FRAME labelsize 11
+      }
+      Fl_Box x2y5 {
+        callback dragGrid
+        xywh {64 256 64 64} box BORDER_FRAME labelsize 11
+      }
+      Fl_Box x3y5 {
+        callback dragGrid
+        xywh {128 256 64 64} box BORDER_FRAME labelsize 11
+      }
+      Fl_Box x4y5 {
+        callback dragGrid
+        xywh {192 256 64 64} box BORDER_FRAME labelsize 11
+      }
+      Fl_Box x5y5 {
+        callback dragGrid
+        xywh {256 256 64 64} box BORDER_FRAME labelsize 11
+      }
+      Fl_Box x6y5 {
+        callback dragGrid
+        xywh {320 256 64 64} box BORDER_FRAME labelsize 11
+      }
+      Fl_Box x1y6 {
+        callback dragGrid
+        xywh {0 320 64 64} box BORDER_FRAME labelsize 11
+      }
+      Fl_Box x2y6 {
+        callback dragGrid
+        xywh {64 320 64 64} box BORDER_FRAME labelsize 11
+      }
+      Fl_Box x3y6 {
+        callback dragGrid
+        xywh {128 320 64 64} box BORDER_FRAME labelsize 11
+      }
+      Fl_Box x4y6 {
+        callback dragGrid
+        xywh {192 320 64 64} box BORDER_FRAME labelsize 11
+      }
+      Fl_Box x5y6 {
+        callback dragGrid
+        xywh {256 320 64 64} box BORDER_FRAME labelsize 11
+      }
+      Fl_Box x6y6 {
+        callback dragGrid
+        xywh {320 320 64 64} box BORDER_FRAME labelsize 11
+      }
+    }
+    Fl_Button HumansBtn {
+      label Humans
+      callback entityBtnClick
+      xywh {5 390 52 20} labelsize 10
+    }
+    Fl_Button GunsBtn {
+      label Guns
+      callback entityBtnClick
+      xywh {65 390 52 20} labelsize 10
+    }
+    Fl_Button BuildingsBtn {
+      label Buildings
+      callback entityBtnClick
+      xywh {125 390 52 20} labelsize 10
+    }
+    Fl_Button CarsBtn {
+      label Cars
+      callback entityBtnClick
+      xywh {185 390 52 20} labelsize 10
+    }
+    Fl_Button ZombiesBtn {
+      label Zombies
+      callback entityBtnClick
+      xywh {245 390 52 20} labelsize 10
+    }
+  }
+  code {DWindow:show();
+DWindow:make_current();
+
+
+while (Fl:event_key() ~= fltk.FL_Escape) do
+Fl:check()
+DWindow:do_callback()
+end} {}
+} 

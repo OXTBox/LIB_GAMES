@@ -1,0 +1,30 @@
+# data file for the Fltk User Interface Designer (fluid)
+version 1.0108 
+header_name {.h} 
+code_name {.cxx}
+Function {make_window()} {open
+} {
+  Fl_Window {} {open
+    xywh {852 89 100 100} type Double visible
+  } {
+    Fl_Group {} {open
+      xywh {0 0 100 100}
+    } {
+      Fl_Box {} {
+        xywh {11 12 10 10} box DOWN_FRAME
+      }
+      Fl_Box {} {
+        xywh {21 22 10 10} box THIN_DOWN_FRAME
+      }
+      Fl_Box {} {
+        xywh {31 32 10 10} box ENGRAVED_FRAME
+      }
+      Fl_Box {} {
+        xywh {41 42 10 10} box BORDER_FRAME
+      }
+      Fl_Box {} {selected
+        tooltip {THIS IS TOOLTIP} xywh {51 52 10 10} box BORDER_BOX color 8
+      }
+    }
+  }
+} 

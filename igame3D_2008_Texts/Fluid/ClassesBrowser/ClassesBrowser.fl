@@ -1,0 +1,245 @@
+# data file for the Fltk User Interface Designer (fluid)
+version 1.0108 
+header_name {.h} 
+code_name {.cxx}
+Function {make_window()} {open
+} {
+  code {gDefaultEntityClasses={"human","zombie","enemyfighter","mothership","house","wall","gun","cars","plane","explosive","exit","achieavable"}
+RTSENTITIES={"Emitters","Human","Zombie","Building","Gun","Car","GUI","BloodPencil"}
+gHumanNames={"jacky","masterchief","officer1","officer2","anita","mcTr","true","human","fighter","chick"}
+humans={}
+cars={}
+zombies={}
+Characters={}
+Characters.name={}
+Characters.wif={}
+Characters.anims={}
+Characters.velocity={}
+zombieAnims={}
+guns={}
+buildings={}
+walls={}} {}
+  code {-- ClassesBrowserCatch()
+
+function ClassesBrowserCatch()
+ClassesBrowser:make_current()
+ClassesBrowser:redraw()
+fltk_update()
+end} {}
+  code {-- WTF BROWSER CODE AHEAD 1015
+gLastBrowserControlClick=time()
+gLastSelection=-1
+gDropObject = gameroot.."Data/WTF/Cubes/cube.wtf"
+gcWTFBrowserPath=gameroot.."Data/WTF/"
+gcWTFBrowserFiles={}
+-- (left, top, right, bottom) 
+gGLX,gGLY,gGLR,gGLB = ig3d_GetWindowBounds__4i()
+
+function uclistWTFFiles()
+gcWTFBrowserFiles={}
+    cWTFFileBrowser:clear()
+    for file in lfs.dir(gcWTFBrowserPath) do
+        if string.sub(file, 1,1)~="." or file==".." then
+            local f = gcWTFBrowserPath..'/'..file
+            local attr = lfs.attributes (f)
+            assert (type(attr) == "table")
+             if attr.mode == "file" and string.sub(file, -4,-1)==".wtf" then 
+             	local a={file, "file"}
+             	table.insert(gcWTFBrowserFiles, a)
+             	cWTFFileBrowser:add(file)
+             end   
+           if attr.mode == "directory" then 
+           local a={file, "directory"}
+             table.insert(gcWTFBrowserFiles, a)
+             cWTFFileBrowser:add(file.."     ->")
+	   end  
+        end
+     end
+     
+end
+
+function updatecWTFPreviewBox(name)
+	fltk.fl_register_images()
+	local a=string.gsub(gcWTFBrowserPath, "/WTF/", "/WTFPreviews/")
+	print("a= "..a)
+	local b=string.sub(name, 1,-5).."_wtf.png"
+	local img = Fl_Shared_Image.get(a..b)
+	cWTFPreviewBox:color(40)
+	if img==nil then
+		img=Fl_Shared_Image.get(gameroot.."Data/Images/Colors/white.png")
+		cWTFPreviewNote:label("No preview available")
+	else
+		cWTFPreviewNote:label("")
+	end
+	
+	WPW=cWTFPreviewBox:w()
+	WPH=cWTFPreviewBox:h()
+	cWTFPreviewBox:image(img,WPW-8,WPH-8)
+	--wtfPreviewBox:resize(90,3,WPW-8,WPH-8)
+	cWTFPreviewBox:redraw()
+end
+
+function cWTFAddObjectClicked(w)
+	if cWTFFileBrowser:value()==0 then return end
+	local theFile=gcWTFBrowserFiles[tonumber(cWTFFileBrowser:value())]
+	if theFile[2]=="directory" then return end
+	
+	local c=\#(gameroot.."Data/WTF/")+1
+	local newObj={}
+	table.insert(gObjects, newObj)
+	local n=\#gObjects
+	gDropObject = string.sub(gcWTFBrowserPath..theFile[1],c,-1)
+	gObjects[n].cObj=make(ig3d_object, gDropObject)
+	
+end
+
+function cWTFPreviewLoadMesh(w)
+	if cWTFFileBrowser:value()==0 then return end
+	local theFile=gcWTFBrowserFiles[tonumber(cWTFFileBrowser:value())]
+	if theFile[2]=="directory" then return end
+	
+	local c=\#(gameroot)+1
+	local newObj={}
+	table.insert(gObjects, newObj)
+	local n=\#gObjects
+	loadMesh( string.sub(gcWTFBrowserPath..theFile[1],c,-1))
+end
+
+function ucreatePreviewsClicked(w)
+	if cWTFFileBrowser:value()==0 then return end
+	local theFile=gcWTFBrowserFiles[tonumber(cWTFFileBrowser:value())]
+	local a=string.gsub(gcWTFBrowserPath, "/WTF/", "/WTFPreviews/")
+	print("a= "..a)
+	local b=string.sub(theFile[1], 1,-5).."_wtf.png"
+	local c=\#gameroot+1
+	
+	
+	if theFile[2]=="file" then
+		ig3d_CreateDirectory_s(goDirsUp(a..b,0))
+		createWTFPreviewPNG(string.sub(gcWTFBrowserPath..theFile[1], c,-1), a..b)
+		updatecWTFPreviewBox(theFile[1])
+	end
+	
+	if theFile[2]=="directory" then
+		ig3d_CreateDirectory_s(a..theFile[1])
+		batchPreviewsForFolder(string.sub(gcWTFBrowserPath..theFile[1].."/", c,-1), string.sub(a..theFile[1].."/", c,-1))
+	end
+	ig3d_SetWindowBounds_4i(gGLX,gGLY,gGLR,gGLB)
+end
+
+
+function cWTFbrowserControlDoubleClicked(w)
+	--
+	local theFile=gcWTFBrowserFiles[tonumber(w:value())]
+	if theFile[2]=="directory" then
+		if theFile[1]==".." then 
+			gcWTFBrowserPath=goDirsUp(gcWTFBrowserPath, 1)
+			if string.find(gcWTFBrowserPath,"/WTF/") == nil then
+			gcWTFBrowserPath=gameroot.."Data/WTF/"
+			end
+		else
+			gcWTFBrowserPath=gcWTFBrowserPath..theFile[1].."/"
+		end
+		uclistWTFFiles()
+	end
+	
+end
+
+function cWTFbrowserControlClicked(w)
+	if w:value()==0 then return end
+	local theFile=gcWTFBrowserFiles[tonumber(w:value())]
+	if theFile[2]=="file" then
+		updatecWTFPreviewBox(theFile[1])
+	end
+	
+	local t=time()
+	
+	if t-gLastBrowserControlClick < 0.4 and w:value()==guLastSelection then
+		cWTFbrowserControlDoubleClicked(w)
+		gLastBrowserControlClick=0
+	else
+		gLastBrowserControlClick=time()
+	end
+	guLastSelection=w:value()
+	
+end} {}
+  code {-- ClassListBrowserClicked
+function ClassListBrowserClicked(w)
+ClassesBrowserCatch()
+end} {}
+  code {-- ChangeGameType
+function ChangeGameType(w)
+print(w:value())
+makdir = true
+for file in lfs.dir(gameroot.."Data/Scripts/") do
+        if string.sub(file, 1,1)~="." or file==".." then
+        local f = gameroot.."Data/Scripts/"..file
+        local attr = lfs.attributes(f)
+            assert (type(attr) == "table")  
+           	if attr.mode == "directory" then 
+          	 local a={file, "directory"}
+        	if  file == w:value() then makdir = false end
+	   	end  
+        end
+  end     
+        
+if makdir == true then lfs.mkdir(gameroot.."Data/Scripts/"..w:value().."_Entities/") end
+end} {}
+  Fl_Window ClassesBrowser {open
+    xywh {696 274 518 312} type Double visible
+  } {
+    Fl_Browser ClassListBrowser {
+      label Class
+      callback ClassListBrowserClicked
+      xywh {0 40 110 240} type Hold labelsize 10 align 1 textsize 11
+    }
+    Fl_Input AddClassInput {
+      label {+}
+      tooltip {add class} xywh {15 281 95 24} labelsize 12 textsize 11
+    }
+    Fl_Group ClassObjectsGroup {open selected
+      xywh {111 32 509 288}
+    } {
+      Fl_Browser ClassObjectsBrowser {
+        label {Class Objects}
+        callback uWTFbrowserControlClicked
+        xywh {111 40 110 240} labelsize 10 align 1 textsize 11
+      }
+      Fl_Button AddObjectBtn {
+        label Add
+        xywh {226 281 40 20} labelsize 10
+      }
+      Fl_Button DeleteObjectBtn {
+        label Delete
+        xywh {178 281 40 20} labelsize 10
+      }
+      Fl_Group WTFBrowserGroup {
+        xywh {220 32 345 261}
+      } {
+        Fl_Browser cWTFFileBrowser {
+          label WTF
+          callback cWTFbrowserControlClicked
+          xywh {222 40 155 240} type Hold labelsize 10 align 1 textsize 11
+        }
+        Fl_Box cWTFPreviewBox {
+          xywh {380 40 128 128} box FLAT_BOX color 40 labelsize 10 align 16
+        }
+        Fl_Box cWTFPreviewNote {
+          label {NO PREVIEW}
+          xywh {380 99 130 16} labelsize 10
+        }
+      }
+    }
+    Fl_Input AddClassInput {
+      label {Game Type}
+      callback ChangeGameType
+      tooltip {add class} xywh {70 1 150 24} labelsize 12 when 8 textsize 11
+    }
+  }
+  code {ClassesBrowser:show()
+ClassesBrowser:make_current()
+for i=1,\#gDefaultEntityClasses,1 do
+ClassListBrowser:add(gDefaultEntityClasses[i])
+end
+uclistWTFFiles()} {}
+} 

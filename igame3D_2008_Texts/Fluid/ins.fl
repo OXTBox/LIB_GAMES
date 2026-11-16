@@ -1,0 +1,102 @@
+# data file for the Fltk User Interface Designer (fluid)
+version 1.0108 
+header_name {.h} 
+code_name {.cxx}
+Function {make_window()} {open
+} {
+  code {gameroot="/ig3d_mac_xcode/"
+--dofile(gameroot.."Data/Scripts/Functions/help_functions.lua")
+
+documentation={}
+documentation.found={}
+documentation.func={}
+documentation.doc={}
+documentation.found[1]=3
+documentation.found[2]=1
+documentation.found[3]=2
+
+documentation.func[1]="x"
+documentation.func[2]="y"
+documentation.func[3]="z"
+
+documentation.doc[1]="its an x"
+documentation.doc[2]="its an y"
+documentation.doc[3]="its an z"} {}
+  code {-- fill rawData
+
+function fillRawData(...)
+	local str=""
+	local i=1
+	while arg[i]~= nil do
+		if str=="" then
+			str=tostring(arg[i])
+		else
+			str=str.."	"..tostring(arg[i])
+		end
+		i=i+1
+	end
+	local l_offset=\#rawData_buf:text()
+	rawData:insert_position(l_offset)
+	rawData:insert(str.."\\n")
+	rawData:show_insert_position()
+	rawData:textfont(4)
+	rawData:textsize(10)
+	
+end} {}
+  code {-- setUpLEvel1
+function setupLevel1()
+	level1:clear()
+level1:clear()
+	for i=1,\#documentation.found do
+	n=documentation.found[i]
+	level1:add(documentation.func[n])
+	end
+	--ig3dReference()
+end} {}
+  code {-- level1Clicked
+function level1Clicked(w)
+if w:value()>0 then
+	
+	rawData:clear()
+	rawData_buf:text("")
+funN=documentation.found[w:value()]
+
+
+if funN ~= nil then 
+docs=documentation.doc[funN]
+
+	if docs ~= nil then 
+	rawData:insert(docs.."\\n")
+	--fillRawData(docs)  
+	end
+end
+
+	end
+	
+end} {}
+  Fl_Window Inspector {
+    label Inspector open
+    xywh {53 227 663 235} type Double hide resizable
+  } {
+    Fl_Text_Editor rawData {
+      xywh {175 10 475 210} labelsize 10 textsize 10
+    }
+    Fl_Browser level1 {
+      callback level1Clicked
+      xywh {8 12 167 205} type Select labelsize 10 align 1 textsize 10
+    }
+  }
+  code {rawData_buf = fltk:Fl_Text_Buffer();
+rawData:buffer( rawData_buf );
+
+--level1:type(1)
+setupLevel1();
+level1:value(1);
+
+Inspector:show()
+
+
+
+Fl:run();} {selected
+  }
+} 

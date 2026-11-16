@@ -1,0 +1,1407 @@
+# data file for the Fltk User Interface Designer (fluid)
+version 1.0108 
+header_name {.h} 
+code_name {.cxx}
+Function {make_window()} {open
+} {
+  Fl_Window {} {open
+    xywh {925 108 100 100} type Double hide
+  } {}
+  code {CameraBrowser=nil
+
+
+storedSingleSelect=0
+gSelector=nil
+
+
+CameraFileList={}
+gSelectedCamera=0
+gAttributePicked = 1
+gCameraVals={}
+gCurSel=ig3d_GetSelection__s()
+gObjName=getlineof(gCurSel,1) ;  
+
+gCameraFieldValues={}
+gCameraFileValues={}
+gCameraFileAttributes={}
+gLastBrowserControlClick=time()
+gCameraBrowserFiles={}
+gCameraBrowserFileList={}
+gCameraFilesShortNames={}
+gCameraSource = ""
+gCameraSourcePath = ""
+
+if gCameras == nil or gNumCameras == 0 then 
+gCameras={ gCameraNames={}, gCameraPositions={}, gCameraRotations={} , gCameraMatrix={}}
+end
+gNumCameras =\#gCameras
+
+
+gCameraValues={} ; -- List of current values
+-- gCameraAttributes={} ; --List of current attribute names
+gCameraAttributes={"name","position","rotation","matrix","target","goto","keys","source"}
+gSelCameraData={}  ; --raw input from getInfo
+
+
+gBrowserCameraPath = gameroot.."Data/Levels/"
+gCameraBrowserPath = gBrowserCameraPath
+gCatchCameraPath = ""
+
+gSourceRequest = ""  ;-- mode of selecting Camera source from browser
+gCameraNewName=""  ; -- hold short name of Camera or Camera name for new make
+
+gNewCameraValueItems={} ;-- multi item list from field values ie x,y,z etc
+gCameraValueItems={};-- multi item list from Camera attriute values ie x,y,z etc
+gOldInfo = ""
+gLastCameraSourceSelection =0
+gLastCameraSourceBrowserControlClick = 0
+gCameraBrowserFiles={}
+gLastSourceDirectory ="Levels"
+gCameraShortPath=""
+gCameraNum = 0
+gCameraInfoAttributes={}
+gCameraDetailsInfo ={}
+gNumHelpedAttributes=1
+gCameraGetInfoTable={}
+gCameraToolTipPicked="translate"} {}
+  code {-- globals_and_functions_codeblock
+colorAttributes={"Ambient","Diffuse","Specular","Alpha"}
+gColorEditMode = "Background"
+gColorAttribute = "Ambient"
+gColorTargets = {"Background","Grid","Fog","Light","Camera","Material","Tint"}
+gfogEnabled, gFogRed, gFogGreen, gFogBlue, gFogstart, gFogend = getSceneInfo(IG3D_FOG)
+
+--colorsourcefile = gameroot.."Data/Images/Colors/colorsource.png"
+--loadTexture("Data/Images/Colors/colorsource.png") 
+--fltk.fl_register_images()
+
+quote ='"'
+gRed,gBlue,gGreen,Alpha = 1,1,1,1
+gRed, gGreen, gBlue = getSceneInfo(IG3D_BACKGROUND_COLOR)
+gAlpha = 1
+choosr,choosg,choosb = (gRed +1) * 254, (gGreen+1) * 254, (gBlue+1) * 254
+
+
+function MaxOfOne(w)
+
+--if tonumber(w) == nil then return 0 end 
+if tonumber(w) >= 1 then return 1 end
+--if tonumber(w) <= 0.00004 then return 0.00004 end
+end} {}
+  code {-- executeTable
+function executeTable(w)
+local i=0
+
+if \#w == nil then return end
+	for i=1,\#w,1 do		
+	local code,error=loadstring(w[i])
+		if code==nil then
+		fltk.fl_message("The script you were attempting to run contains errors:\\n"..error)
+		else
+		code()
+		end
+	end
+end} {}
+  code {-- CameraBrowserGroupsHide
+function CameraBrowserGroupsHide()
+  		if gCameraToolTipPicked ~="source" then  
+  		CameraSourceGroup:hide() 
+  		ReplaceWTFSourceBtn:hide()
+		ReplaceAllWTFSourceBtn:hide()
+  		end
+  		
+	
+
+	CameraTextureGroup:hide() 
+	CameraSaveAsGroup:hide()
+		
+		if gCameraToolTipPicked ~="translate" or gNumCameras < 1 then
+		CameraInputGroup:hide() 
+		CameraValueGroup:hide()
+		CameraValInputA:value()
+		CameraValInputB:value()
+		CameraValInputC:value()
+		CameraValInputD:value()
+		CameraValInputA:hide()
+		CameraValInputB:hide()
+		CameraValInputC:hide()
+		CameraValInputD:hide()
+		CameraBoolBtn:hide()
+		CameraNameInput:hide()
+		else
+		CameraValueGroup:show()
+		end
+		
+		
+		
+			
+	if gCameraToolTipPicked ~="bones" then	CameraBonesGroup:hide() end
+		
+		if gCameraToolTipPicked ~="materials" then  
+		CameraMaterialsGroup:hide() 	
+		CameraMaterialsInputGroup:hide() 
+		CameraValueGroup:hide()
+		CameraMaterialsValInputA:value()
+		CameraMaterialsValInputB:value()
+		CameraMaterialsValInputC:value()
+		CameraMaterialsValInputD:value()
+		CameraMaterialsValInputA:hide()
+		CameraMaterialsValInputB:hide()
+		CameraMaterialsValInputC:hide()
+		CameraMaterialsValInputD:hide()
+		CameraMaterialsBoolBtn:hide()
+		CameraMaterialsNameInput:hide()
+		end
+		
+	
+end} {}
+  code {-- listWTFFiles
+function listWTFFiles()
+gCameraBrowserFiles={}
+    wtfFileBrowser:clear()
+    CameraSourceGroup:show()
+    for file in lfs.dir(gCameraBrowserPath) do
+        if string.sub(file, 1,1)~="." or file==".." then
+            local f = gCameraBrowserPath..'/'..file
+            local attr = lfs.attributes (f)
+            assert (type(attr) == "table")
+             if attr.mode == "file" and string.sub(file, -4,-1)==".wtf" then 
+             	local a={file, "file"}
+             	table.insert(gCameraBrowserFiles, a)
+             	wtfFileBrowser:add(file)
+             end   
+           if attr.mode == "directory" then 
+           local a={file, "directory"}
+             table.insert(gCameraBrowserFiles, a)
+             wtfFileBrowser:add(file.."     ->")
+	   end  
+        end
+     end
+     
+end} {}
+  code {-- resetCameraTables
+function resetCameraTables()
+
+tCameraInfo = ig3d_GetCameraInfo__s()
+
+if gCameras == nil   then
+gCameras={ gCameraNames={}, gCameraPositions={}, gCameraRotations={}, gCameraMatrix={} }
+end
+
+
+
+
+end} {}
+  code {--  CameraBrowserValueCatch
+function CameraBrowserValueCatch()
+CameraFieldValues[1]=CameraListBrowser:value()
+CameraFieldValues[2]=CameraAttListBrowser:value()
+CameraFieldValues[3]=CameraAttListBrowser:value()
+
+CameraFieldValues[4]=wtfFileBrowser:value()
+CameraFieldValues[5]=CameraBoolBtn:value()
+CameraFieldValues[6]=CameraValInputA:value()
+CameraFieldValues[7]=CameraNameInput:value()
+
+CameraFieldValues[8]=CameraMaterialsBrowser:value()
+CameraFieldValues[9]=CameraMaterialsAttributesBrowser:value()
+CameraFieldValues[10]=CameraFieldValues[9]
+CameraFieldValues[11]=CameraMaterialsBoolBtn:value()
+curValBool = gCameraValueItems[1]
+	if curValBool ~= "true" and curValBool ~= "false" then 	
+	curValBool = nil
+	end	
+	
+gNewCameraValueItems={}	
+for i=1,\#gCameraValueItems,1 do
+  if i == 1 then
+	if curValBool == nil then
+ 	
+ 	table.insert(gNewCameraValueItems,CameraValInputA:value());
+ 	else
+ 	table.insert(gNewCameraValueItems,curValBool);
+ 	end
+ 	end
+ 
+	if i == 2 then 
+	if curValBool == nil then
+ 	table.insert(gNewCameraValueItems,CameraValInputB:value());
+ 	else
+ 	table.insert(gNewCameraValueItems,CameraValInputA:value());
+ 	end
+ 	end
+ 
+	if i == 3 then 
+	if curValBool == nil then
+ 	table.insert(gNewCameraValueItems,CameraValInputC:value());
+ 	else
+ 	table.insert(gNewCameraValueItems,CameraValInputB:value());
+ 	end
+ 	end
+ 	
+	if i == 4 then 
+	if curValBool == nil then
+ 	table.insert(gNewCameraValueItems,CameraValInputD:value());
+	else
+ 	table.insert(gNewCameraValueItems,CameraValInputC:value());
+ 	end
+ 	end		
+end
+
+gNewCameraMaterialsValueItems={}
+if gCameraMaterialsValueItems[1] =="true" or gCameraMaterialsValueItems[1] =="false" then
+table.insert(gNewCameraMaterialsValueItems,CameraFieldValues[11])
+else
+for i=1,\#gCameraMaterialsValueItems,1 do
+  if i == 1 then
+ 	table.insert(gNewCameraMaterialsValueItems,CameraMaterialsValInputA:value());
+ 	end
+ 
+	if i == 2 then 
+ 	table.insert(gNewCameraMaterialsValueItems,CameraMaterialsValInputB:value());
+ 	end
+ 
+	if i == 3 then 
+ 	table.insert(gNewCameraMaterialsValueItems,CameraMaterialsValInputC:value());
+ 	end
+ 	
+	if i == 4 then 
+ 	table.insert(gNewCameraMaterialsValueItems,CameraMaterialsValInputD:value());
+ 	end		
+end
+end
+
+ fltk_update()
+end} {}
+  code {-- parseHelpForAttributes
+
+function parseHelpForCameraAttributes()
+CameraBrowserValueCatch()
+whichCommand = "getCameraInfo"
+whichElement = ""
+q= string.char(34); --quotation mark;
+pc = string.char(37); --percent sign;
+gFoundAttributes={"name","position","rotation","size","coll","hud"}
+        pslist = ""
+	for i = 1,\#gFoundAttributes,1 do
+	pslist = pslist..gFoundAttributes[i].."\\n"
+	end
+	slist=pslist
+	shText=tText
+	f=io.open(gameroot.."Data/Help/scripting.txt", "r")
+	tText=f:read("*a")
+	f:close()	
+	-- get one underscores 
+	firstMatch = whichCommand..pc.."p"....pc.."sIG3D_"..pc.."u+."..pc..")"..pc..":";
+ 	for s in string.gmatch(tText,firstMatch) do 	
+ 		shText = string.sub(s,string.len(whichCommand.."(".."IG3D_")+1,-1)
+ 		shText = string.sub(shText,1,string.find(shText,")")-1)
+
+		 if string.find(slist,string.lower(shText)) == nil then
+		 slist = slist..shText.."\\n"
+ 		 table.insert(gFoundAttributes,string.lower(shText))
+ 		 end
+ 	 end
+ 	-- get two underscores 	
+   	secondMatch = whichCommand..pc.."p"..pc.."sIG3D_"..pc.."u+"..pc.."_"..pc.."u+"..pc..")";
+		for s in string.gmatch(tText,secondMatch) do 
+ 			shText = string.sub(s,string.len(whichCommand.."(".." IG3D_")+1,-1)
+ 			shText = string.sub(shText,1,string.find(shText,")")-1)
+
+	 		if string.find(slist,string.lower(shText)) == nil then
+	 		slist = slist..shText.."\\n"
+ 	 		table.insert(gFoundAttributes,string.lower(shText))
+ 	 		end
+		end	
+end} {}
+  code {-- parseCameraAttributesTable
+function parseCameraAttributesTable(whichCommand, whichElement)
+		gCameraDetailsInfo={}
+		gCameraInfoAttributes={}
+		gCameraAttVars={{}}
+		whichCommand = "getCameraInfo"
+		whichElement = "obj"
+		gCameraGetInfoTable={}
+		local tally=""
+		for i =1,\#gFoundAttributes,1 do
+		ts = "IG3D_"..string.upper(gFoundAttributes[i])
+		table.insert(gCameraInfoAttributes,ts)
+		thirdMatch = whichCommand..pc.."p"..ts..pc..")"..pc..":"..pc.."("..".+";
+		tk = string.match(tText,thirdMatch,1)
+		if tk ~= nil then 
+		tmsub=string.sub(tk,string.len(whichCommand.."("..ts.."):(")+1, string.find(tk,"\\n")-2)
+		
+		-- insert model info attributes
+		table.insert(gCameraAttVars ,tmsub)
+		-- temp strings
+		tmsur=tmsub
+		its=tmsub
+			if string.find(tmsur,",") ~= nil then
+			its=""
+			mn=0
+			for items in string.gmatch(tmsub, pc.."a+") do
+			fc=string.find(tmsur,",")
+				if fc ==nil then fc =0 end
+				its=its..string.sub(tmsur,1,fc-1)..","
+				tmsur=string.sub(tmsur,fc+1,-1)
+				mn=mn+1
+				end
+			end
+			
+			-- insert commands to get info as strings
+			tmas=  tmsub.."="..whichCommand.."("..ts.." )"
+			tally =tally.. tmas .. "\\n"
+			table.insert(gCameraGetInfoTable,tmas)
+			-- insert command to insert retrieved info into table  
+			tmai = "table.insert(gCameraDetailsInfo,{"..tmsub.."} )"
+			table.insert(gCameraGetInfoTable,tmai)	
+	end
+	end
+	--print(tally)
+	
+end} {}
+  code {-- updateCameraAttributesTables
+function updateCameraAttributesTables()
+gCameraDetailsInfo={}
+executeTable(gCameraGetInfoTable) 	
+		
+	gSelCameraData={}
+
+	for i=1,\#gCameraDetailsInfo,1 do
+	sou=""
+		for ii=1,\#gCameraDetailsInfo[i],1 do
+		if gCameraDetailsInfo[i][ii] ~= nil then
+		sou=sou..tostring(gCameraDetailsInfo[i][ii])..","
+		end
+		end
+		sout = string.sub(sou,1,-2)	
+	table.insert(gSelCameraData, sout)
+	end
+	
+	
+	gCameraAttributes={}
+	for i=1,\#gFoundAttributes,1 do
+	table.insert(gCameraAttributes,gFoundAttributes[i])
+	end
+	
+	
+end} {}
+  code {-- showCameraColorChooser
+function showCameraColorChooser()
+	colorChooserLabel = gSelectedMaterialAttributes[gSelectedMaterialAttribute]
+	choosr,choosg,choosb= (gRed * 255) , (gGreen * 255), (gBlue *255)
+	color_ok, choosr, choosg , choosb = fltk.fl_color_chooser(colorChooserLabel,choosr,choosg,choosb)	
+	
+	if color_ok == 1 then -- color_ok represents the first value (exit status) returned by fl_color_chooser
+	Fl:set_color(15,choosr,choosg,choosb) -- change color 15
+ 	gRed, gGreen, gBlue = (choosr) / 255.0, (choosg) / 255.0, (choosb) / 255.0
+ 		
+	CameraMaterialsValInputA:value(tonumber(string.sub(gRed,1,4)))
+	CameraMaterialsValInputB:value(tonumber(string.sub(gGreen,1,4)))
+	CameraMaterialsValInputC:value(tonumber(string.sub(gBlue,1,4)))
+	
+	CameraBrowserValueCatch()
+	local lVal = ""	
+	for i=1,\#gNewCameraMaterialsValueItems,1 do
+	lVal = lVal..gNewCameraMaterialsValueItems[i]..","
+	end
+	changeCameraMaterialsVal(string.sub(lVal,1,-2));
+
+		
+	end
+end} {}
+  code {-- CameraBrowserWindowUpdate
+function CameraBrowserWindowUpdate(arg)
+ if CameraBrowser == nil then return end
+ CameraBrowser:make_current()
+ CameraBrowserValueCatch()
+  
+ local i = 1
+ local FBn,EBLn,EAn = nil,nil,nil
+ EAn= CameraFieldValues[2]
+CameraBrowserGroupsHide()
+ ---- SourceList 
+		if arg == "SourceList" then
+	local FBn = wtfFileBrowser:value()
+		wtfFileBrowser:clear() 
+  			for i=1,\#gCameraFilesShortNames,1 do
+			wtfFileBrowser:add(gCameraFilesShortNames[i])
+			end
+		end
+---- CurCameraInfo	
+		if arg == "CurCameraInfo" then
+			if gCameraourcePath ~= nil then  
+				local ss,se = string.find(gCameraourcePath,"Data/WTF/")
+				if se ~= nil then 
+				local curCameraName = string.sub(gCameraourcePath,se+1,-1)
+				SourceNameInput:value(curCameraName)
+				SourceNameInput:redraw()
+				end;	
+			end;
+			updateCameraAttributesTables()
+				
+			 if \#gSelCameraData > 1 then 
+			 EAn = CameraFieldValues[2]
+			 EBLn = CameraFieldValues[1]
+				
+				CameraAttListBrowser:clear()
+				CameraValueListBrowser:clear()
+				
+				
+			        local i = 1
+				for i = 1,\#gCameraAttributes,1 do
+				CameraAttListBrowser:add(gCameraAttributes[i])
+				CameraAttListBrowser:redraw()
+				end
+				
+				for i = 1,\#gSelCameraData,1 do
+				CameraValueListBrowser:add(gSelCameraData[i])
+				gOldInfo = gSelectedCameraInfo
+				end
+				
+			end
+			
+	
+	
+			
+				
+		end; -- if_curCamerainfo
+		
+---- updateCameraListBrowser 		
+		if arg == "updateCameraListBrowser" then
+		if \#gCameraNames > 0  then
+		 EBLn = CameraFieldValues[1]
+			  CameraListBrowser:clear()
+			  for i=1,\#gCameraNames,1 do 
+			  CameraListBrowser:add(gCameraNames[i])	
+			 	 if gSelectedCamera == gCameraNames[i] then EBLn = i end;
+			  end
+		gSourceRequest = ""
+		else
+		
+		end	
+		end;
+		  
+
+	
+	if arg == "newCamera" then
+		CameraAttListBrowser:value(2)
+		CameraValueListBrowser:value(2)
+		CameraAttListBrowser:select(2)
+		CameraValueListBrowser:select(2)
+		CameraBrowserValueCatch()
+	end
+	
+	if arg == "updateMaterialsBrowser" then
+		
+
+	end
+
+
+
+---- SELECT LINE OF BROWSER  
+				if FBn ~= nil then
+				wtfFileBrowser:selected(FBn,FBn)
+				wtfFileBrowser:value(FBn)
+				wtfFileBrowser:select(FBn)
+				wtfFileBrowser:redraw()
+				end
+		
+				if EBLn ~= nil then
+				CameraFieldValues[1] = EBLn
+				gSelectedCamera = gCameraNames[EBLn] 
+				 CameraListBrowser:select(EBLn,EBLn)
+		 		CameraListBrowser:value(EBLn)
+		 		CameraListBrowser:selected(EBLn)
+				end
+			if EAn ~= nil then 		 
+			CameraAttListBrowser:select(EAn,EAn)
+			CameraAttListBrowser:value(EAn)
+			CameraAttListBrowser:selected(EAn)
+			CameraValueListBrowser:select(EAn,EAn)
+			CameraValueListBrowser:value(EAn)
+			CameraValueListBrowser:selected(EAn) 
+			
+			end
+fltk_update()
+end} {}
+  code {-- updateCameraListBrowser
+function updateCameraListBrowser()
+CameraBrowserValueCatch()
+plist= ig3d_GetCamerasList__s()
+if plist ~= nil then 
+	gCameraNames={}
+	
+	pcount =  getlinecount(plist)
+	if pcount == 0 and string.len(plist) ~=0 then 
+	pcount = 1 
+	plist = plist.."\\n"
+	end
+	
+	if pcount ~= 0 then  
+		for i=1,pcount,1 do		
+		pname = getlineof(plist,i)
+			
+			if pname ~= nil then  
+			table.insert(gCameraNames,pname)
+			end;	
+		end	
+	end
+	
+	 
+	end
+	CameraBrowserWindowUpdate("updateCameraListBrowser")
+	
+end} {}
+  code {--  CurCameraInfo
+function CurCameraInfo(n)
+CameraBrowserValueCatch()
+
+	gSelectedCameraInfo = ig3d_GetCameraInfo__s()
+	
+CameraValueListBrowser:clear()
+	for i =1,getlinecount(gSelectedCameraInfo),1 do
+	if getlineof(gSelectedCameraInfo,i) ~= nil then
+	
+	CameraValueListBrowser:add(getlineof(gSelectedCameraInfo,i));
+	end
+	end
+	
+--parseHelpForCameraAttributes()
+--parseCameraAttributesTable("getCameraInfo","obj")	
+
+gNumHelpedAttributes=\#gCameraAttributes
+
+--CameraBrowserWindowUpdate("CurCameraInfo")
+
+return gSelectedCameraInfo
+
+end
+
+
+-- end CurCameraInfo --} {selected
+  }
+  code {-- changeCameraVal
+function changeCameraVal(PValue)
+if CameraBrowser == nil then return end;
+CameraBrowserValueCatch()
+changeLine = CameraFieldValues[2]
+setVal=""
+gSelectedCameraInfo = CurCameraInfo()
+curData = gSelCameraData[changeLine]
+currentCameraVal = gCameraValues[changeLine]
+
+gSelCameraData[changeLine] = PValue
+
+local tally =""
+for i=1,4,1 do
+setVal = setVal .. gSelCameraData[i].."\\n"
+end
+ig3d_SetCameraInfo_2s(gObjName,setVal)
+
+for i=1,\#gSelCameraData,1 do
+if i<\#gCameraInfoAttributes and i < \#gSelCameraData  then
+setObjString ="setCameraInfo(gCameras["..gCameraNum.."].cObj,"..gCameraInfoAttributes[i]..","..gSelCameraData[i]..")"
+tally = tally..setObjString.."\\n"
+end
+end
+
+--print(tally)
+
+CameraBrowserValueCatch()
+CurCameraInfo()
+				
+
+end} {}
+  code {-- CameraValInput
+
+function CameraValInput(w)
+	if CameraBrowser == nil then return end;
+	CameraBrowserValueCatch()
+	local lVal = ""	
+		for i=1,\#gNewCameraValueItems,1 do
+		lVal = lVal..gNewCameraValueItems[i]..","
+		end
+	changeCameraVal(string.sub(lVal,1,-2));
+end} {}
+  code {-- changeCameraBool
+function changeCameraBool(w)
+if CameraBrowser == nil then return end;
+CameraBrowserValueCatch()
+changeLine = CameraFieldValues[2]
+
+gSelectedCameraInfo = CurCameraInfo()
+
+	if w:value() == 1 then 
+		tBool = "true"
+	else
+		tBool = "false"
+	end
+
+gSelCameraData[changeLine] = tBool
+
+ses= "setCameraInfo("..gCameraInfoAttributes[changeLine]..","..gSelCameraData[changeLine]..")"
+local code,error = loadstring(ses)
+if error == nil then code() end
+
+CurCameraInfo()
+fltk_update()
+end} {}
+  code {-- PickCameraDetails
+function PickCameraDetails()
+CameraBrowserValueCatch()
+AttributeLine = gCameraAttributes[CameraFieldValues[2]]
+
+
+if AttributeLine == "bones" then CameraBonesGroup:show()
+elseif AttributeLine == "materials" then CameraMaterialsGroup:show()
+elseif AttributeLine == "source" then listWTFFiles () 
+end
+
+end} {}
+  code {-- PickedCameraAttribute
+function PickedCameraAttribute(n)
+if CameraBrowser == nil then return end;
+CameraBrowserValueCatch()
+if n == nil then n = CameraFieldValues[2] end
+if n == nil then return end
+
+gSelectedCameraInfo = CurCameraInfo()
+             
+CameraBrowserGroupsHide()		
+CameraNameInput:value(gCameraValues[1]) 
+-- Path to Source
+if n == 9999 then 
+CameraBrowserWindowUpdate("SourceList")
+gSourceRequest = "Replace"
+wtfFileBrowser:label("Replace Camera Source")
+CameraSourceGroup:show()
+wtfFileBrowser:value(CameraFieldValues[4])
+wtfFileBrowser:select(CameraFieldValues[4])
+CameraSourceGroup:redraw()
+ end
+ 
+
+if gCameraToolTipPicked =="translate" then 
+
+	CameraValueGroup:show()
+	CameraInputGroup:show() 
+	CameraNameInput:hide()
+	CameraValInputA:hide()
+	
+	if n == 1 or CameraFieldValues[2] == 1 then 
+	-- Camera NAME
+	CameraInputGroup:show()  
+	CameraNameInput:show()
+	CameraNameInput:value(gSelCameraData[1])
+	CameraValInputA:hide()
+	end
+
+
+
+	
+if n > 1 then 
+
+	gCameraValueItems={}
+	curVal = gSelCameraData[n]
+	curValBool=curVal
+	curValF=""
+	sstr = nil
+	-- COMMAS
+	if curVal ~= nil then 
+	fc=string.find(curVal,",")
+		if fc == nil then 
+		
+		table.insert(gCameraValueItems,curVal)
+		else
+			for i = 1, numberofitems(curVal,","), 1 do
+			local va=item(i,curVal,",")
+			
+			table.insert(gCameraValueItems,va)
+			end
+		end
+		
+	end	
+
+
+if \#gCameraValueItems == 1 then 
+		CameraValInputA:hide()
+		CameraValInputB:hide()
+		CameraValInputC:hide()
+		CameraValInputD:hide()
+		end
+-- BOOLS
+curValBool = gCameraValueItems[1]
+	if curValBool == "true" or curValBool == "false" then 	
+	CameraBoolBtn:show()
+	CameraBoolBtn:label(gCameraAttributes[n])
+		if string.len(curValF) >1  then 
+		CameraValInputA:show()
+		CameraValInputA:value(tonumber(curValF))
+		else
+		CameraValInputA:hide()
+		end
+	else
+	if n ~= 1 then 
+	CameraValInputA:value(tonumber(curValBool))
+	CameraValInputA:show()
+	end
+	CameraBoolBtn:hide()
+	curValBool = nil
+	end	
+		
+	if curValBool == "true" then
+	CameraBoolBtn:value(1)
+	else
+	CameraBoolBtn:value(0)
+	end
+	
+for i=1,\#gCameraValueItems,1 do
+cCameraValueItem = tonumber(gCameraValueItems[i])
+  if i == 1 then
+	if curValBool == nil then
+ 	CameraValInputA:show()
+ 	CameraValInputA:value(cCameraValueItem)
+ 	end
+ 	end
+ 
+	if i == 2 then 
+	if curValBool == nil then
+	CameraValInputB:show()
+ 	CameraValInputB:value(cCameraValueItem)
+ 	else
+ 	CameraValInputA:show()
+ 	CameraValInputA:value(cCameraValueItem)
+ 	end
+ 	end
+ 
+	if i == 3 then 
+	if curValBool == nil then
+	CameraValInputC:show()
+ 	CameraValInputC:value(cCameraValueItem)
+ 	else
+ 	CameraValInputB:show()
+ 	CameraValInputB:value(cCameraValueItem)
+ 	end
+ 	end
+ 	
+	if i == 4 then 
+	if curValBool == nil then
+	CameraValInputD:show()
+ 	CameraValInputD:value(cCameraValueItem)
+ 	else
+ 	CameraValInputC:show()
+ 	CameraValInputC:value(cCameraValueItem)
+ 	end
+ 	end
+ 	
+		
+end  -- <5
+end -- > 1
+end
+
+fltk_update()
+end
+
+-- end PickedCameraAttribute --} {}
+  code {-- RenameCamera
+function RenameCamera(w)
+nName = tostring(w:value())
+changeCameraVal(nName)
+updateCameraListBrowser("updateCameraListBrowser")
+PickedCameraAttribute(CameraFieldValues[2])
+				
+end} {}
+  code {-- updateMaterialsTables
+
+function updateMaterialsTables()
+gSelectedMaterialAttributes={}
+gSelectedMaterialValues={}
+gSelectedMaterialData={} ; -- raw data
+gSelectedMaterial = CameraFieldValues[8]
+gselCameraMaterialsList ={}
+	cMatList = ig3d_GetCameraMaterialsList_s_s(gObjName).."\\n"
+	
+	mcount = getlinecount(cMatList)
+	if mcount == 0 and string.len(cMatList) ~= 0 then CameraMaterialsBrowser:add(cMatList) end
+	
+	for i =1,mcount,1 do
+	linem=getlineof(cMatList,i)
+	if linem ~= nil then
+	table.insert(gselCameraMaterialsList,linem)
+	
+	end
+	end
+	
+curmatinfo = ig3d_GetCameraMaterialInfo_si_s(gObjName , gSelectedMaterial).."\\n"				 
+
+	for i = 1,getlinecount(curmatinfo),1 do
+	curMatInfoLine = getlineof(curmatinfo,i)
+		
+		if curMatInfoLine ~= nil then 
+		table.insert(gSelectedMaterialData,curMatInfoLine)
+		
+		if i == 1 then curMatInfoLine = "name="..curMatInfoLine end
+		if i == 2 then curMatInfoLine = "lines="..curMatInfoLine end
+		
+		fe = string.find(curMatInfoLine,"=")
+			if fe ~= nil  then 
+				attrb = string.sub(curMatInfoLine,1,fe-1)
+				values = string.sub(curMatInfoLine,fe+1,-1)
+		
+			if attrb ~= nil then table.insert(gSelectedMaterialAttributes,attrb) end
+			
+			if i == 1 and values == nil then 
+			values =  gselCameraMaterialsList[gSelectedMaterial]
+			end
+			if values ~= nil then table.insert(gSelectedMaterialValues,values) end;
+		 	end
+		end
+	end
+end} {}
+  code {-- updateMaterialBrowsers
+function updateMaterialBrowsers()
+CameraBrowserValueCatch()
+CameraBrowserGroupsHide()
+	updateMaterialsTables()
+CameraMaterialsAttributesBrowser:clear()
+CameraMaterialsValuesBrowser:clear()
+CameraMaterialsBrowser:clear()
+
+if \#gSelectedMaterialValues == nil then return end
+	for i=1,\#gSelectedMaterialValues,1 do
+	values= gSelectedMaterialValues[i]
+				if tonumber(values) ~= 0 then
+				for z in string.gmatch(values,"00") do
+				values = string.gsub(values,"000","0")
+				end
+				end				
+	CameraMaterialsValuesBrowser:add(values)
+	end
+	if \#gSelectedMaterialAttributes == nil then return end
+
+	for i=1,\#gSelectedMaterialAttributes,1 do
+	CameraMaterialsAttributesBrowser:add(gSelectedMaterialAttributes[i])
+	end	
+	
+	for i=1,\#gselCameraMaterialsList,1 do
+	CameraMaterialsBrowser:add(gselCameraMaterialsList[i]);
+	end
+	CameraMaterialsAttributesBrowser:select(CameraFieldValues[9])
+	CameraMaterialsValuesBrowser:select(CameraFieldValues[9])
+	CameraMaterialsBrowser:select(CameraFieldValues[8])
+	CameraMaterialsAttributesBrowser:value(CameraFieldValues[9])
+	CameraMaterialsValuesBrowser:value(CameraFieldValues[9])
+	CameraMaterialsBrowser:value(CameraFieldValues[8])
+	CameraMaterialsAttributesBrowser:selected(CameraFieldValues[9],CameraFieldValues[9])
+	CameraMaterialsValuesBrowser:selected(CameraFieldValues[9],CameraFieldValues[9])
+	CameraMaterialsBrowser:selected(CameraFieldValues[8],CameraFieldValues[8])
+	
+	
+end} {}
+  code {-- changeCameraMaterialsVal
+function changeCameraMaterialsVal(PValue)
+if CameraBrowser == nil then return end;
+CameraBrowserValueCatch()
+changeLine = CameraFieldValues[9]
+setVal=""
+gSelectedCameraInfo = CurCameraInfo()
+curData = gSelectedMaterialData[changeLine]
+currentCameraVal = gSelectedMaterialValues[changeLine]
+
+gSelectedMaterialValues[changeLine] = PValue
+
+gSelectedMaterialValues[changeLine] = PValue
+gChangeMaterial = gSelectedMaterialAttributes[changeLine].."="..PValue
+MatString = gSelectedMaterialValues[1].."\\n"..gSelectedMaterialValues[2].."\\n"
+
+for i = 3, \#gSelectedMaterialValues,1 do
+MatString = MatString..gSelectedMaterialAttributes[i].."="..gSelectedMaterialValues[i].."\\n"
+end
+
+MaterialsUpdate = string.sub(MatString,1,-2)
+ig3d_SetCameraMaterialInfo_sis(gSelectedCamera,CameraFieldValues[8],MaterialsUpdate)
+
+print(MaterialsUpdate)
+updateMaterialBrowsers()
+				
+fltk_update()
+end} {}
+  code {-- CameraMaterialsValInput
+
+function CameraMaterialsValInput(w)
+
+if CameraBrowser == nil then return end;
+CameraBrowserValueCatch()
+local lVal = ""	
+for i=1,\#gNewCameraMaterialsValueItems,1 do
+lVal = lVal..gNewCameraMaterialsValueItems[i]..","
+end
+
+
+changeCameraMaterialsVal(string.sub(lVal,1,-2));
+end} {}
+  code {-- PickedCameraMaterialsAttribute
+function PickedMaterialsAttribute(n)
+if CameraBrowser == nil then return end;
+CameraBrowserValueCatch()
+if n == nil then n = CameraFieldValues[9] end
+if n == nil then return end
+
+gSelectedCameraInfo = CurCameraInfo()             
+CameraBrowserGroupsHide()		
+
+
+
+if gCameraToolTipPicked =="materials" then 
+	CameraMaterialsGroup:show()
+	CameraMaterialsInputGroup:show() 
+	CameraMaterialsNameInput:hide()
+	CameraMaterialsValInputA:hide()
+	
+	if n == 1 or CameraFieldValues[9] == 1 then 
+	-- Camera NAME
+		CameraMaterialsValInputA:hide()
+		CameraMaterialsValInputB:hide()
+		CameraMaterialsValInputC:hide()
+		CameraMaterialsValInputD:hide()
+	CameraMaterialsInputGroup:show()  
+	CameraMaterialsNameInput:show()
+	CameraMaterialsNameInput:value(gSelectedMaterialValues[1])
+	CameraMaterialsValInputA:hide()
+	end
+
+
+
+	
+if n > 1 then 
+
+	gCameraMaterialsValueItems={}
+	curVal = gSelectedMaterialValues[n]
+	curValBool=curVal
+	curValF=""
+	sstr = nil
+	-- COMMAS
+	if curVal ~= nil then 
+	fc=string.find(curVal,",")
+		if fc == nil then 
+		
+		table.insert(gCameraMaterialsValueItems,curVal)
+		else
+			for i = 1, numberofitems(curVal,","), 1 do
+			local va=item(i,curVal,",")
+			
+			table.insert(gCameraMaterialsValueItems,va)
+			end
+		end
+		
+	end	
+
+if \#gCameraMaterialsValueItems == 1 then 
+		CameraMaterialsValInputA:hide()
+		CameraMaterialsValInputB:hide()
+		CameraMaterialsValInputC:hide()
+		CameraMaterialsValInputD:hide()
+		end
+		
+	if string.find(colorfulMaterialAtt,gSelectedMaterialAttributes[n]) ~= nil then 
+	gRed = gCameraMaterialsValueItems[1]
+	gGreen = gCameraMaterialsValueItems[2]
+	gBlue = gCameraMaterialsValueItems[3]
+	end
+	
+
+-- BOOLS
+curValBool = tostring(gCameraMaterialsValueItems[1])
+	if curValBool == "true" then
+	CameraMaterialsBoolBtn:value(1)
+	else
+	CameraMaterialsBoolBtn:value(0)
+	end
+	
+	if curValBool == "true" or curValBool == "false" then 	
+	CameraMaterialsBoolBtn:show()
+	CameraMaterialsBoolBtn:label(gSelectedMaterialAttributes[n])		
+	else
+	CameraMaterialsBoolBtn:hide()
+	
+		
+	
+	
+for i=1,\#gCameraMaterialsValueItems,1 do
+cCameraValueItem = tonumber(gCameraMaterialsValueItems[i])
+  	if i == 1 then
+ 	CameraMaterialsValInputA:show()
+ 	CameraMaterialsValInputA:value(cCameraValueItem)
+ 	end
+ 
+	if i == 2 then 
+	CameraMaterialsValInputB:show()
+ 	CameraMaterialsValInputB:value(cCameraValueItem)
+ 	end
+ 
+	if i == 3 then 
+	CameraMaterialsValInputC:show()
+ 	CameraMaterialsValInputC:value(cCameraValueItem)
+ 	end
+ 	
+	if i == 4 then 
+	CameraMaterialsValInputD:show()
+ 	CameraMaterialsValInputD:value(cCameraValueItem)
+ 	end
+ 	end
+ 		
+end  -- <5
+end -- > 1
+
+end
+
+
+
+fltk_update()
+end
+
+-- end PickedCameraAttribute --} {}
+  code {-- changeCameraMaterialsBool
+function changeCameraMaterialsBool(w)
+if CameraBrowser == nil then return end;
+CameraBrowserValueCatch()
+changeLine = CameraFieldValues[9]
+
+
+	if w:value() == 1 then 
+		tBool = "true"
+	else
+		tBool = "false"
+	end
+gChangeMaterial = gSelectedMaterialAttributes[changeLine].."="..tBool
+
+gSelectedMaterialValues[changeLine] = tBool
+MatString = gSelectedMaterialValues[1].."\\n"..gSelectedMaterialValues[2].."\\n"
+
+for i = 3, \#gSelectedMaterialValues,1 do
+MatString = MatString..gSelectedMaterialAttributes[i].."="..gSelectedMaterialValues[i].."\\n"
+end
+MaterialsUpdate = string.sub(MatString,1,-2)
+ig3d_SetCameraMaterialInfo_sis(gSelectedCamera,CameraFieldValues[8],MaterialsUpdate)
+
+
+
+
+fltk_update()
+end} {}
+  code {-- CameraAttPicked
+function CameraAttPicked(w)
+if CameraBrowser == nil then return end;
+if w:value() == nil then return end
+CameraValueListBrowser:value(w:value())
+CameraValueListBrowser:select(w:value())
+CameraValueListBrowser:selected(w:value(),w:value())
+CameraBrowserValueCatch()
+PickedCameraAttribute(CameraFieldValues[2])
+end} {}
+  code {-- CameraMaterialsAttributesBrowserCallback
+function CameraMaterialsAttributesBrowserCallback(w)
+local n = w:value()
+gSelectedMaterialAttribute = n 
+
+
+CameraMaterialsAttributesBrowser:select(n)
+CameraMaterialsAttributesBrowser:value(n)
+CameraMaterialsAttributesBrowser:selected(n,n)
+
+CameraMaterialsValuesBrowser:select(n)
+CameraMaterialsValuesBrowser:value(n)
+CameraMaterialsValuesBrowser:selected(n,n)
+
+
+updateMaterialBrowsers()
+PickedMaterialsAttribute(n)
+if string.find(colorfulMaterialAtt,gSelectedMaterialAttributes[n]) ~= nil then  showCameraColorChooser() end
+end} {}
+  code {-- CameraMaterialsBrowserCallback 
+function CameraMaterialsBrowserCallback(w)
+gSelectedMaterial=w:value()
+updateMaterialBrowsers()
+end} {}
+  code {-- CameraBonesBrowserCallback 
+function CameraBonesBrowserCallback(w)
+end} {}
+  code {-- CameraValueListCallback
+function CameraValueListCallback(w)
+if CameraBrowser == nil then return end;
+if w:value() == nil then return end
+CameraAttListBrowser:value(w:value())
+CameraAttListBrowser:select(w:value())
+CameraAttListBrowser:selected(w:value(),w:value())
+CameraBrowserValueCatch()
+PickedCameraAttribute(CameraFieldValues[2])
+end} {}
+  code {-- CameraSourceBrowserControlDoubleClicked
+function CameraSourceBrowserControlDoubleClicked(w)
+local theFile=gCameraBrowserFiles[tonumber(w:value())]
+	if theFile[2]=="directory" then
+		if theFile[1]==".." then 
+			gCameraBrowserPath=goDirsUp(gCameraBrowserPath, 1)
+		else
+			gCameraBrowserPath=gCameraBrowserPath..theFile[1].."/"
+			if theFile[1] ~= nil then gLastSourceDirectory=theFile[1] end
+		end
+		listWTFFiles()
+	end
+	
+end} {}
+  code {-- CameraSourcebrowserControlClicked
+
+
+
+function CameraSourcebrowserControlClicked(w)
+if w:value()==0 then return end
+	local theFile=gCameraBrowserFiles[tonumber(w:value())]
+	if theFile[2]=="file" then
+		--updateWTFPreviewBox(theFile[1])
+		
+		gWTFReplacementFile = gLastSourceDirectory.. "/"..theFile[1]
+		
+		
+		ReplaceWTFSourceBtn:label(gCameraShortPath.."\\nwith\\n"..gWTFReplacementFile)
+	ReplaceWTFSourceBtn:show()
+		ReplaceAllWTFSourceBtn:show()
+	end
+	local t=time()
+	if t-gLastCameraSourceBrowserControlClick < 0.4 and w:value()==gLastCameraSourceSelection then
+	CameraSourceBrowserControlDoubleClicked(w)
+		gLastCameraSourceBrowserControlClick=0
+	else
+		gLastCameraSourceBrowserControlClick=time()
+	end
+	gLastCameraSourceSelection=w:value()	
+end} {}
+  code {-- ReplaceWTFSourceBtnClick
+function ReplaceWTFSourceBtnClick()
+
+fileName = gameroot..ig3d_GetLevelName__s().."/load script.lua"
+
+	local f=io.open(fileName, "r")
+	local tText=f:read("*a")
+	f:close()
+	q='"'
+	
+	s,ig = string.find(tText,"gCameraWTFs")
+	se,ig = string.find(tText,"gCameraNames")
+	
+	refrsrc = string.sub(tText,s,se-1)
+	
+	loadstring(refrsrc) -- refreshes gCameraWTFs table
+	
+	gCameraWTFs[gCameraNum] = gWTFReplacementFile
+	
+	local tableout = "gCameraWTFs={"
+	for i=1,\#gCameraWTFs,1 do
+	tableout = tableout..q..gCameraWTFs[i]..q..","
+	end
+	
+	tableout = string.sub(tableout,1,-2).."}"
+	
+	tText = string.gsub(tText,refrsrc,tableout)
+	
+	f=io.open(fileName,"w")
+	
+	f:write(tText)
+	f:close()
+	
+	loadLevel(ig3d_GetLevelName__s())
+end} {}
+  code {-- ReplaceAllWTFSourceBtnClick
+function ReplaceAllWTFSourceBtnClick()
+
+fileName = gameroot..ig3d_GetLevelName__s().."/load script.lua"
+
+local f=io.open(fileName, "r")
+	local tText=f:read("*a")
+	for repmatch in string.gmatch(tText,gCameraShortPath) do
+	tText = string.gsub(tText,gCameraShortPath,gWTFReplacementFile,1)
+	end
+	
+	f:close()
+	f=io.open(fileName,"w")
+	
+	f:write(tText)
+	f:close()
+	
+	loadLevel(ig3d_GetLevelName__s())
+end} {}
+  code {-- Camera MENU FUNCTIONS
+CameraMenuIndex={}
+CameraMenuText={}
+CameraMenuText.Source={"Make", "Save","Duplicate"}
+CameraMenuText.Control={"Run","Stop","Clear"}
+
+function fillCameraSourceMenu()
+if CameraBrowser == nil then return end;
+	for  i=1,\#CameraMenuText.Source,1 do
+	menuLine="Camera/"..CameraMenuText.Source[i]
+	CameraMenu:add(menuLine);
+	table.insert(CameraMenuIndex,menuLine)
+	end
+CameraMenu:add("");
+table.insert(CameraMenuIndex,"")
+CameraMenu:redraw()
+end 
+
+function fillCameraControlMenu()
+if CameraBrowser == nil then return end;
+for  i=1,\#CameraMenuText.Control,1 do
+	menuLine="Current/"..CameraMenuText.Control[i]
+	CameraMenu:add(menuLine);
+	table.insert(CameraMenuIndex,menuLine)
+	end
+CameraMenu:add("");
+table.insert(CameraMenuIndex,"")
+CameraMenu:add("");
+table.insert(CameraMenuIndex,"")
+--All
+for  i=1,\#CameraMenuText.Control,1 do
+	menuLine="All/"..CameraMenuText.Control[i]
+	CameraMenu:add(menuLine);
+	table.insert(CameraMenuIndex,menuLine)
+	end
+
+
+
+CameraMenu:redraw()
+end
+
+
+function CameraCurrentPick(tPick)
+
+		if tPick == "Clear" then
+	
+		render()
+		end
+		
+		if tPick == "Run" then		
+		
+		render()
+		end
+		
+		if tPick == "Stop" then		
+	 
+		render()
+		end
+end
+
+
+function CameraBrowsersMenuPick(tPick)
+if CameraBrowser == nil then return end;
+CurCameraInfo()	
+if tPick == "Save" then 
+PickedCameraAttribute(2)
+CameraInputGroup:hide()
+CameraourceGroup:hide()
+CameraValueGroup:hide()
+CameraTextureGroup:hide()
+CameraaveAsGroup:show()
+end
+
+if tPick == "Make" then
+wtfFileBrowser:label(tPick)
+gSourceRequest = tPick
+PickedCameraAttribute(1)
+ValueListBrowser:clear()
+CameraInputGroup:hide()
+CameraourceGroup:show()
+CameraValueGroup:hide()
+CameraTextureGroup:hide()
+CameraaveAsGroup:hide()
+CameraourceList()
+CameraBrowserWindowUpdate("SourceList") --
+end		
+if tPick == "Duplicate" then MakeCamera() end;
+
+end
+
+
+
+
+function Camera_menu_callback(w)
+if CameraBrowser == nil then return end;
+tMenu = w:label()
+tVal = w:value()
+tPick = w:text()
+tIndex = CameraMenuIndex[tVal]
+tIndex1 = CameraMenuIndex[tVal-1]
+tIndex2 = CameraMenuIndex[tVal+1]
+
+	if tIndex ~=nil  then 
+	CameramenuHead=item(1,tIndex,"/")
+
+ 		if CameramenuHead == "Camera" then CameraBrowsersMenuPick(tPick) end;
+ 		if CameramenuHead == "Current" then CameraCurrentPick(tPick) end;
+ 		if CameramenuHead == "All" 	then  CameraAllMenuPick(tPick) end;
+ 		
+ 	 end 
+ 	 if tIndex1 == "All/Clear" then CameraAllMenuPick("Clear") end
+ 	 if tIndex1 == "Current/Clear" then CameraCurrentPick("Clear") end
+  Fl:check();
+   io.flush();
+end
+
+function Camera_MenuBarFill()
+if CameraBrowser == nil then return end;
+fillCameraSourceMenu()
+fillCameraControlMenu()
+end} {}
+  code {-- CameraListBrowserCallback
+function CameraListBrowserCallback(w)
+if CameraBrowser == nil then return end;
+n = w:value()
+CameraBrowserValueCatch()
+resetCameraTables()
+gObjName = gCameraNames[w:value()]
+
+ig3d_SetSelection_s(gObjName)
+gSelectedCamera = gObjName
+CurCameraInfo()	
+gCameraNum = w:value()	
+camera_faceObj(gCameraNum)
+if gCameraToolTipPicked == "translate" then PickedCameraAttribute(CameraFieldValues[2]) end
+if gCameraToolTipPicked == "materials" then updateMaterialsTables() end
+render()			
+end} {}
+  code {-- CameraToolPick
+function CameraToolPick(gCameraToolTipPicked)
+CameraBrowserValueCatch()
+CameraBrowserGroupsHide()
+if gCameraToolTipPicked == "bones" then CameraBonesGroup:show()
+elseif gCameraToolTipPicked == "materials" then CameraMaterialsGroup:show()
+elseif gCameraToolTipPicked == "source" then listWTFFiles () 
+elseif gCameraToolTipPicked == "translate" then CameraValueGroup:show()
+end
+
+
+fltk_update()
+end} {}
+  code {-- cameraToolBtnCallback
+function cameraToolBtnCallback(w)
+gCameraToolTipPicked = w:tooltip()
+
+CameraToolPick(gCameraToolTipPicked)
+
+end} {}
+  code {-- CamerawtfAddCameraClicked
+function CamerawtfAddCameraClicked(w)
+	if wtfFileBrowser:value()==0 then return end
+	local theFile=gCameraBrowserFiles[tonumber(wtfFileBrowser:value())]
+	if theFile[2]=="directory" then return end
+	
+	local c=\#(gameroot.."Data/WTF/")+1
+	local newObj={}
+	table.insert(gCameras, newObj)
+	local n=\#gCameras
+	gDropCamera = string.sub(gCameraBrowserPath..theFile[1],c,-1)
+	gCameras[n].cObj=make(ig3d_camera, gDropCamera)
+	updateCameraListBrowser()
+	
+end} {}
+} 

@@ -1,0 +1,1170 @@
+# data file for the Fltk User Interface Designer (fluid)
+version 1.0108 
+header_name {.h} 
+code_name {.cxx}
+Function {make_window()} {open selected
+} {
+  code {if gameroot==nil then dofile(getSceneInfo(IG3D_ROOT).."Data/game script.lua") end} {}
+  code {-- MESH Editing FUNCTIONS 
+-- Match file /Data/Scripts/Functions/mesh_editor_functions.lua
+
+function meshBonesClicked(w)
+if w:value() ~= 0 then
+	ig3d_SelectMeshBone_s(removeSpaces(w:text(w:value())))
+	end
+	
+end
+-- selectBoneMesh
+function selectBoneMesh(w)
+	ig3d_SelectMeshAttachedToBone_s(removeSpaces(meshBones:text(meshBones:value())))
+end
+-- boneattacher
+function boneattacher(w)
+	ig3d_AttachVertexToBone_s(removeSpaces(meshBones:text(meshBones:value())))
+end
+-- alignIt
+function alignIt(w)
+	ig3d_SetMeshAlignmentSize_f(alignSize:value())
+	ig3d_AlignMesh()
+end
+-- backfaceControlClicked
+function backfaceControlClicked(w)
+	if w:value()==1 then ig3d_SetBackfaceCulling_b(true) else ig3d_SetBackfaceCulling_b(false) end
+end
+-- DoMagic
+function DoMagic(w)
+
+	if magicCyl:value()==1 then
+		ig3d_MagicCatch_fb(magicValue:value(),true)
+	else
+		ig3d_MagicCatch_fb(magicValue:value(),false)
+	end
+	
+end
+-- duplicateButtonClicked
+function duplicateButtonClicked(w)
+	ig3d_DuplicateMesh()
+end
+-- hideSelectionClicked
+function hideSelectionClicked(w)
+	ig3d_MakeInvisible()
+end
+-- invertSelectionClicked
+function invertSelectionClicked(w)
+	ig3d_InvertMeshSelection()
+end
+-- selectAllClicked
+function selectAllClicked(w)
+	ig3d_SelectWholeMesh()
+end
+-- showAllClicked
+function showAllClicked(w)
+	ig3d_ShowAll()
+end
+-- selectConnectedClicked
+function selectConnectedClicked(w)
+	ig3d_SelectConnectedMesh()
+end
+-- subdivideClicked
+function subdivideClicked(w)
+	ig3d_SubdivideMesh()
+end
+-- extrudeButtonClicked
+function extrudeButtonClicked(w)
+	ig3d_ExtrudeSelectedMesh_fb(extrudeDepth:value(), true)
+end
+-- zbufferControlClicked
+function zbufferControlClicked(w)
+	if w:value()==1 then ig3d_SetMeshZBuffering_b(true) else ig3d_SetMeshZBuffering_b(false) end
+end
+-- handlePositionValueFields
+function handlePositionValueFields(w)
+	--tell igame3d that the input field has the focus
+	ig3d_TellFocus_b(true)
+	if Fl:event_key() ~= fltk.FL_Enter and Fl:event_key() ~= fltk.FL_KP_Enter then return end
+	ig3d_SetMeshPosition_3f(xpos:value(), ypos:value(), zpos:value() )
+end
+-- handleScaleValueFields
+function handleScaleValueFields(w)
+	--tell igame3d that the input field has the focus
+	ig3d_TellFocus_b(true)
+	if Fl:event_key() ~= fltk.FL_Enter and Fl:event_key() ~= fltk.FL_KP_Enter then return end
+	ig3d_ScaleSelectedMesh_3f(xsize:value(), ysize:value(), zsize:value() )
+end
+-- handleGetButton
+function handleGetButton(w)
+	local x,y,z=ig3d_GetMeshCentroid__3f()
+	xpos:value(x)
+	ypos:value(y)
+	zpos:value(z)
+end
+-- handleGetSizeButton
+function handleGetSizeButton(w)
+	local x,y,z=meshHWD()
+	xsize:value(x)
+	ysize:value(y)
+	zsize:value(z)
+end
+-- handleExtrudeValueField
+function handleExtrudeValueField(w)
+	--tell igame3d that the input field has the focus
+	ig3d_TellFocus_b(true)
+	if Fl:event_key() ~= fltk.FL_Enter and Fl:event_key() ~= fltk.FL_KP_Enter then return end
+	extrudeButtonClicked(w)
+end
+-- handlelinewidth
+function handlelinewidth(w)
+ig3d_SetLineWidth_f(w:value()) 
+end
+-- handlepointwidth
+function handlepointwidth(w)
+ig3d_SetPointSize_f(w:value()) 
+
+end
+-- recursiveBonePrint
+function recursiveBonePrint(b)	
+	local str=""
+	for i=1,bdepth,1 do
+		str=str.."	"
+	end
+	meshBones:add(str..b.name)
+	
+	
+	
+	bdepth=bdepth+1
+	for i=1,\#b.subs,1 do
+		recursiveBonePrint(b.subs[i])
+	end
+	bdepth=bdepth-1
+end
+-- selBoneInListFromName
+function selBoneInListFromName(name)
+	for i=1,\#bonelist,1 do
+		local a=removeSpaces(meshBones:text(i))
+		if a == name then
+			meshBones:value(i)
+		end
+	end
+end
+-- listBones
+function listBones()
+	-- turns the returned bone list into a tree structure and displays that in the bone list field
+	-- using recursion
+	local bl=ig3d_GetMeshBonesList__s()
+	
+	bonelist={}
+	
+	for w in string.gmatch(bl, "[^\\n]+") do
+		local spaceoffset=string.find(w, " ")
+		local nam=string.sub(w, 1, spaceoffset-1)
+		local num=string.sub(w, spaceoffset+1, -1)
+		
+		it={name=nam, numb=num, parent=nil, subs={} }
+		table.insert(bonelist, it)
+     	end
+     	
+     	
+     	for i=2,\#bonelist,1 do
+     		bonelist[i].parent=bonelist[ tonumber(bonelist[i].numb) ]
+     	end
+     	
+     	for i=1,\#bonelist,1 do
+     		for j=2,\#bonelist,1 do
+     			if bonelist[j].parent==bonelist[i] then
+     				table.insert(bonelist[i].subs, bonelist[j])
+     			end
+     		end
+     	end
+     	
+     	meshBones:clear()
+     	bdepth=0
+     	recursiveBonePrint(bonelist[1])
+     
+end
+--  bonemaker
+function bonemaker(w)
+	local bname=fltk.fl_input("Please enter a name for the bone and the name of the parent bone. Use comma as delimiter.", "NewBone,None")
+	if bname~=nil then
+		local commaoffset=string.find(bname, ",")
+		local newbone=string.sub(bname, 1, commaoffset-1)
+		local parentbone=string.sub(bname, commaoffset+1, -1)
+		
+		ig3d_MakeBoneFromVertex_2s(newbone, parentbone)
+		listBones()
+		--selBoneInListFromName(newbone)
+	end
+	
+end
+-- removeSpaces
+function removeSpaces(theWord)
+	local str=theWord..""
+	local offset
+	while true do
+		offset=string.find(str, "	")
+		
+		if offset==nil then offset=string.find(str, " ") end
+		
+		if offset ~= nil then
+			str=string.sub(str,1,offset-1)..string.sub(str,offset+1,-1)
+		else
+			break
+		end
+	end
+	return str
+
+end
+-- faceMeshIn
+function faceMeshIn()
+ig3d_MeshFaceAwayFromCamera()
+end
+--  faceMeshOut
+function faceMeshOut()
+ig3d_MeshFaceAwayFromCamera()
+ig3d_InvertMeshFaces() 
+end} {}
+  code {-----------------------------------------------
+-----------------------------------------------
+-----------------------------------------------
+-----------------------------------------------
+-----------------------------------------------
+-----------------------------------------------
+-----------------------------------------------
+-----------------------------------------------} {}
+  code {-- FILL THE Mesh MENU
+MeshMenuIndex={}
+
+MeshMenuText={}
+MeshMenuText.base={"Focus Mesh","Goto Points","Tag Vertices","Duplicate Vertices","Extrude","Combine Overlaps","Subdivide","Delete Vertices","Clear Mesh"}
+MeshMenuText.Select={"Select/All Vertices","Select/Connected","Select/Invert","Select/Connected to Bone","Select/Same Material","Select/Same Tag"}
+MeshMenuText.Face={"Face/In","Face/Out","Face/Invert"}
+MeshMenuText.View={"View/Hide","View/Hide All","View/Show All","View/Swap Hidden","View/Hide Faces","View/Show Faces","View/Invisible","View/Visible"}
+MeshMenuText.Mirror={"Mirror/x","Mirror/y","Mirror/z"}
+meshIndexCount=0
+
+
+function fillMeshbase(MeshMenuIndex)
+meshIndexCount = table.getn(MeshMenuIndex)
+local mstop=table.getn(MeshMenuText.base)
+local i = 0
+while(i ~= mstop) do	
+i=i+1
+print(i)
+menuLine="Mesh/"..MeshMenuText.base[i]
+meshMenu:add(menuLine);
+meshIndexCount = table.getn(MeshMenuIndex)+1
+MeshMenuIndex[meshIndexCount] = menuLine
+end
+MeshMenuIndex[meshIndexCount+1]=""
+end --fillMeshbase
+
+function fillMeshSelect(MeshMenuIndex)
+meshIndexCount = table.getn(MeshMenuIndex)+1
+MeshMenuIndex[meshIndexCount]="Select"
+local mstop = table.getn(MeshMenuText.Select)
+local i = 0
+while(i ~= mstop) do
+i=i+1
+menuLine=MeshMenuText.Select[i]
+meshMenu:add(menuLine);
+meshIndexCount = table.getn(MeshMenuIndex)+1
+MeshMenuIndex[meshIndexCount] = menuLine
+end
+MeshMenuIndex[meshIndexCount+1]=""
+end --fillMeshSelect
+
+
+function fillMeshFace(MeshMenuIndex)
+meshIndexCount = table.getn(MeshMenuIndex)+1
+MeshMenuIndex[meshIndexCount]="Face"
+local mstop=table.getn(MeshMenuText.Face)
+local i = 0
+while(i ~= mstop) do
+i=i+1
+menuLine=MeshMenuText.Face[i]
+meshMenu:add(menuLine);
+meshIndexCount = table.getn(MeshMenuIndex)+1
+MeshMenuIndex[meshIndexCount]=menuLine
+end
+MeshMenuIndex[meshIndexCount+1]=""
+end --fillMeshFace
+
+function fillMeshView(MeshMenuIndex)
+meshIndexCount = table.getn(MeshMenuIndex)+1
+MeshMenuIndex[meshIndexCount]="View"
+local mstop=table.getn(MeshMenuText.View)
+local i = 0
+while(i ~= mstop) do
+i=i+1
+menuLine=MeshMenuText.View[i]
+meshMenu:add(menuLine);
+
+
+meshIndexCount = table.getn(MeshMenuIndex)+1
+MeshMenuIndex[meshIndexCount]=menuLine
+end
+MeshMenuIndex[meshIndexCount+1]=""
+end --fillMeshView
+
+function fillMeshMirror(MeshMenuIndex)
+meshIndexCount = table.getn(MeshMenuIndex)+1
+MeshMenuIndex[meshIndexCount]="Mirror"
+local mstop=table.getn(MeshMenuText.Mirror)
+local i = 0
+while(i ~= mstop) do
+i=i+1
+menuLine=MeshMenuText.Mirror[i]
+meshMenu:add(menuLine);
+meshIndexCount = table.getn(MeshMenuIndex)+1
+MeshMenuIndex[meshIndexCount] = menuLine
+end
+
+end --fillMeshMirror
+
+function fill_MeshMenu()
+fillMeshbase(MeshMenuIndex)
+fillMeshSelect(MeshMenuIndex)
+fillMeshFace(MeshMenuIndex)
+fillMeshView(MeshMenuIndex)
+fillMeshMirror(MeshMenuIndex)
+end} {}
+  code {-- mesh menu Picks
+
+-- meshBasePick
+function meshBasePick(tIndex)
+if tPick == "Focus Mesh" then action = 1
+elseif tPick == "Goto Points" then action = 1
+elseif tPick == "Tag Vertices" then action = 1
+elseif tPick == "Duplicate Vertices" then ig3d_DuplicateMesh()
+elseif tPick == "Extrude" then ig3d_ExtrudeSelectedMesh_fb(extrudeDepth:value(), true)
+elseif tPick == "Combine Overlaps" then action = 1
+elseif tPick == "Subdivide" then ig3d_SubdivideMesh()
+elseif tPick == "Delete Vertices" then ig3d_DeleteMesh_b(false)
+elseif tPick == "Clear Mesh" then ig3d_DeleteMesh_b(true)
+end
+end
+-- meshSelectPick
+
+function meshSelectPick(tPick)
+if tPick == "All Vertices" then ig3d_SelectWholeMesh() 
+elseif tPick == "Connected" then  ig3d_SelectConnectedMesh()
+elseif tPick == "Invert" then ig3d_InvertMeshSelection()
+elseif tPick == "Connected to Bone" then ig3d_SelectMeshAttachedToBone_s(removeSpaces(meshBones:text(meshBones:value())))
+elseif tPick == "Same Material" then
+elseif tPick == "Same Tag" then
+
+end
+end
+-- meshFacePick
+function meshFacePick(tPick)
+
+if tPick == "In" then  faceMeshIn()
+elseif tPick == "Out" then faceMeshOut()
+elseif tPick == "Invert" then ig3d_InvertMeshFaces() 
+end
+
+end
+-- meshViewPick
+
+function meshViewPick(tPick)
+if tPick == "Hide" then ig3d_MakeInvisible()
+elseif tPick == "Hide All"  then ig3d_ShowAll()
+elseif tPick == "Show All"  then ig3d_ShowAll()
+elseif tPick == "Swap Hidden"  then ig3d_ShowAll()
+elseif tPick == "Hide Faces"  then ig3d_ShowAll()
+elseif tPick == "Show Faces"  then ig3d_ShowAll()
+elseif tPick == "Invisible"   then ig3d_ShowAll()
+elseif tPick == "Visible"  then ig3d_ShowAll()
+end
+
+end
+-- meshMirrorPick
+function meshMirrorPick(tIndex)
+if tIndex ==  "x"  then ig3d_MirrorSelectedMesh_3i(1,0,0) --MIRRORX
+elseif tIndex ==  "y" then ig3d_MirrorSelectedMesh_3i(0,1,0) --MIRRORYÊ
+elseif tIndex ==  "z" then ig3d_MirrorSelectedMesh_3i(0,0,1) --MIRRORZ
+end
+end} {}
+  code {-- mesh_menu_callback
+function mesh_menu_callback(w)
+tMenu = w:label()
+tVal = w:value()
+tPick = w:text()
+tIndex = MeshMenuIndex[tVal]
+tIndex1 = MeshMenuIndex[tVal-1]
+tIndex2 = MeshMenuIndex[tVal+1]
+print(tMenu,tVal,tPick,tIndex)
+if tIndex ~=nil then 
+meshmenuHead=item(1,tIndex,"/")
+--print(meshmenuHead,tPick)
+ if meshmenuHead == "Mesh" then meshBasePick(tPick) 
+ elseif meshmenuHead == "Select" then meshSelectPick(tPick) 
+ elseif meshmenuHead == "Face" then meshFacePick(tPick) 
+  elseif meshmenuHead == "View" then meshViewPick(tPick) 
+   elseif meshmenuHead == "Mirror" then meshMirrorPick(tPick) 
+ end
+ end 
+  Fl:check();
+   io.flush();
+end} {}
+  code {-- material-related callbacks and functions
+function listMaterials()
+	meshMaterials:clear()
+     	local lst=ig3d_GetMeshMaterialsList__s()
+	
+	for w in string.gmatch(lst, "[^\\n]+") do
+		meshMaterials:add(w)
+     	end
+     	
+     
+end
+---------------------
+function selectMaterialMesh()
+	local i=meshMaterials:value()
+	if i> 0 then
+		ig3d_SelectMeshOfMaterial_i(i)
+	end
+end
+---------------------
+function materialattacher()
+	local i=meshMaterials:value()
+	if i> 0 then
+		ig3d_SetMaterialForSelectedMesh_i(i)
+	end
+end
+---------------------
+function materialmaker()
+	local i=meshMaterials:value()
+	ig3d_TellFocus_b(true)
+	local mname=fltk.fl_input("Please enter a name for the new material", "NewMaterial")
+	if mname~=nil then
+		ig3d_CreateMaterial_s(mname)
+		listMaterials()
+		meshMaterials:value(i)
+	end
+end
+---------------------
+function renameMaterial()
+	local i=meshMaterials:value()
+	if i> 0 then
+		ig3d_TellFocus_b(true)
+		local mname=fltk.fl_input("Please enter a new name for the material", meshMaterials:text(i))
+		if mname~=nil then
+			ig3d_SetMeshMaterialName_is(i, mname)
+			listMaterials()
+			meshMaterials:value(i)
+		end
+	end
+end
+---------------------
+function clearMaterial()
+	local i=meshMaterials:value()
+	if i> 0 then
+		ig3d_DeleteMaterial_i(i)
+		listMaterials()
+	end
+end
+---------------------
+function setupmatsettingschooser()
+	matsetting:clear()
+	matsetting:add("COLOR")
+	matsetting:add("AMBIENT")
+	matsetting:add("DIFFUSE")
+	matsetting:add("SPECULAR")
+	matsetting:add("EMISSION")
+	matsetting:add("SHININESS")
+	matsetting:add("DEPTH")
+	matsetting:add("WIRE")
+	matsetting:add("SMOOTH")
+	matsetting:add("TRANSPARENT")
+	matsetting:add("LUX")
+	matsetting:add("SHADER")
+	matsetting:add("TEXTURE 1")
+	matsetting:add("TEXTURE 2")
+	matsetting:add("TEXTURE 3")
+	matsetting:add("TEXTURE 4")
+	matsetting:add("TEXTURE 5")
+	matsetting:add("TEXTURE 6")
+	matsetting:add("TEXTURE 7")
+	matsetting:add("TEXTURE 8")
+end
+---------------------
+function booleanToInt(b)
+	if b==true then return 1 else return 0 end
+end
+---------------------
+function intToBoolean(i)
+	if i==1 then return true else return false end
+end
+---------------------
+function matsettingChosen(w)
+
+	beep()
+	local i=w:value()
+	
+	matred:hide()
+	matgreen:hide()
+	matblue:hide()
+	matalpha:hide()
+	matpath:hide()
+	matbool:hide()
+	matred:label("R")
+	matbool:label("Smooth")
+	
+	if i>10 then
+		matpath:show()
+	else
+		if i>7 then
+			matbool:show()
+			if i==9 then
+				matbool:label("Transparent")
+			end
+			if i==10 then
+				matbool:label("Self-illuminating")
+			end
+		else
+			matred:show()
+			if i<5 then
+				matgreen:show()
+				matblue:show()
+				matalpha:show()
+			end
+			if i==5 then
+				matred:label("Shininess value")
+			end
+			if i==6 then
+				matred:label("Depth value")
+			end
+			
+			if i==7 then
+				matred:label("Wire size")
+			end
+		end
+	end
+	
+	local j=meshMaterials:value()
+	if j<1 then return end
+	
+	local r=0
+	local g=0
+	local b=0
+	local a=0
+	local bl=false
+	local s=""
+	
+	local m=get(ig3d_material, -1, j)
+	if i==0 then r,g,b,a=getMaterialInfo(m, IG3D_COLOR)
+	elseif i == 1 then r,g,b,a=getMaterialInfo(m, IG3D_AMBIENT)
+	elseif i == 2 then r,g,b,a=getMaterialInfo(m, IG3D_DIFFUSE)
+	elseif i == 3 then r,g,b,a=getMaterialInfo(m, IG3D_SPECULAR)
+	elseif i == 4 then r,g,b,a=getMaterialInfo(m, IG3D_EMISSION)
+	elseif i == 5 then r=getMaterialInfo(m, IG3D_SHININESS)
+	elseif i == 6 then r=getMaterialInfo(m, IG3D_DEPTH)
+	elseif i == 7 then r=getMaterialInfo(m, IG3D_WIRE)
+	elseif i == 8 then bl=getMaterialInfo(m, IG3D_SMOOTH)
+	elseif i == 9 then bl=getMaterialInfo(m, IG3D_TRANSPARENT)
+	elseif i == 10 then bl=getMaterialInfo(m, IG3D_LUX)
+	elseif i == 11 then s=getMaterialInfo(m, IG3D_SHADER)
+	elseif i > 11 then s=getMaterialInfo(m, IG3D_TEXTURE, i-11)
+
+	end
+	
+	if s==nil then s="" end
+	matred:value(r)
+	matgreen:value(g)
+	matblue:value(b)
+	matalpha:value(a)
+	matbool:value(booleanToInt(bl))
+	matpath:value(s)
+	
+	--print(r,g,b,a,bl,s)
+end
+---------------------
+function matsettingChange(w)
+	ig3d_TellFocus_b(true)
+	if Fl:event_key() ~= fltk.FL_Enter and Fl:event_key() ~= fltk.FL_KP_Enter and w~= matbool then return end
+
+	local i=matsetting:value()
+	
+	local j=meshMaterials:value()
+	if j<1 then return end
+	
+	local r=matred:value()
+	local g=matgreen:value()
+	local b=matblue:value()
+	local a=matalpha:value()
+	local bl=intToBoolean(matbool:value())
+	local s=matpath:value()
+	
+	if s=="" then s=nil end
+	
+	local m=get(ig3d_material, -1, j)
+	if i==0 then setMaterialInfo(m, IG3D_COLOR, r,g,b,a)
+	elseif i == 1 then setMaterialInfo(m, IG3D_AMBIENT, r,g,b,a)
+	elseif i == 2 then setMaterialInfo(m, IG3D_DIFFUSE, r,g,b,a)
+	elseif i == 3 then setMaterialInfo(m, IG3D_SPECULAR, r,g,b,a)
+	elseif i == 4 then setMaterialInfo(m, IG3D_EMISSION, r,g,b,a)
+	elseif i == 5 then setMaterialInfo(m, IG3D_SHININESS,r)
+	elseif i == 6 then setMaterialInfo(m, IG3D_DEPTH,r)
+	elseif i == 7 then setMaterialInfo(m, IG3D_WIRE,r)
+	elseif i == 8 then ig3d_MakeMeshSmoothShaded_b(bl);setMaterialInfo(m, IG3D_SMOOTH, bl);
+	elseif i == 9 then setMaterialInfo(m, IG3D_TRANSPARENT, bl)
+	elseif i == 10 then setMaterialInfo(m, IG3D_LUX, bl)
+	elseif i == 11 then setMaterialInfo(m, IG3D_SHADER, s)
+	elseif i > 11 then setMaterialInfo(m, IG3D_TEXTURE, i-11, s)
+
+	end
+	
+	
+end
+---------------------
+function meshMaterialsClicked()
+	matsettingChosen(matsetting)
+end
+---------------------} {}
+  code {-- UV-related callbacks and functions
+function getMapAxisFromControls()
+	local i=uvmapaxis:value()
+	if i==0 then return false,0,0,0 end
+	if i==1 then return true,1,0,0 end
+	if i==2 then return true,0,1,0 end
+	return true,0,0,1
+end
+------------------
+
+function uvmatcher()
+	local b,dx,dy,dz=getMapAxisFromControls()
+	local u,v=ig3d_GetMatchingUVSizesForMesh_fb3f_2f(uvrot:value(), b, dx,dy,dz)
+	uvwidth:value(u)
+	uvheight:value(v)
+end
+------------------
+
+function applyuvmapping()
+	ig3d_GenerateAndApplyMeshUVMapping_5fb3f(uvwidth:value(), uvheight:value(), 0,0, uvrot:value(), getMapAxisFromControls())
+end
+------------------
+function scaleuvmapping()
+	ig3d_ScaleUVMapping_2f(uvscaleu:value(), uvscalev:value())
+end
+------------------
+function offsetuvmapping()
+	ig3d_OffsetUVMapping_2f(uvoffu:value(), uvoffv:value())
+end
+------------------} {}
+  code {-- hideAllGroups
+function hideAllGroups()
+local ax = 10
+local ay = 65
+
+
+bonesgroup:x(ax)
+uvmappinggroup:x(ax)
+materialsgroup:x(ax)
+magicgroup:x(ax)
+meshviewgroup:x(ax)
+
+bonesgroup:y(ay)
+uvmappinggroup:y(ay)
+materialsgroup:y(ay)
+magicgroup:y(ay)
+Translate:y(ay)
+meshviewgroup:y(ay)
+
+bonesgroup:hide()
+uvmappinggroup:hide()
+materialsgroup:hide()
+magicgroup:hide()
+
+
+end} {}
+  code {-- setMeshTool
+function setMeshTool(w)
+hideAllGroups()
+Translate:show()
+local t = w:label() 
+if t == nil then t = "Materials" end
+
+print(t)
+gEditingMode = t
+if t == "meshtoolBones" then bonesgroup:show()
+elseif t == "UV" then uvmappinggroup:show()
+elseif t == "Materials" then materialsgroup:show()
+elseif t == "Magic" then magicgroup:show()
+end
+
+if t == "meshtool1" then ig3d_SetMeshTool_i(1)
+elseif t == "meshtool2" then ig3d_SetMeshTool_i(2)
+elseif t == "meshtool3" then ig3d_SetMeshTool_i(3)
+elseif t == "meshtool4" then ig3d_SetMeshTool_i(4)
+elseif t == "meshtool5" then ig3d_SetMeshTool_i(5)
+elseif t == "meshtool6" then ig3d_SetMeshTool_i(6)
+elseif t == "meshtoolPath" then ig3d_SetMeshTool_i(99)
+end
+
+
+end} {}
+  Fl_Window mesheditor {
+    label {Mesh Editor}
+    callback wClose
+    xywh {97 187 385 435} type Double labelsize 10 resizable visible
+  } {
+    Fl_Menu_Bar meshMenu {
+      callback mesh_menu_callback
+      xywh {0 -4 425 29} labelsize 10 textsize 11
+    } {}
+    Fl_Group rootgroup {
+      xywh {5 60 375 370} box FLAT_BOX labelsize 11
+    } {}
+    Fl_Group Translate {
+      xywh {10 65 360 115} box DOWN_BOX
+    } {
+      Fl_Input xpos {
+        label x
+        callback handlePositionValueFields
+        xywh {35 75 60 22} type Float labelsize 10 align 1 textsize 10
+      }
+      Fl_Input ypos {
+        label y
+        callback handlePositionValueFields
+        xywh {95 75 60 22} type Float labelsize 10 align 1 textsize 10
+      }
+      Fl_Input zpos {
+        label z
+        callback handlePositionValueFields
+        xywh {155 75 60 22} type Float labelsize 10 align 1 textsize 10
+      }
+      Fl_Button {} {
+        label Get
+        callback handleGetButton
+        xywh {13 76 20 21} labelsize 9
+      }
+      Fl_Input xsize {
+        label {x-size}
+        callback handleScaleValueFields
+        xywh {35 108 60 19} type Float labelsize 10 align 1 textsize 10
+      }
+      Fl_Input ysize {
+        label {y-size}
+        callback handleScaleValueFields
+        xywh {95 108 60 19} type Float labelsize 10 align 1 textsize 10
+      }
+      Fl_Input zsize {
+        label {z-size}
+        callback handleScaleValueFields
+        xywh {155 108 60 19} type Float labelsize 10 align 1 textsize 10
+      }
+      Fl_Group MeshAlign {
+        label {Alignment Size}
+        xywh {93 151 277 26} labelsize 10 align 4
+      } {
+        Fl_Button {} {
+          label Align
+          callback alignIt
+          xywh {164 152 50 21} labelsize 10
+        }
+        Fl_Value_Input alignSize {
+          xywh {95 153 60 19} labelsize 9 maximum 32 step 0.1 value 4 textsize 10
+        }
+      }
+      Fl_Group extrudegroup {
+        xywh {18 129 203 19}
+      } {
+        Fl_Button {} {
+          label Extrude
+          callback extrudeButtonClicked
+          xywh {164 129 50 19} labelsize 10
+        }
+        Fl_Value_Input extrudeDepth {
+          callback handleExtrudeValueField
+          xywh {95 129 60 19} labelsize 10 minimum 0.1 maximum 100 step 0.5 value 1 textsize 10
+        }
+      }
+      Fl_Button getsizebutton {
+        label Get
+        callback handleGetSizeButton
+        xywh {13 107 20 21} labelsize 9
+      }
+    }
+    Fl_Group magicgroup {
+      xywh {-13 184 383 21} box FLAT_BOX color 51
+    } {
+      Fl_Button {} {
+        label Magic
+        callback DoMagic
+        xywh {165 184 49 19} labelsize 10
+      }
+      Fl_Value_Input magicValue {
+        xywh {91 184 60 17} labelsize 10 step 0.1 value 1 textsize 10
+      }
+      Fl_Check_Button magicCyl {
+        label Cylindric
+        xywh {9 184 61 17} down_box DOWN_BOX labelsize 10
+      }
+    }
+    Fl_Group bonesgroup {
+      label Bones
+      xywh {10 184 360 211} box FLAT_BOX labelsize 10 align 21
+    } {
+      Fl_Browser meshBones {
+        callback meshBonesClicked
+        xywh {15 200 135 158} type Hold labelsize 10 align 1 textsize 10
+      }
+      Fl_Group bonebuttonsgroup {
+        xywh {150 205 215 150} box DOWN_BOX
+      } {
+        Fl_Button verticetobone {
+          label {Make bone from selected vertex}
+          callback bonemaker
+          xywh {165 214 190 22} labelsize 10
+        }
+        Fl_Button attachmeshtobone {
+          label {Attach selected mesh to bone}
+          callback boneattacher
+          xywh {165 237 190 22} labelsize 10
+        }
+        Fl_Button updatebonelist {
+          label {Update list}
+          callback listBones
+          xywh {165 260 190 22} labelsize 10
+        }
+        Fl_Button selectbonemesh {
+          label {Select bone mesh}
+          callback selectBoneMesh
+          xywh {165 283 190 22} labelsize 10
+        }
+      }
+    }
+    Fl_Group uvmappinggroup {
+      label {UV Mapping}
+      xywh {9 184 361 163} box FLAT_BOX labelsize 10 align 21
+    } {
+      Fl_Value_Input uvwidth {
+        label Width
+        xywh {49 234 70 19} labelsize 10 maximum 10000 value 1
+      }
+      Fl_Value_Input uvheight {
+        label Height
+        xywh {174 234 65 19} labelsize 10 maximum 10000 value 1
+      }
+      Fl_Value_Input uvrot {
+        label Rotation
+        xywh {194 209 45 19} labelsize 10
+      }
+      Fl_Button {} {
+        label {Match selection once}
+        callback uvmatcher
+        xywh {14 209 125 19} labelsize 10
+      }
+      Fl_Button {} {
+        label {Apply UV mapping}
+        callback applyuvmapping
+        xywh {114 274 125 19} labelsize 10
+      }
+      Fl_Button {} {
+        label {Scale UV mapping}
+        callback scaleuvmapping
+        xywh {14 299 115 19} labelsize 10
+      }
+      Fl_Button {} {
+        label {Offset UV mapping}
+        callback offsetuvmapping
+        xywh {14 319 115 22} labelsize 10
+      }
+      Fl_Value_Input uvscaleu {
+        label {uv-factors}
+        xywh {179 299 30 19} labelsize 10 maximum 10000 value 1 textsize 10
+      }
+      Fl_Value_Input uvscalev {
+        xywh {209 299 30 19} labelsize 10 maximum 10000 value 1 textsize 10
+      }
+      Fl_Value_Input uvoffu {
+        label {uv-offsets}
+        xywh {179 319 30 22} labelsize 10 textsize 10
+      }
+      Fl_Value_Input uvoffv {
+        xywh {209 319 30 22} labelsize 10 textsize 10
+      }
+      Fl_Choice uvmapaxis {
+        label {Mapping axis} open
+        xywh {14 274 100 19} down_box BORDER_BOX labelsize 10 align 5 textsize 12
+        code0 {uvmapaxis:add("Adaptive")}
+        code1 {uvmapaxis:add("x-axis")}
+        code2 {uvmapaxis:add("y-axis");uvmapaxis:add("z-axis");}
+        code3 {uvmapaxis:value(0)}
+      } {}
+    }
+    Fl_Group materialsgroup {
+      label Materials
+      xywh {10 195 360 224} box FLAT_BOX labelsize 10 align 5 resizable
+    } {
+      Fl_Browser meshMaterials {
+        callback meshMaterialsClicked
+        xywh {15 199 185 156} type Hold labelsize 10 align 1 textsize 10
+      }
+      Fl_Button {} {
+        label {New Material...}
+        callback materialmaker
+        xywh {241 240 125 19} labelsize 10
+      }
+      Fl_Button {} {
+        label {Set Material To Mesh}
+        callback materialattacher
+        xywh {241 300 125 19} labelsize 10
+      }
+      Fl_Button {} {
+        label {Update list}
+        callback listMaterials
+        xywh {241 200 125 19} labelsize 10
+      }
+      Fl_Button {} {
+        label {Select material mesh}
+        callback selectMaterialMesh
+        xywh {241 220 125 19} labelsize 10
+      }
+      Fl_Button {} {
+        label {Rename Material...}
+        callback renameMaterial
+        xywh {241 260 125 19} labelsize 10
+      }
+      Fl_Button {} {
+        label {Clear material}
+        callback clearMaterial
+        xywh {241 280 125 19} labelsize 10
+      }
+      Fl_Choice matsetting {
+        label {Material settings}
+        callback matsettingChosen open
+        xywh {241 340 125 19} down_box BORDER_BOX labelsize 10 align 5 textsize 12
+        code0 {setupmatsettingschooser();}
+        code1 {matsetting:value(0);}
+      } {}
+      Fl_Value_Input matred {
+        label R
+        callback matsettingChange
+        xywh {17 373 55 23} labelsize 10 align 5 when 8 textsize 9
+      }
+      Fl_Value_Input matgreen {
+        label G
+        callback matsettingChange
+        xywh {72 373 55 23} labelsize 10 align 5 when 8 textsize 9
+      }
+      Fl_Value_Input matblue {
+        label B
+        callback matsettingChange
+        xywh {134 373 55 23} labelsize 10 align 5 when 8 textsize 9
+      }
+      Fl_Value_Input matalpha {
+        label A
+        callback matsettingChange
+        xywh {189 373 55 23} labelsize 10 align 5 when 8 textsize 9
+      }
+      Fl_Input matpath {
+        label Path
+        callback matsettingChange
+        xywh {17 373 350 23} labelsize 10 align 5 when 8
+        code0 {matpath:hide()}
+      }
+      Fl_Check_Button matbool {
+        label Smooth
+        callback matsettingChange
+        xywh {285 396 75 19} down_box DOWN_BOX labelsize 10
+        code0 {matbool:hide()}
+      }
+    }
+    Fl_Group mainttoolsgroup {open
+      xywh {0 29 416 31}
+    } {
+      Fl_Button meshtooldropmesh {
+        label meshtooldropMesh
+        callback setMeshTool
+        xywh {5 30 26 26} labelsize 1
+      }
+      Fl_Button meshtool1 {
+        label meshtool1
+        callback setMeshTool
+        xywh {33 30 26 26} labelsize 1
+      }
+      Fl_Button meshtool2 {
+        label meshtool2
+        callback setMeshTool
+        xywh {62 30 26 26} labelsize 1
+      }
+      Fl_Button meshtool3 {
+        label meshtool3
+        callback setMeshTool
+        xywh {90 30 26 26} labelsize 1
+      }
+      Fl_Button meshtool4 {
+        label meshtool4
+        callback setMeshTool
+        xywh {119 30 26 26} labelsize 1
+      }
+      Fl_Button meshtool5 {
+        label meshtool5
+        callback setMeshTool
+        xywh {148 30 26 26} labelsize 1
+      }
+      Fl_Button meshtoolbones {
+        label meshtoolBones
+        callback setMeshTool
+        xywh {176 30 26 26} labelsize 1
+      }
+      Fl_Button uvgrouptab {
+        label UV
+        callback setMeshTool
+        xywh {205 30 26 26} labelsize 11
+      }
+      Fl_Button meshtoolmaterials {
+        label Materials
+        callback setMeshTool
+        xywh {234 30 26 26} labelsize 2
+      }
+      Fl_Button meshtoolmagic {
+        label Magic
+        callback setMeshTool
+        xywh {262 30 26 26} labelsize 2
+      }
+      Fl_Button meshtoolpath {
+        label meshtoolPath
+        callback setMeshTool
+        xywh {291 30 26 26} labelsize 1
+      }
+      Fl_Button meshtool6 {
+        label meshtool6
+        callback setMeshTool
+        xywh {320 30 26 26} labelsize 1
+      }
+    }
+    Fl_Group meshviewgroup {
+      label meshviewgroup
+      xywh {220 74 145 97} box FLAT_BOX color 51 labeltype NO_LABEL align 0
+    } {
+      Fl_Check_Button {} {
+        label {Mesh Z-buffering}
+        callback zbufferControlClicked
+        xywh {230 75 105 19} down_box DOWN_BOX labelsize 10
+      }
+      Fl_Check_Button {} {
+        label {Backface Culling}
+        callback backfaceControlClicked
+        xywh {230 94 100 16} down_box DOWN_BOX labelsize 10
+      }
+      Fl_Value_Input meshlinewidth {
+        label {Line Width}
+        callback handlelinewidth
+        xywh {235 116 40 19} labelsize 9 align 8 maximum 8 step 0.5 value 1 textsize 10
+      }
+      Fl_Value_Input meshpointwidth {
+        label {Point Width}
+        callback handlepointwidth
+        xywh {235 136 40 18} labelsize 9 align 8 maximum 8 step 0.5 value 1 textsize 10
+      }
+    }
+  }
+  code {--- HANDLE CALL BACKS
+extrudeDepth:when(11)	--enter key and changed
+xpos:when(11)	--enter key and changed
+ypos:when(11)
+zpos:when(11)
+xsize:when(11)	--enter key and changed
+ysize:when(11)
+zsize:when(11)
+uvwidth:when(11)
+uvheight:when(11)
+uvrot:when(11)
+uvscaleu:when(11)
+uvscalev:when(11)
+uvoffu:when(11)
+uvoffv:when(11)
+matred:when(11)
+matblue:when(11)
+matblue:when(11)
+matalpha:when(11)
+matpath:when(11)} {}
+  code {---- BUTTON ICONS 
+fltk.fl_register_images()
+local iconPath=gameroot.."Data/Icons/ig3dSetMeshTool/ig3dSetMeshTool"
+mtl1 = Fl_Shared_Image.get(iconPath.."1.png")
+mtl2 = Fl_Shared_Image.get(iconPath.."2.png")
+mtl3 = Fl_Shared_Image.get(iconPath.."3.png")
+mtl4 = Fl_Shared_Image.get(iconPath.."4.png")
+mtl5 = Fl_Shared_Image.get(iconPath.."5.png")
+mtl6 = Fl_Shared_Image.get(iconPath.."6.png")
+mtlp = Fl_Shared_Image.get(iconPath.."Path.png")
+mtld = Fl_Shared_Image.get(iconPath.."dropMesh.png")
+mtlb = Fl_Shared_Image.get(iconPath.."Bones.png")
+mtlm  = Fl_Shared_Image.get(iconPath.."Materials.png")
+mtlma  = Fl_Shared_Image.get(iconPath.."Magic.png")
+--mtlv  = Fl_Shared_Image.get(iconPath.."Views.png")
+
+meshtool1:image(mtl1)
+meshtool2:image(mtl2)
+meshtool3:image(mtl3)
+meshtool4:image(mtl4)
+meshtool5:image(mtl5)
+meshtool5:image(mtl6)
+meshtoolpath:image(mtlp)
+meshtooldropmesh:image(mtld)
+meshtoolbones:image(mtlb)
+meshtoolmaterials:image(mtlm)
+meshtoolmagic:image(mtlma)
+--meshtoolviews:image(mtlv)
+
+meshtool1:image(mtl1,22,22)
+meshtool2:image(mtl2,22,22)
+meshtool3:image(mtl3,22,22)
+meshtool4:image(mtl4,22,22)
+meshtool5:image(mtl5,22,22)
+meshtool6:image(mtl6,22,22)
+meshtoolpath:image(mtlp,22,22)
+meshtooldropmesh:image(mtld,22,22)
+meshtoolbones:image(mtlb,22,22)
+meshtoolmaterials:image(mtlm,22,22)
+meshtoolmagic:image(mtlma,22,22)
+--meshtoolviews:image(mtlv,22,22)
+
+meshtool1:redraw()
+meshtool2:redraw()
+meshtool3:redraw()
+meshtool4:redraw()
+meshtool5:redraw()
+meshtool6:redraw()
+meshtoolpath:redraw()
+meshtooldropmesh:redraw()
+meshtoolbones:redraw()
+meshtoolmaterials:redraw()
+meshtoolmagic:redraw()
+--meshtoolviews:redraw()
+
+meshtool1:when(11)
+meshtool2:when(11)
+meshtool3:when(11)
+meshtool4:when(11)
+meshtool5:when(11)
+meshtool6:when(11)
+meshtoolpath:when(11)
+meshtooldropmesh:when(11)
+meshtoolbones:when(11)
+meshtoolmaterials:when(11)
+meshtoolmagic:when(11)
+--meshtoolviews:when(11)} {}
+  code {-- FINAL STEP
+setSceneInfo(IG3D_BACKGROUND_COLOR, 0.65,0.65,0.65)
+ig3d_SetFourViews_b(true)
+ig3d_SetMode_i(1)
+
+fill_MeshMenu()
+if not UIMainTools then OPEN_UI_WINDOWS("UI_MAIN_TOOLS") end
+mH= UIMainTools:x()+UIMainTools:h()+30
+mY= UIMainTools:y()
+
+mesheditor:x(mH);
+mesheditor:y(mY);
+
+hideAllGroups();
+mesheditor:show()
+
+Translate:show();
+Fl:scheme("plastic");
+mesheditor:make_current();} {}
+} 
