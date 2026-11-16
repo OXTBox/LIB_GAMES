@@ -1860,17 +1860,41 @@ function VT.DotMesh
    return tM
 end VT.DotMesh
 
--- looks for pRelPath in the folders above this stack, then in the WSL projects folder
+-- where a file is (install/LAYOUT.md 5.1): this script's own folder first
+-- (LIB_GAMES/Vibecode3D_Games/X/... is <script folder>/X/...), then Vibecode3D Common beside
+-- it, then the folders above this stack, and last the owner's projects through WSL (his PC
+-- only; the global bNoWSL, a test hook, turns that last one off)
 function VT.FindFile pRelPath
-   local tPath, tTry
-   put the effective filename of this stack into tPath
+   local tPath, tTry, tShort, tDir, tErr
+   global bNoWSL
+   put pRelPath into tShort
+   if tShort begins with "LIB_GAMES/Vibecode3D_Games/" then delete char 1 to 27 of tShort
    set the itemDel to "/"
+   -- the script's file, as the launcher or the game player set it on the stack
+   put empty into tDir
+   try
+      put the uScriptFile of (the long owner of me) into tDir
+   catch tErr
+      put empty into tDir
+   end try
+   replace "\" with "/" in tDir
+   if tDir contains "/" then
+      delete item -1 of tDir
+      put tDir & "/" & tShort into tTry
+      if there is a file tTry then return tTry
+      put item 1 to -2 of tDir & "/Vibecode3D Common/" into tTry
+      if there is a file (tTry & pRelPath) then return tTry & pRelPath
+      if there is a file (tTry & tShort) then return tTry & tShort
+   end if
+   put the effective filename of this stack into tPath
+   replace "\" with "/" in tPath
    repeat 6 times
       delete item -1 of tPath
       if tPath is empty then exit repeat
       put tPath & "/" & pRelPath into tTry
       if there is a file tTry then return tTry
    end repeat
+   if bNoWSL is true then return empty
    put "//wsl$/Ubuntu/home/igame3d/projects/" & pRelPath into tTry
    if there is a file tTry then return tTry
    put "/home/igame3d/projects/" & pRelPath into tTry
