@@ -50,7 +50,7 @@ teaching and research; only what's needed ships. Generated stand-ins get plain n
 | | Work | First result |
 |---|---|---|
 | A | **Generators** seeded by name: buildings with window rules by kind (warehouse: big, above head height; shop: knee to above head; home: hip to above head, or smaller; military: well above head) and uDead's breakable doors and windows on every one; then dungeon parts (arches, columns, walls, arched bridges), furniture, street, foliage, vehicles, weapons, containers, a vector skybox | a building generator + a street of each kind |
-| B | **Aquarius**: AquaChar from LIB_BIT's Aquarius font (LIB_BIT inside the editor); the Aquarius level from its bitmap, 256 models from one file, timed | the speed test |
+| B | **Aquarius**: AquaChar from LIB_BIT's Aquarius font (LIB_BIT inside the editor); the Aquarius level from its bitmap, 256 models from one file, timed | **done 16 Nov** (below) |
 | C | **Stick-figure characters** with role names, replacing every WTF character reference | one glTF figure + the name map |
 | D | **Scripts as files**: the Lua functions the editor calls, as xTalk files with the same hooks | the list of hooks, then the first files |
 | E | **DeadDays**, a new game (third-person shooter), generated: a small city, police station, a park with an alien/ancient temple; zombies, a robot that hunts them; weapons found on the map. Police station door -> the station map; its upstairs office -> the park; the temple ends it: "To be continued" (it won best story) | its own branch in LIB_GAMES, a concept page first |
@@ -95,6 +95,22 @@ vibeapps\common\iGame3D Editor\
 - **Generated, not shipped, where possible:** a small generator (Python, in the branch) writes
   the template's meshes, emitter, level and clip from code, so most of the Data folder is
   rebuilt rather than stored.
+
+## B, done (16 Nov)
+
+- **One bitmap:** `Data/Text/Aquarius.pbm`, a plain PBM (128 x 128, 16 x 16 glyphs of 8 x 8,
+  16.7 KB, opens in any text editor or paint program), made by `tools/aquarius_bitmap.py` from
+  the bitmaps in your 2008 converter (`AquariusCharactersPMB.lua`). The same bitmap is built into
+  the editor script (`kAquaHex`, 4 KB) for when the file isn't there; edit the file and the
+  models change. It replaces 256 .wtf files (3.0 MB).
+- **LIB_BIT's Aquarius font agrees on 251 of 255 glyphs.** It lacks the descenders of g (103)
+  and j (106), and 138 and 148 differ by one pixel; the 2008 bitmaps are kept.
+- **In the editor:** Library > Text lists the 256 characters (click one: it stands in the middle,
+  bigger); the first line lays all 256 on the floor, one floor square each, as the 2008 aquatext
+  level did. Each model is the outline of its lit pixels, raised a little: a vector glyph.
+- **Speed** (test t33, the real engine from the V: install, headless, no screen): 256 models,
+  15,102 vertices, 23,655 lines; made in **304 ms**, placed in **32 ms**, the first frame drawn
+  in **395 ms**. On a screen the drawing time is what to watch.
 
 ## Steps
 
