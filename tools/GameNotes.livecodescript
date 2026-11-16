@@ -9,15 +9,19 @@ script "GameNotes"
 ## Commands (the note box is the in-game command line): a line starting with / is a command
 ##   /next  /back       the next / previous game card (alphabetical, wrapping), via Game.Select,
 ##                      so gCurrentGame follows    /play <name>   that game    /games   list them
-## Every note is one line appended to LIB_LLMIN/LIB_GAMES/GAME_NOTES.txt (the inbox, where
-## Claude reads it): date time | game card | level/state if the game says | the note.
+## Every note is a TELL for the AI (the owner, 15 Nov 2026: "it's the whole vibe"): its own file in
+## the player's Data folder, Data/Games/<Game>/LIB_LLM/tell_<YYYY-MM-DD_HHMMSS>.txt, so any player's
+## AI can read what they asked for. On the owner's PC it is also one line in the inbox,
+## LIB_LLMIN/LIB_GAMES/GAME_NOTES.txt: date time | game card | level/state if the game says | the note.
+## The Data folder: LIB_DATA's Data.Root() when loaded, else <AppData>/Vibecode3D/data_root.txt,
+## else Documents/Data (LIB_DATA's rule).
 ## Works for every game: install with
 ##   insert script of stack "GameNotes" into front     (LIB_TEST/install_all_games_vibecode3d.sh does it;
 ##   the xt3d games bench loads it itself when a game starts)
 ######################################################################################
 
 global bPaused, gCurrentGame
-local sOpen, sWasPaused, sCard, sSaid
+local sOpen, sWasPaused, sCard, sSaid, sTold, sTestRoot
 
 on rawKeyDown pKey
    if sOpen is true and pKey is 65471 then
@@ -84,7 +88,7 @@ on Notes.Open
    end if
    put Notes.Area() into tArea
    set the rect of field "GameNoteTip" of sCard to item 1 of tArea, item 2 of tArea, item 3 of tArea, item 2 of tArea + 20
-   set the text of field "GameNoteTip" of sCard to "NOTE ABOUT" && toUpper(Notes.Game()) & ":  type, Return saves, Escape cancels   /next /back /play name /games"
+   set the text of field "GameNoteTip" of sCard to "TELL THE AI ABOUT" && toUpper(Notes.Game()) & ":  type, Return saves, Escape cancels   /next /back /play name /games"
    set the rect of field "GameNote" of sCard to item 1 of tArea, item 2 of tArea + 22, item 3 of tArea, item 2 of tArea + 52
    put empty into field "GameNote" of sCard
    set the visible of field "GameNoteTip" of sCard to true
@@ -122,9 +126,14 @@ on Notes.Save
       put the system date && the long time & " | " & Notes.Game() into tLine
       if tState is not empty then put " | " & tState after tLine
       put " | " & tText after tLine
-      put Notes.File() into tFile
-      put tLine & cr after URL ("file:" & tFile)
-      put tFile into sSaid
+      put Notes.Tell(tText, tState) into sTold         -- the player's own Data folder, always
+      put Notes.File() into tFile                       -- the owner's inbox, when there is one
+      if tFile is not empty then
+         try
+            put tLine & cr after URL ("file:" & tFile)
+            put tFile into sSaid
+         end try
+      end if
    end if
    Notes.Close
 end Notes.Save
@@ -286,8 +295,125 @@ function Notes.File
          return tTry & "/GAME_NOTES.txt"
       end if
    end repeat
-   return "//wsl$/Ubuntu/home/igame3d/projects/LIB_LLMIN/LIB_GAMES/GAME_NOTES.txt"
+   if sTestRoot is not empty then return empty          -- tests never write the owner's inbox
+   if there is a folder "//wsl$/Ubuntu/home/igame3d/projects/LIB_LLMIN/LIB_GAMES" then
+      return "//wsl$/Ubuntu/home/igame3d/projects/LIB_LLMIN/LIB_GAMES/GAME_NOTES.txt"
+   end if
+   return empty                                         -- a player's PC: no inbox, the tell file is enough
 end Notes.File
+
+-------------------------------------------------------------------- tells
+
+-- write Data/Games/<Game>/LIB_LLM/tell_<YYYY-MM-DD_HHMMSS>.txt; returns its path (empty if it failed)
+function Notes.Tell pText, pState
+   local tDir, tFile, tN, tBody, tErr
+   put Notes.TellFolder(Notes.Game()) into tDir
+   if tDir is empty then return empty
+   put tDir & "/tell_" & Notes.Stamp() into tFile
+   put empty into tN
+   repeat while there is a file (tFile & tN & ".txt")      -- two in one second: _2, _3 ...
+      if tN is empty then
+         put "_2" into tN
+      else
+         put "_" & (char 2 to -1 of tN + 1) into tN
+      end if
+   end repeat
+   put tFile & tN & ".txt" into tFile
+   put "game" & tab & Notes.Game() & cr & "when" & tab & the system date && the long time & cr into tBody
+   if pState is not empty then put "state" & tab & pState & cr after tBody
+   put "tell" & tab & pText & cr after tBody
+   try
+      put textEncode(tBody, "UTF-8") into URL ("binfile:" & tFile)
+   catch tErr
+      return empty
+   end try
+   if the result is not empty then return empty
+   return tFile
+end Notes.Tell
+
+-- the game's LIB_LLM folder in the Data folder, made if missing
+function Notes.TellFolder pGame
+   local tRoot, tDir, tPart, tErr
+   put Notes.DataRoot() into tRoot
+   if tRoot is empty then return empty
+   put tRoot into tDir
+   try
+      repeat for each item tPart in "Games," & pGame & ",LIB_LLM"
+         put "/" & tPart after tDir
+         if there is not a folder tDir then create folder tDir
+      end repeat
+   catch tErr
+      return empty
+   end try
+   if there is not a folder tDir then return empty
+   return tDir
+end Notes.TellFolder
+
+-- LIB_DATA's rule: Data.Root() if that library is in use, else a data_root.txt in the install
+-- (up to five folders above this script: a portable install, or the simulated PC on V:), else
+-- the saved choice in <AppData>/Vibecode3D/data_root.txt, else Documents/Data
+function Notes.DataRoot
+   local tRoot, tFile, tErr
+   if sTestRoot is not empty then return sTestRoot
+   try
+      put value("Data.Root()") into tRoot
+   catch tErr
+      put empty into tRoot
+   end try
+   if tRoot is not empty and there is a folder tRoot then return tRoot
+   put Notes.InstallDataRoot() into tRoot              -- data_root.txt in the install (portable, or V:)
+   if tRoot is not empty then return tRoot
+   put specialFolderPath("support") & "/Vibecode3D/data_root.txt" into tFile
+   if there is a file tFile then
+      put line 1 of textDecode(URL ("binfile:" & tFile), "UTF-8") into tRoot
+      replace "\" with "/" in tRoot
+      if tRoot is not empty and there is a folder tRoot then return tRoot
+   end if
+   put specialFolderPath("documents") into tRoot
+   if tRoot is empty then return empty
+   replace "\" with "/" in tRoot
+   return tRoot & "/Data"
+end Notes.DataRoot
+
+function Notes.InstallDataRoot
+   local tPath, tRoot
+   put the effective filename of stack "GameNotes" into tPath
+   replace "\" with "/" in tPath
+   set the itemDel to "/"
+   repeat 5 times
+      delete item -1 of tPath
+      if tPath is empty then exit repeat
+      if there is a file (tPath & "/data_root.txt") then
+         put line 1 of textDecode(URL ("binfile:" & tPath & "/data_root.txt"), "UTF-8") into tRoot
+         replace "\" with "/" in tRoot
+         if tRoot is not empty and there is a folder tRoot then return tRoot
+      end if
+   end repeat
+   return empty
+end Notes.InstallDataRoot
+
+-- 2026-11-15_211503: sorts by time
+function Notes.Stamp
+   local tD
+   put the seconds into tD
+   convert tD to dateItems
+   return item 1 of tD & "-" & Notes.Two(item 2 of tD) & "-" & Notes.Two(item 3 of tD) & "_" & \
+         Notes.Two(item 4 of tD) & Notes.Two(item 5 of tD) & Notes.Two(item 6 of tD)
+end Notes.Stamp
+
+function Notes.Two pN
+   if pN < 10 then return "0" & pN
+   return pN
+end Notes.Two
+
+function Notes.LastTell
+   return sTold
+end Notes.LastTell
+
+-- tests: tells go under pFolder, and the owner's inbox is left alone
+command Notes.TestRoot pFolder
+   put pFolder into sTestRoot
+end Notes.TestRoot
 
 function Notes.LastFile
    return sSaid
