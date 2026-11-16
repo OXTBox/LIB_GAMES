@@ -10,6 +10,10 @@ stands where, with which model) and the level mesh (.wtf, text). The mesh is cut
 height and pressed flat into a 1-bit grid (1 = wall), the format LIB_BIT / LIB_MAP use, so
 the game builds walls with Map.BlockEdges and finds paths with Map.FindPath.
 Nothing is read but text; no images.
+
+Since 16 Nov 2026 its source (iGame3d_To_Recreate/iGame3D_uDeadGame2009-master) is removed from
+the projects (the owner, with LIB_SYSTEM/tools/remove_ig3d_assets.sh): udead_levels.txt is the
+master now; edit it directly. To run this again, put the 2009 source back where SRC points.
 """
 import argparse, math, os, re, sys
 
