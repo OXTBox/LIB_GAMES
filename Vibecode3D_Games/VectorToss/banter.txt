@@ -4,7 +4,7 @@
 # The HUD letters are A-Z 0-9 and : - + . ! / ? , '   Anything else is skipped.
 # PROMPT gets the job done no matter what: short, blunt, keeps score.
 # GLAZE barters, charms and influences: deals, flattery, never quite serious.
-# Events: start level catch_good catch_big catch_flat drop wild easy easy_caught rally swap idle
+# Events: start level crack fall hang catch_good catch_big catch_flat drop wild easy easy_caught rally swap idle
 #   catch_*, drop, wild, easy, easy_caught, swap: who = the hero it happened to.
 
 start	*	P Ball. Floor. Each other. Catch it before the floor does. | G You make everything sound like a chore list. | P It is a chore list.
@@ -62,3 +62,17 @@ level	*	G Is it me, or is the floor growing fences? | P Walls. Bounce it off the
 level	*	P The walls moved in. | G Closer every time. Like a party that won't end. | P Like a test.
 level	*	G Who keeps moving the furniture? | P Someone who wants us closer together. | G Sweet. Suspicious, but sweet.
 level	*	P Jump the wall if it drops short. | G In these shoes? | P You don't have shoes. | G Exactly my point.
+
+crack	*	G Did the floor just... open? | P Don't drop it, then. | G Thank you, that's very helpful.
+crack	*	P That's a hole. | G That's a hole with a view. | P Of nothing. | G Of nothing, beautifully lit.
+crack	*	G So the floor holds... until it doesn't. | P Told you. For now.
+
+hang	PROMPT	P Got the edge. | G Look at you, dangling heroically.
+hang	PROMPT	G Hold on! | P What do you think I'm doing?
+hang	GLAZE	G Still here! Still gorgeous! | P Climb, Glaze.
+hang	GLAZE	P You okay? | G Never better. Don't look down. I did. Don't.
+
+fall	PROMPT	G Prompt! ...Prompt? | P I'm back. Cost me three. | G Worth it for the scream.
+fall	PROMPT	P That one's on me. | G It's on the floor, technically. Well. Under it.
+fall	GLAZE	G Okay. That was a lot of down. | P You came back. | G I always come back. It's my best quality.
+fall	GLAZE	P Watch the holes! | G I watched one. Very closely. From the inside.

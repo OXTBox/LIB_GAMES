@@ -15,6 +15,11 @@
 ##           front of its hero, and closes in towards the centre level by level. A bounce
 ##           off the INSIDE of a wall +1, and from one wall's inside straight to the other's
 ##           +2 more. Heroes can't walk through a wall: SPACE jumps it, into the middle.
+## HAZARDS   (phase 3) from level 2 a dropped ball cracks the floor tile it hits; a second
+##           hit breaks it (from level 4 one hit does): a hole down into nothing. Step in
+##           and you fall. A HANG catches the edge and climbs you out (each hero starts
+##           with one, +1 every 10 points); with none, the fall costs 3 points and you come
+##           back at your spot. A ball that falls in is a drop. Each new level mends the floor.
 ## BANTER    the heroes talk: VectorToss/banter.txt (event, who, then "P line | G line").
 ## MOVES     Animations/VectorToss.anims.txt (throw, lob, catch), cut from LIB_MOCAP clips
 ##           with the editor's Window > Inspector > Animation page.
@@ -49,6 +54,8 @@ constant kRoofPower = 3.2     -- full power adds this much upward speed: off the
 constant kHeroGrav = 0.3      -- the heroes' jumps
 constant kJumpV = 4.6         -- a jump peaks about 35 high: the walls stay lower
 constant kLevelCatches = 10   -- catches a level
+constant kFallCost = 3        -- points a fall costs with no hang left
+constant kHangEvery = 10      -- a new hang every this many points
 constant kAIWait = 40         -- the companion holds the ball this many steps
 constant kCamUp = 230         -- camera height
 constant kCamBack = 170       -- behind the front bound
@@ -72,6 +79,7 @@ local sCharging, sPower, sAimX, sAimZ, sLandX, sLandZ, sShowLand, sTestAim, sTes
 local sLevel, sLevelCatches, sTosses   -- tosses finished this level: the instructions stay for two
 local sWallX, sWallH, sWallXTo, sWallHTo, sWall, sWallMesh   -- the walls: x of each (+/-), height
 local sGhostKey, sGhostAt
+local sTile, sTileKey   -- [col,row]: hits left (empty = whole, 0 = a hole); its crack / hole entity
 local sKeyWas, sTestKeys, sTestAuto
 local sRally, sBestRally, sPlayerDrops, sHoldUntil
 local sPlan          -- the companion's plan: [name][at|x|z]
@@ -268,6 +276,10 @@ on VT.NewMatch
    put empty into sGhostKey
    put Entity.Spawn("VT.Ball", 0, 0, -100000, "#8090FF") into sWall[-1]
    put Entity.Spawn("VT.Ball", 0, 0, -100000, "#8090FF") into sWall[1]
+   put empty into sTile
+   put empty into sTileKey
+   Mesh.Define "VT.Crack", VT.CrackMesh()
+   Mesh.Define "VT.Hole", VT.HoleMesh()
    put empty into sPlan
    put empty into sTalk
    put 0 into sLastTalk
@@ -346,6 +358,9 @@ on VT.Spawn pName, pColor, pSide, pIdle
    put 0 into sHero[pName]["speed"]
    put 0 into sHero[pName]["h"]
    put 0 into sHero[pName]["vh"]
+   put empty into sHero[pName]["state"]
+   put 1 into sHero[pName]["hangs"]
+   put kHangEvery into sHero[pName]["nextHang"]
    put 0 into sHero[pName]["score"]
    put 0 into sHero[pName]["catches"]
    put pColor into sHero[pName]["color"]
@@ -365,6 +380,10 @@ end VT.OwnerAt
 -- move a hero by dx,dz, kept inside its own half
 on VT.Move pName, pDX, pDZ
    local tX, tZ, tSide
+   if sHero[pName]["state"] is not empty then
+      put 0 into pDX
+      put 0 into pDZ
+   end if
    put sHero[pName]["side"] into tSide
    put sHero[pName]["x"] + pDX into tX
    put sHero[pName]["z"] + pDZ into tZ
@@ -456,7 +475,7 @@ on VT.Controls
 end VT.Controls
 
 on VT.Jump pName
-   if sHero[pName]["h"] > 0 then exit VT.Jump
+   if sHero[pName]["h"] is not 0 or sHero[pName]["state"] is not empty then exit VT.Jump
    put kJumpV into sHero[pName]["vh"]
    put 0.01 into sHero[pName]["h"]
    VT.Act pName, "jump"
@@ -592,7 +611,7 @@ on VT.Launch pName, pVel, pEasy
    put pName into sBall["thrower"]
    put empty into sBall["by"]
    put VT.HandX(pName) into sBall["x"]
-   put kHandH into sBall["h"]
+   put kHandH + sHero[pName]["h"] into sBall["h"]
    put sHero[pName]["z"] into sBall["z"]
    set the itemDel to comma
    put item 1 of pVel into sBall["vx"]
@@ -703,7 +722,7 @@ on VT.Advance @pB
       add 1 to pB["tops"]
       put "top" into pB["hit"]
    end if
-   if pB["h"] <= kBallR then
+   if pB["h"] <= kBallR and pB["h"] > kBallR - 12 and VT.Solid(pB["x"], pB["z"]) then
       put kBallR into pB["h"]
       if pB["vh"] < -kRollV then
          put -pB["vh"] * kBounce into pB["vh"]
@@ -730,7 +749,7 @@ on VT.BallStep
    if sBall["state"] is "held" then
       put sBall["by"] into tName
       put VT.HandX(tName) into sBall["x"]
-      put kHandH into sBall["h"]
+      put kHandH + sHero[tName]["h"] into sBall["h"]
       put sHero[tName]["z"] into sBall["z"]
    else
       VT.Advance sBall
@@ -746,7 +765,12 @@ on VT.BallStep
             VT.Say "wild", tOwner, 70
          else
             VT.Drop tOwner
+            VT.HitTile sBall["x"], sBall["z"]
          end if
+      end if
+      if sBall["h"] < -160 then
+         VT.BallLost
+         exit VT.BallStep
       end if
       if sBall["age"] > 3 then
          repeat for each item tName in "PROMPT,GLAZE"
@@ -799,6 +823,10 @@ on VT.Catch pName
    end if
    put VT.CatchPoints() into tP
    add tP to sHero[pName]["score"]
+   repeat while sHero[pName]["score"] >= sHero[pName]["nextHang"]
+      add 1 to sHero[pName]["hangs"]
+      add kHangEvery to sHero[pName]["nextHang"]
+   end repeat
    add 1 to sHero[pName]["catches"]
    add 1 to sTosses
    add 1 to sLevelCatches
@@ -870,6 +898,9 @@ on VT.Think pName
    end if
    if sPlan[pName]["x"] is a number then
       VT.MoveToward pName, sPlan[pName]["x"], sPlan[pName]["z"], tSpeed
+      if sHero[pName]["h"] is 0 and sHero[pName]["speed"] > 0.5 and not VT.Solid(sHero[pName]["x"] + sHero[pName]["mdx"] * 4, sHero[pName]["z"] + sHero[pName]["mdz"] * 4) then
+         VT.Jump pName
+      end if
       if sWallH > 1 and sHero[pName]["h"] is 0 and abs(abs(sHero[pName]["x"]) - sWallX) < kHeroR + 3 and \
             (abs(sPlan[pName]["x"]) - sWallX) * (abs(sHero[pName]["x"]) - sWallX) < 0 then
          VT.Jump pName
@@ -1112,15 +1143,8 @@ on VT.Animate pName
    end if
    put VT.TurnToward(sHero[pName]["yaw"], tWant, 0.25) into sHero[pName]["yaw"]
    VT.SetMesh tKey, "VT." & tClip & "." & max(1, trunc(sHero[pName]["frame"]))
-   -- jumps
-   if sHero[pName]["h"] > 0 then
-      subtract kHeroGrav from sHero[pName]["vh"]
-      add sHero[pName]["vh"] to sHero[pName]["h"]
-      if sHero[pName]["h"] <= 0 then
-         put 0 into sHero[pName]["h"]
-         put 0 into sHero[pName]["vh"]
-      end if
-   end if
+   VT.HeroFall pName
+   if sHero[pName]["state"] is "hang" and sClip["catch"]["frames"] >= 12 then VT.SetMesh tKey, "VT.catch.12"
    SetObjectPosition tKey, sHero[pName]["x"], -sHero[pName]["h"], sHero[pName]["z"]
    put VT.Euler(sHero[pName]["yaw"], 0) into tE
    SetObjectRotation tKey, item 1 of tE, item 2 of tE, item 3 of tE
@@ -1142,7 +1166,7 @@ end VT.TurnToward
 
 -------------------------------------------------------------------- banter
 -- VectorToss/banter.txt: event TAB who TAB "P line | G line | ..."; who is PROMPT, GLAZE
--- or * (either). P and G say who speaks each turn. Events: start level catch_good catch_big
+-- or * (either). P and G say who speaks each turn. Events: start level crack fall hang catch_good catch_big
 -- catch_flat drop wild easy easy_caught rally swap idle. The HUD letters: A-Z 0-9 and
 -- : - + . ! / ? , '  (anything else is skipped).
 
@@ -1173,7 +1197,7 @@ end VT.DefaultBanter
 -- time; a fresh exchange waits for the one already playing
 on VT.Say pEvent, pWho, pChance
    local tPick, tLine, n, tTurn, tList
-   if sTalk is not empty and pEvent is not "start" then exit VT.Say
+   if sTalk is not empty and pEvent is not among the items of "start,level,fall" then exit VT.Say
    if random(100) > pChance then exit VT.Say
    set the itemDel to tab
    repeat for each line tLine in sBanter[pEvent]
@@ -1283,6 +1307,7 @@ end VT.Sign
 
 -- level pLevel: where the walls stand and how tall (pSnap: at once, for tests)
 on VT.SetLevel pLevel, pSnap
+   VT.MendFloor
    put pLevel into sLevel
    put 0 into sLevelCatches
    put 0 into sTosses
@@ -1356,6 +1381,235 @@ on VT.TestLaunch pVX, pVH, pVZ
    VT.Launch sActive, pVX & comma & pVH & comma & pVZ, false
 end VT.TestLaunch
 
+-------------------------------------------------------------------- the floor breaks (phase 3)
+
+function VT.TileOf pX, pZ
+   return (trunc((pX + kHalfW) / kTile) + 1) & "," & (trunc((pZ + kHalfD) / kTile) + 1)
+end VT.TileOf
+
+-- is there floor under x,z?
+function VT.Solid pX, pZ
+   if abs(pX) >= kHalfW or abs(pZ) >= kHalfD then return true
+   return sTile[VT.TileOf(pX, pZ)] is not 0
+end VT.Solid
+
+-- a dropped ball hits the floor at x,z: from level 2 it cracks, then breaks
+on VT.HitTile pX, pZ
+   local tT, tLeft, tC, tR, tX, tZ
+   if sLevel < 2 then exit VT.HitTile
+   put VT.TileOf(pX, pZ) into tT
+   if sTile[tT] is 0 then exit VT.HitTile
+   put sTile[tT] into tLeft
+   if tLeft is empty then
+      if sLevel >= 4 then
+         put 1 into tLeft
+      else
+         put 2 into tLeft
+      end if
+   end if
+   subtract 1 from tLeft
+   put tLeft into sTile[tT]
+   set the itemDel to comma
+   put item 1 of tT into tC
+   put item 2 of tT into tR
+   put -kHalfW + (tC - 0.5) * kTile into tX
+   put -kHalfD + (tR - 0.5) * kTile into tZ
+   if sTileKey[tT] is not empty then Entity.Kill sTileKey[tT]
+   if tLeft is 0 then
+      put Entity.Spawn("VT.Hole", tX, 0, tZ, "#FF5030") into sTileKey[tT]
+      VT.Message "THE FLOOR BROKE"
+      VT.Say "crack", "*", 50
+   else
+      put Entity.Spawn("VT.Crack", tX, -1, tZ, "#C08030") into sTileKey[tT]
+   end if
+end VT.HitTile
+
+on VT.MendFloor
+   local tT
+   repeat for each key tT in sTileKey
+      if sTileKey[tT] is not empty then Entity.Kill sTileKey[tT]
+   end repeat
+   put empty into sTileKey
+   put empty into sTile
+end VT.MendFloor
+
+-- the ball fell through: a drop for whoever's half it fell in; they get it back
+on VT.BallLost
+   local tOwner
+   put VT.OwnerAt(sBall["x"]) into tOwner
+   if sBall["touched"] is empty then VT.Drop tOwner
+   VT.Message "THE PIT TOOK THE BALL"
+   VT.GiveBall tOwner
+end VT.BallLost
+
+-- jumps, falls into holes, hangs and climbing out
+on VT.HeroFall pName
+   local tSpot
+   switch sHero[pName]["state"]
+      case "hang"
+         subtract 1 from sHero[pName]["timer"]
+         if sHero[pName]["timer"] <= 0 then
+            -- climb out onto the nearest whole tile
+            put VT.SafeSpot(pName) into tSpot
+            put item 1 of tSpot into sHero[pName]["x"]
+            put item 2 of tSpot into sHero[pName]["z"]
+            put empty into sHero[pName]["state"]
+            put 0.01 into sHero[pName]["h"]
+            put 3 into sHero[pName]["vh"]
+            VT.Act pName, "jump"
+         end if
+         break
+      case "fall"
+         subtract kHeroGrav from sHero[pName]["vh"]
+         add sHero[pName]["vh"] to sHero[pName]["h"]
+         if sHero[pName]["h"] < -48 and sHero[pName]["hangs"] > 0 then
+            subtract 1 from sHero[pName]["hangs"]
+            put "hang" into sHero[pName]["state"]
+            put -56 into sHero[pName]["h"]
+            put 0 into sHero[pName]["vh"]
+            put round(1500 / sStepMS) into sHero[pName]["timer"]
+            put empty into sHero[pName]["act"]
+            VT.Message pName & " HANGS ON"
+            VT.Say "hang", pName, 80
+         else if sHero[pName]["h"] < -420 then
+            VT.Respawn pName
+         end if
+         break
+      default
+         if sHero[pName]["h"] is not 0 or sHero[pName]["vh"] is not 0 then
+            subtract kHeroGrav from sHero[pName]["vh"]
+            add sHero[pName]["vh"] to sHero[pName]["h"]
+            if sHero[pName]["h"] <= 0 then
+               if VT.Solid(sHero[pName]["x"], sHero[pName]["z"]) then
+                  put 0 into sHero[pName]["h"]
+                  put 0 into sHero[pName]["vh"]
+               else
+                  VT.StartFall pName
+               end if
+            end if
+         else if not VT.Solid(sHero[pName]["x"], sHero[pName]["z"]) then
+            VT.StartFall pName
+         end if
+   end switch
+end VT.HeroFall
+
+on VT.StartFall pName
+   put "fall" into sHero[pName]["state"]
+   put min(0, sHero[pName]["vh"]) into sHero[pName]["vh"]
+   put -0.01 into sHero[pName]["h"]
+   put 0 into sHero[pName]["speed"]
+end VT.StartFall
+
+-- out of hangs: the fall costs points, back at your spot
+on VT.Respawn pName
+   local tSpot
+   put max(0, sHero[pName]["score"] - kFallCost) into sHero[pName]["score"]
+   put sHero[pName]["side"] * kHalfW * 0.55 into sHero[pName]["x"]
+   put 0 into sHero[pName]["z"]
+   put VT.SafeSpot(pName) into tSpot
+   put item 1 of tSpot into sHero[pName]["x"]
+   put item 2 of tSpot into sHero[pName]["z"]
+   put empty into sHero[pName]["state"]
+   put 0 into sHero[pName]["h"]
+   put 0 into sHero[pName]["vh"]
+   VT.Message pName & " FELL   -" & kFallCost
+   VT.Say "fall", pName, 100
+end VT.Respawn
+
+-- the middle of the nearest whole tile on pName's half, behind its wall
+function VT.SafeSpot pName
+   local tC, tR, tX, tZ, tD, tBest, tBestD, tSide
+   put sHero[pName]["side"] into tSide
+   put 1e9 into tBestD
+   repeat with tC = 1 to round(2 * kHalfW / kTile)
+      put -kHalfW + (tC - 0.5) * kTile into tX
+      if tX * tSide < kMid + kHeroR then next repeat
+      if sWallH > 1 and abs(tX) < sWallX + kHeroR then next repeat
+      repeat with tR = 1 to round(2 * kHalfD / kTile)
+         if sTile[tC & "," & tR] is 0 then next repeat
+         put -kHalfD + (tR - 0.5) * kTile into tZ
+         put (tX - sHero[pName]["x"]) ^ 2 + (tZ - sHero[pName]["z"]) ^ 2 into tD
+         if tD < tBestD then
+            put tD into tBestD
+            put tX & comma & tZ into tBest
+         end if
+      end repeat
+   end repeat
+   if tBest is empty then return (tSide * kHalfW * 0.55) & comma & 0
+   return tBest
+end VT.SafeSpot
+
+-- the hangs left, as lives triangles
+function VT.Hangs pName
+   local tOut
+   repeat min(5, sHero[pName]["hangs"]) times
+      put "^" after tOut
+   end repeat
+   return tOut
+end VT.Hangs
+
+-- a crack across a tile
+function VT.CrackMesh
+   local tM, tA, k
+   put kTile / 2 - 3 into k
+   put Mesh.New() into tM
+   put VT.Line(tM, -k, 0, -k * 0.6, -k * 0.2, 0, 0) into tA
+   put VT.Line(tM, -k * 0.2, 0, 0, k * 0.3, 0, -k * 0.4) into tA
+   put VT.Line(tM, k * 0.3, 0, -k * 0.4, k, 0, k * 0.5) into tA
+   put VT.Line(tM, -k * 0.2, 0, 0, 0, 0, k) into tA
+   return tM
+end VT.CrackMesh
+
+-- a hole: the tile's edge and its walls running down into nothing
+function VT.HoleMesh
+   local tM, tA, k, tY
+   put kTile / 2 into k
+   put Mesh.New() into tM
+   repeat for each item tY in "0,-60,-200"
+      put VT.Line(tM, -k, tY, -k, k, tY, -k) into tA
+      put VT.Line(tM, k, tY, -k, k, tY, k) into tA
+      put VT.Line(tM, k, tY, k, -k, tY, k) into tA
+      put VT.Line(tM, -k, tY, k, -k, tY, -k) into tA
+   end repeat
+   put VT.Line(tM, -k, 0, -k, -k, -400, -k) into tA
+   put VT.Line(tM, k, 0, -k, k, -400, -k) into tA
+   put VT.Line(tM, k, 0, k, k, -400, k) into tA
+   put VT.Line(tM, -k, 0, k, -k, -400, k) into tA
+   return tM
+end VT.HoleMesh
+
+-- tests
+on VT.TestHitTile pX, pZ
+   VT.HitTile pX, pZ
+end VT.TestHitTile
+
+function VT.SolidAt pX, pZ
+   return VT.Solid(pX, pZ)
+end VT.SolidAt
+
+function VT.HeroField pName, pKey
+   return sHero[pName][pKey]
+end VT.HeroField
+
+on VT.TestHangs pName, pN
+   put pN into sHero[pName]["hangs"]
+end VT.TestHangs
+
+on VT.TestPlaceBall pX, pH, pZ
+   put "loose" into sBall["state"]
+   put pX into sBall["x"]
+   put pH into sBall["h"]
+   put pZ into sBall["z"]
+   put 0 into sBall["vx"]
+   put 0 into sBall["vh"]
+   put 0 into sBall["vz"]
+   put 10 into sBall["age"]
+   put true into sBall["air"]
+   put empty into sBall["touched"]
+   put sActive into sBall["thrower"]
+   put true into sBall["crossed"]
+end VT.TestPlaceBall
+
 -------------------------------------------------------------------- HUD
 
 on VT.Message pText
@@ -1365,8 +1619,8 @@ end VT.Message
 
 on VT.ShowHUD
    local tBar, i, tScoreG
-   HUD.Set "VT.P", "PROMPT " & sHero["PROMPT"]["score"], gViewLeft + 20, gViewTop + 16, 20
-   put "GLAZE " & sHero["GLAZE"]["score"] into tScoreG
+   HUD.Set "VT.P", "PROMPT " & sHero["PROMPT"]["score"] & " " & VT.Hangs("PROMPT"), gViewLeft + 20, gViewTop + 16, 20
+   put VT.Hangs("GLAZE") & " GLAZE " & sHero["GLAZE"]["score"] into tScoreG
    HUD.Set "VT.G", tScoreG, gViewRight - 20 - the number of chars of tScoreG * 20, gViewTop + 16, 20
    HUD.Set "VT.Rally", "LEVEL " & sLevel & "   RALLY " & sRally & "  BEST " & sBestRally, (gViewLeft + gViewRight) / 2 - 130, gViewTop + 18, 13
    if sMsgUntil is a number and sTicks < sMsgUntil then
