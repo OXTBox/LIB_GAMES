@@ -20,7 +20,7 @@
 ##           and you fall. A HANG catches the edge and climbs you out (each hero starts
 ##           with one, +1 every 10 points); with none, the fall costs 3 points and you come
 ##           back at your spot. A ball that falls in is a drop. Each new level mends the floor.
-## THE END   a hero's third fall into a hole (hang or not) ends the game. ENTER or R: again.
+## THE END   a hero's third fatal fall (no hang to catch it) ends the game. ENTER or R: again.
 ## BANTER    the heroes talk: VectorToss/banter.txt (event, who, then "P line | G line").
 ## MOVES     Animations/VectorToss.anims.txt (throw, lob, catch), cut from LIB_MOCAP clips
 ##           with the editor's Window > Inspector > Animation page.
@@ -56,7 +56,7 @@ constant kHeroGrav = 0.3      -- the heroes' jumps
 constant kJumpV = 4.6         -- a jump peaks about 35 high: the walls stay lower
 constant kLevelCatches = 10   -- catches a level
 constant kFallCost = 3        -- points a fall costs with no hang left
-constant kMaxFalls = 3        -- the third fall into a hole ends the game
+constant kMaxFalls = 3        -- the third fatal fall (no hang) ends the game
 constant kHangEvery = 10      -- a new hang every this many points
 constant kAIWait = 40         -- the companion holds the ball this many steps
 constant kCamUp = 230         -- camera height
@@ -1477,9 +1477,7 @@ on VT.HeroFall pName
       case "fall"
          subtract kHeroGrav from sHero[pName]["vh"]
          add sHero[pName]["vh"] to sHero[pName]["h"]
-         if sHero[pName]["last"] is true and sHero[pName]["h"] < -160 then
-            VT.GameOver pName
-         else if sHero[pName]["h"] < -48 and sHero[pName]["hangs"] > 0 and sHero[pName]["last"] is not true then
+         if sHero[pName]["h"] < -48 and sHero[pName]["hangs"] > 0 and sHero[pName]["last"] is not true then
             subtract 1 from sHero[pName]["hangs"]
             put "hang" into sHero[pName]["state"]
             put -56 into sHero[pName]["h"]
@@ -1488,6 +1486,13 @@ on VT.HeroFall pName
             put empty into sHero[pName]["act"]
             VT.Message pName & " HANGS ON"
             VT.Say "hang", pName, 80
+         else if sHero[pName]["h"] < -160 and sHero[pName]["last"] is not true then
+            -- no hang caught it: a fatal fall (climbing out never counts)
+            put true into sHero[pName]["last"]
+            add 1 to sHero[pName]["falls"]
+            if sHero[pName]["falls"] >= kMaxFalls then
+               VT.GameOver pName
+            end if
          else if sHero[pName]["h"] < -420 then
             VT.Respawn pName
          end if
@@ -1511,8 +1516,7 @@ on VT.HeroFall pName
 end VT.HeroFall
 
 on VT.StartFall pName
-   add 1 to sHero[pName]["falls"]
-   if sHero[pName]["falls"] >= kMaxFalls then put true into sHero[pName]["last"]
+   put false into sHero[pName]["last"]
    put "fall" into sHero[pName]["state"]
    put min(0, sHero[pName]["vh"]) into sHero[pName]["vh"]
    put -0.01 into sHero[pName]["h"]
