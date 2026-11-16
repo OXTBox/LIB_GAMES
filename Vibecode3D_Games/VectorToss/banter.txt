@@ -4,7 +4,7 @@
 # The HUD letters are A-Z 0-9 and : - + . ! / ? , '   Anything else is skipped.
 # PROMPT gets the job done no matter what: short, blunt, keeps score.
 # GLAZE barters, charms and influences: deals, flattery, never quite serious.
-# Events: start level crack fall hang catch_good catch_big catch_flat drop wild easy easy_caught rally swap idle
+# Events: start level crack fall hang over catch_good catch_big catch_flat drop wild easy easy_caught rally swap idle
 #   catch_*, drop, wild, easy, easy_caught, swap: who = the hero it happened to.
 
 start	*	P Ball. Floor. Each other. Catch it before the floor does. | G You make everything sound like a chore list. | P It is a chore list.
@@ -76,3 +76,8 @@ fall	PROMPT	G Prompt! ...Prompt? | P I'm back. Cost me three. | G Worth it for t
 fall	PROMPT	P That one's on me. | G It's on the floor, technically. Well. Under it.
 fall	GLAZE	G Okay. That was a lot of down. | P You came back. | G I always come back. It's my best quality.
 fall	GLAZE	P Watch the holes! | G I watched one. Very closely. From the inside.
+
+over	PROMPT	G Prompt? ...Prompt! | P Still falling. Start again without me. | G Never. Press the button.
+over	PROMPT	P Three's too many holes. | G We'll get a new floor. We always get a new floor.
+over	GLAZE	G Well. That's all the down I can take today. | P Again? | G Again.
+over	GLAZE	P Glaze! | G Tell them I went out gorgeous.

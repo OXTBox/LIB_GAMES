@@ -20,6 +20,7 @@
 ##           and you fall. A HANG catches the edge and climbs you out (each hero starts
 ##           with one, +1 every 10 points); with none, the fall costs 3 points and you come
 ##           back at your spot. A ball that falls in is a drop. Each new level mends the floor.
+## THE END   a hero's third fall into a hole (hang or not) ends the game. ENTER or R: again.
 ## BANTER    the heroes talk: VectorToss/banter.txt (event, who, then "P line | G line").
 ## MOVES     Animations/VectorToss.anims.txt (throw, lob, catch), cut from LIB_MOCAP clips
 ##           with the editor's Window > Inspector > Animation page.
@@ -55,6 +56,7 @@ constant kHeroGrav = 0.3      -- the heroes' jumps
 constant kJumpV = 4.6         -- a jump peaks about 35 high: the walls stay lower
 constant kLevelCatches = 10   -- catches a level
 constant kFallCost = 3        -- points a fall costs with no hang left
+constant kMaxFalls = 3        -- the third fall into a hole ends the game
 constant kHangEvery = 10      -- a new hang every this many points
 constant kAIWait = 40         -- the companion holds the ball this many steps
 constant kCamUp = 230         -- camera height
@@ -78,7 +80,7 @@ local sBall          -- [key|shadow|state (held|loose)|by|x|h|z|vx|vh|vz|air|age
 local sCharging, sPower, sAimX, sAimZ, sLandX, sLandZ, sShowLand, sTestAim, sTestMouse
 local sLevel, sLevelCatches, sTosses   -- tosses finished this level: the instructions stay for two
 local sWallX, sWallH, sWallXTo, sWallHTo, sWall, sWallMesh   -- the walls: x of each (+/-), height
-local sGhostKey, sGhostAt
+local sGhostKey, sGhostAt, sOver
 local sTile, sTileKey   -- [col,row]: hits left (empty = whole, 0 = a hole); its crack / hole entity
 local sKeyWas, sTestKeys, sTestAuto
 local sRally, sBestRally, sPlayerDrops, sHoldUntil
@@ -115,6 +117,10 @@ end Game.OnStart
 on Game.OnUpdate
    if sError is not empty then exit Game.OnUpdate
    add 1 to sTicks
+   if sOver then
+      VT.OverKeys
+      exit Game.OnUpdate
+   end if
    VT.Levels
    VT.Controls
    VT.Companion
@@ -260,6 +266,7 @@ on VT.NewMatch
    put Entity.Spawn("VT.Ball", 0, 0, -100000, "#506070") into sGhost
    put Entity.Spawn("VT.Mark", 0, 0, -100000, "#FFD040") into sMark
    put 0 into sRally
+   put false into sOver
    put 0 into sBestRally
    put 0 into sPlayerDrops
    put false into sCharging
@@ -360,6 +367,8 @@ on VT.Spawn pName, pColor, pSide, pIdle
    put 0 into sHero[pName]["vh"]
    put empty into sHero[pName]["state"]
    put 1 into sHero[pName]["hangs"]
+   put 0 into sHero[pName]["falls"]
+   put false into sHero[pName]["last"]
    put kHangEvery into sHero[pName]["nextHang"]
    put 0 into sHero[pName]["score"]
    put 0 into sHero[pName]["catches"]
@@ -1172,7 +1181,7 @@ end VT.TurnToward
 
 -------------------------------------------------------------------- banter
 -- VectorToss/banter.txt: event TAB who TAB "P line | G line | ..."; who is PROMPT, GLAZE
--- or * (either). P and G say who speaks each turn. Events: start level crack fall hang catch_good catch_big
+-- or * (either). P and G say who speaks each turn. Events: start level crack fall hang over catch_good catch_big
 -- catch_flat drop wild easy easy_caught rally swap idle. The HUD letters: A-Z 0-9 and
 -- : - + . ! / ? , '  (anything else is skipped).
 
@@ -1281,7 +1290,7 @@ on VT.Bubble pName, pText
       else
          put gViewRight - 20 - tLong * tSize into tX
       end if
-      HUD.Set "VT.Say." & pName & "." & i, line i of tLines, tX, gViewTop + 52 + (i - 1) * (tSize + 7), tSize
+      HUD.Set "VT.Say." & pName & "." & i, line i of tLines, tX, gViewTop + 66 + (i - 1) * (tSize + 7), tSize
    end repeat
 end VT.Bubble
 
@@ -1468,7 +1477,9 @@ on VT.HeroFall pName
       case "fall"
          subtract kHeroGrav from sHero[pName]["vh"]
          add sHero[pName]["vh"] to sHero[pName]["h"]
-         if sHero[pName]["h"] < -48 and sHero[pName]["hangs"] > 0 then
+         if sHero[pName]["last"] is true and sHero[pName]["h"] < -160 then
+            VT.GameOver pName
+         else if sHero[pName]["h"] < -48 and sHero[pName]["hangs"] > 0 and sHero[pName]["last"] is not true then
             subtract 1 from sHero[pName]["hangs"]
             put "hang" into sHero[pName]["state"]
             put -56 into sHero[pName]["h"]
@@ -1500,6 +1511,8 @@ on VT.HeroFall pName
 end VT.HeroFall
 
 on VT.StartFall pName
+   add 1 to sHero[pName]["falls"]
+   if sHero[pName]["falls"] >= kMaxFalls then put true into sHero[pName]["last"]
    put "fall" into sHero[pName]["state"]
    put min(0, sHero[pName]["vh"]) into sHero[pName]["vh"]
    put -0.01 into sHero[pName]["h"]
@@ -1544,6 +1557,47 @@ function VT.SafeSpot pName
    if tBest is empty then return (tSide * kHalfW * 0.55) & comma & 0
    return tBest
 end VT.SafeSpot
+
+-- the third fall: the end
+on VT.GameOver pName
+   local tMid
+   put true into sOver
+   put (gViewLeft + gViewRight) / 2 into tMid
+   HUD.Remove "VT.Intro1"
+   HUD.Remove "VT.Intro2"
+   HUD.Remove "VT.Intro3"
+   HUD.Set "VT.Over1", "GAME OVER", tMid - 90, gViewTop + 190, 20
+   HUD.Set "VT.Over2", pName & " FELL " & kMaxFalls & " TIMES   LEVEL " & sLevel & "   BEST RALLY " & sBestRally, tMid - (30 + the number of chars of (pName & sLevel & sBestRally)) * 6, gViewTop + 226, 12
+   HUD.Set "VT.Over3", "PROMPT " & sHero["PROMPT"]["score"] & "   GLAZE " & sHero["GLAZE"]["score"] & "   TOGETHER " & (sHero["PROMPT"]["score"] + sHero["GLAZE"]["score"]), tMid - 200, gViewTop + 248, 12
+   HUD.Set "VT.Over4", "ENTER OR R: PLAY AGAIN", tMid - 132, gViewTop + 280, 12
+   put empty into sTalk
+   VT.Say "over", pName, 100
+   VT.TalkTick
+end VT.GameOver
+
+-- after the end: ENTER or R starts again
+on VT.OverKeys
+   local tKeys, tK
+   put VT.Keys() into tKeys
+   if VT.Pressed(tKeys, "65293,65421,114,82") then
+      repeat for each item tK in "VT.Over1,VT.Over2,VT.Over3,VT.Over4"
+         HUD.Remove tK
+      end repeat
+      VT.NewMatch
+   else
+      VT.TalkTick
+   end if
+   put tKeys into sKeyWas
+end VT.OverKeys
+
+function VT.Over
+   return sOver
+end VT.Over
+
+-- the falls so far, under each score
+function VT.FallsText pName
+   return "FALLS " & sHero[pName]["falls"] & " OF " & kMaxFalls
+end VT.FallsText
 
 -- the hangs left, as lives triangles
 function VT.Hangs pName
@@ -1628,6 +1682,8 @@ on VT.ShowHUD
    local tBar, i, tScoreG
    HUD.Set "VT.P", "PROMPT " & sHero["PROMPT"]["score"] & " " & VT.Hangs("PROMPT"), gViewLeft + 20, gViewTop + 16, 20
    put VT.Hangs("GLAZE") & " GLAZE " & sHero["GLAZE"]["score"] into tScoreG
+   HUD.Set "VT.PF", VT.FallsText("PROMPT"), gViewLeft + 20, gViewTop + 42, 11
+   HUD.Set "VT.GF", VT.FallsText("GLAZE"), gViewRight - 20 - the number of chars of VT.FallsText("GLAZE") * 11, gViewTop + 42, 11
    HUD.Set "VT.G", tScoreG, gViewRight - 20 - the number of chars of tScoreG * 20, gViewTop + 16, 20
    HUD.Set "VT.Rally", "LEVEL " & sLevel & "   RALLY " & sRally & "  BEST " & sBestRally, gViewRight - 20 - (34 + the number of chars of (sRally & sBestRally & sLevel)) * 12, gViewBottom - 54, 12
    if sMsgUntil is a number and sTicks < sMsgUntil then
