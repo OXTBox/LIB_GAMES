@@ -22,8 +22,10 @@
 ##           back at your spot. A ball that falls in is a drop. Each new level mends the floor.
 ## THE END   a hero's third fatal fall (no hang to catch it) ends the game. ENTER or R: again.
 ## BANTER    the heroes talk: VectorToss/banter.txt (event, who, then "P line | G line").
-## MOVES     Animations/VectorToss.anims.txt (throw, lob, catch), cut from LIB_MOCAP clips
-##           with the editor's Window > Inspector > Animation page.
+## MOVES     Animations/VectorToss.anims.txt (throw, lob, catch, jump, hang), cut from LIB_MOCAP
+##           clips with the editor's Window > Inspector > Animation page.
+## CREDIT    the hang (dangling in a hole) is Harold Lloyd's, from the public-domain 1923 film
+##           "Safety Last!" (Hal Roach Studios), captured by the owner (LIB_BVH/Harold_Lloyd).
 ## NEEDS     ../LIB_MOCAP/library (clips) and ../LIB_MOCAP/livecode/anim_list.livecodescript
 ######################################################################################
 
@@ -70,7 +72,7 @@ constant kPromptIdle = "Animazoo_hands_on_hips"
 constant kGlazeIdle = "Animazoo_talking_gesturing"
 constant kRun = "Animazoo_Running_-_Jog"
 constant kMaxIdleFrames = 300
-constant kActs = "throw,lob,catch,jump"
+constant kActs = "throw,lob,catch,jump,hang"
 
 local sStepMS = 33, sTicks = 0, sError
 local sClip          -- [key][frames|fps|travel]; meshes "VT.<key>.<n>"; keys idleP idleG run throw lob catch
@@ -1153,7 +1155,7 @@ on VT.Animate pName
    put VT.TurnToward(sHero[pName]["yaw"], tWant, 0.25) into sHero[pName]["yaw"]
    VT.SetMesh tKey, "VT." & tClip & "." & max(1, trunc(sHero[pName]["frame"]))
    VT.HeroFall pName
-   if sHero[pName]["state"] is "hang" and sClip["catch"]["frames"] >= 12 then VT.SetMesh tKey, "VT.catch.12"
+   if sHero[pName]["state"] is "hang" then VT.HangPose pName, tKey
    if sHero[pName]["state"] is "hang" then
       -- dangling: a little sway and swing, nothing under the feet
       SetObjectPosition tKey, sHero[pName]["x"] + sin(sTicks * 0.17) * 3, -(sHero[pName]["h"] - abs(sin(sTicks * 0.085)) * 2), sHero[pName]["z"]
@@ -1164,6 +1166,26 @@ on VT.Animate pName
    end if
    SetObjectRotation tKey, item 1 of tE, item 2 of tE, item 3 of tE
 end VT.Animate
+
+-- dangling: Harold Lloyd's hang from the list (played forward, then back if the hang outlasts it);
+-- without it, the catch's reach-high frame
+on VT.HangPose pName, pKey
+   local tN
+   put sClip["hang"]["frames"] into tN
+   if tN is a number and tN >= 2 then
+      add sHero[pName]["hangDir"] * sClip["hang"]["fps"] * sStepMS / 1000 to sHero[pName]["hangFrame"]
+      if sHero[pName]["hangFrame"] >= tN then
+         put tN into sHero[pName]["hangFrame"]
+         put -1 into sHero[pName]["hangDir"]
+      else if sHero[pName]["hangFrame"] <= 1 then
+         put 1 into sHero[pName]["hangFrame"]
+         put 1 into sHero[pName]["hangDir"]
+      end if
+      VT.SetMesh pKey, "VT.hang." & max(1, min(tN, trunc(sHero[pName]["hangFrame"])))
+   else if sClip["catch"]["frames"] >= 12 then
+      VT.SetMesh pKey, "VT.catch.12"
+   end if
+end VT.HangPose
 
 function VT.TurnToward pFrom, pTo, pRate
    local tD
@@ -1480,6 +1502,8 @@ on VT.HeroFall pName
          if sHero[pName]["h"] < -48 and sHero[pName]["hangs"] > 0 and sHero[pName]["last"] is not true then
             subtract 1 from sHero[pName]["hangs"]
             put "hang" into sHero[pName]["state"]
+            put 1 into sHero[pName]["hangFrame"]
+            put 1 into sHero[pName]["hangDir"]
             put -56 into sHero[pName]["h"]
             put 0 into sHero[pName]["vh"]
             put round(1500 / sStepMS) into sHero[pName]["timer"]
@@ -1655,6 +1679,10 @@ end VT.SolidAt
 function VT.HeroField pName, pKey
    return sHero[pName][pKey]
 end VT.HeroField
+
+function VT.ClipField pKey, pField
+   return sClip[pKey][pField]
+end VT.ClipField
 
 on VT.TestHangs pName, pN
    put pN into sHero[pName]["hangs"]
