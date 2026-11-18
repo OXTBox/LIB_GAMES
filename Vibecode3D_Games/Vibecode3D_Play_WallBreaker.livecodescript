@@ -7,7 +7,6 @@
 ##           The ball past the bat costs a life; three lives. 5 levels.
 ######################################################################################
 
-global gObjectTransforms, gSceneObjects
 global bPaused, bPlaying
 
 local sBat, sBall, sBatX, sBatW, sBX, sBY, sDX, sDY, sStuck, sSpeed
@@ -26,7 +25,7 @@ constant kBrickH = 26
 
 on Game.OnStart
    focus on nothing          -- arrow keys belong to the game, never to a menu or a field
-   Engine.ResetCamera
+   Camera.Reset
    Scene.ClearAll
    Particles.Clear
    HUD.Clear
@@ -46,9 +45,9 @@ on Wall.StartLevel pLevel
    put item 2 of tRow into sBatW
    put item 3 of tRow into tRows
    Scene.ClearAll
-   Mesh.Define "Wall.Bat", MeshBox(sBatW, 14, 14)
-   Mesh.Define "Wall.Ball", MeshBox(14, 14, 14)
-   Mesh.Define "Wall.Brick", MeshBox(kBrickW - 6, kBrickH - 6, 14)
+   Mesh.Define "Wall.Bat", Mesh.Box(sBatW, 14, 14)
+   Mesh.Define "Wall.Ball", Mesh.Box(14, 14, 14)
+   Mesh.Define "Wall.Brick", Mesh.Box(kBrickW - 6, kBrickH - 6, 14)
    put empty into sBrick
    put 0 into sBricksLeft
    repeat with tR = 1 to tRows
@@ -99,7 +98,7 @@ on Game.OnUpdate
    if (65361 is among the items of tKeys or 97 is among the items of tKeys) then subtract kBatSpeed from sBatX
    if (65363 is among the items of tKeys or 100 is among the items of tKeys) then add kBatSpeed to sBatX
    put max(kLeft + tHalf, min(kRight - tHalf, sBatX)) into sBatX
-   SetObjectPosition sBat, sBatX, kBatY, kZ
+   Entity.SetPosition sBat, sBatX, kBatY, kZ
    if sStuck then
       put sBatX into sBX
       put kBatY - 16 into sBY
@@ -108,7 +107,7 @@ on Game.OnUpdate
          put sSpeed * 0.5 into sDX
          put -sSpeed into sDY
       end if
-      SetObjectPosition sBall, sBX, sBY, kZ
+      Entity.SetPosition sBall, sBX, sBY, kZ
       Wall.ShowHUD
       exit Game.OnUpdate
    end if
@@ -153,7 +152,7 @@ on Game.OnUpdate
          exit repeat
       end if
    end repeat
-   SetObjectPosition sBall, sBX, sBY, kZ
+   Entity.SetPosition sBall, sBX, sBY, kZ
    if sBricksLeft <= 0 then
       if sLevel >= 5 then
          put true into sOver
