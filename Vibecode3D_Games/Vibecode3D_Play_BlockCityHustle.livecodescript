@@ -114,7 +114,11 @@ on Hust.StartLevel pLevel
    -- parked cars
    put empty into sParked
    repeat with i = 1 to 4
-      put Hust.Spot(9999, 9999) into tP
+      -- never parked at a booth: SPACE there answers the phone
+      repeat 20 times
+         put Hust.Spot(9999, 9999) into tP
+         if not Hust.NearBooth(item 1 of tP, item 2 of tP, 60) then exit repeat
+      end repeat
       put item 1 of tP into sParked[i]["x"]
       put item 2 of tP into sParked[i]["y"]
       put Entity.Spawn("Hust.Car", sParked[i]["x"], sParked[i]["y"], kZ, "0,200,200") into sParked[i]["key"]
@@ -139,8 +143,7 @@ on Hust.StartLevel pLevel
    put 0 into sJobsDone
    put empty into sJob
    put 0 into sHurt
-   put empty into sLastRing
-   put empty into sRinging
+   -- the booths stand where they stood: the one that rang last does not ring first on the new level
    Hust.NextBooth
    put "LEVEL" && pLevel & ": ANSWER THE RINGING BOOTH" into sMsg
    put 60 into sMsgT
@@ -223,6 +226,14 @@ function Hust.Spot pAwayX, pAwayY
    end repeat
    return tX & "," & tY
 end Hust.Spot
+
+function Hust.NearBooth pX, pY, pR
+   local tK
+   repeat for each key tK in sBooth
+      if abs(sBooth[tK]["x"] - pX) < pR and abs(sBooth[tK]["y"] - pY) < pR then return true
+   end repeat
+   return false
+end Hust.NearBooth
 
 function Hust.Solid pX, pY, pR
    local tK, tB
@@ -336,10 +347,16 @@ on Game.OnUpdate
    end if
    -- E: out of the car
    if sInCar and (Hust.Down(101, tKeys) or Hust.Down(69, tKeys)) then Hust.LeaveCar true
-   -- Space: take a parked car, or answer the ringing booth
+   -- Space: answer the ringing booth, or take a parked car (the booth first: a car parked
+   -- beside the ringing booth used to steal the press, and the job never started)
    if tPress and not sInCar then
       put false into tNear
+      if sJob is empty and abs(sBooth[sRinging]["x"] - sX) < 30 and abs(sBooth[sRinging]["y"] - sY) < 30 then
+         Hust.StartJob
+         put true into tNear
+      end if
       repeat for each key tK in sParked
+         if tNear then exit repeat
          if abs(sParked[tK]["x"] - sX) < 30 and abs(sParked[tK]["y"] - sY) < 30 then
             put true into sInCar
             put 450 into sCarT
@@ -352,7 +369,6 @@ on Game.OnUpdate
             exit repeat
          end if
       end repeat
-      if not tNear and sJob is empty and abs(sBooth[sRinging]["x"] - sX) < 30 and abs(sBooth[sRinging]["y"] - sY) < 30 then Hust.StartJob
    end if
    -- the ringing booth bobs
    repeat for each key tK in sBooth
