@@ -9,7 +9,6 @@
 ##           the ground end the game. Clear the sky to move on. 5 levels.
 ######################################################################################
 
-global gObjectTransforms, gSceneObjects
 global bPaused, bPlaying
 
 local sCannon, sCX, sShot, sShotX, sShotY, sR, sLeftCount, sDir, sOffX, sOffY, sMarch
@@ -29,7 +28,7 @@ constant kGapY = 44
 
 on Game.OnStart
    focus on nothing          -- arrow keys belong to the game, never to a menu or a field
-   Engine.ResetCamera
+   Camera.Reset
    Scene.ClearAll
    Particles.Clear
    HUD.Clear
@@ -50,11 +49,11 @@ on Raid.StartLevel pLevel
    put item 3 of tRow into sBombChance
    put item 4 of tRow into tShields
    Scene.ClearAll
-   Mesh.Define "Raid.Raider", MeshBox(40, 24, 14)
-   Mesh.Define "Raid.Cannon", MeshPyramid(4, 26, 30)
-   Mesh.Define "Raid.Shot", MeshBox(4, 16, 4)
-   Mesh.Define "Raid.Bomb", MeshBox(6, 12, 6)
-   Mesh.Define "Raid.Shield", MeshBox(70, 20, 14)
+   Mesh.Define "Raid.Raider", Mesh.Box(40, 24, 14)
+   Mesh.Define "Raid.Cannon", Mesh.Pyramid(4, 26, 30)
+   Mesh.Define "Raid.Shot", Mesh.Box(4, 16, 4)
+   Mesh.Define "Raid.Bomb", Mesh.Box(6, 12, 6)
+   Mesh.Define "Raid.Shield", Mesh.Box(70, 20, 14)
    put empty into sR
    put 0 into sLeftCount
    repeat with tR = 1 to tRows
@@ -113,7 +112,7 @@ on Game.OnUpdate
    if (65361 is among the items of tKeys or 97 is among the items of tKeys) then subtract kCannonSpeed from sCX
    if (65363 is among the items of tKeys or 100 is among the items of tKeys) then add kCannonSpeed to sCX
    put max(kLeft + 20, min(kRight - 20, sCX)) into sCX
-   SetObjectPosition sCannon, sCX, kCannonY, kZ
+   Entity.SetPosition sCannon, sCX, kCannonY, kZ
    if 32 is among the items of tKeys and sShot is empty then
       put sCX into sShotX
       put kCannonY - 24 into sShotY
@@ -131,7 +130,7 @@ on Game.OnUpdate
       put min(tMinX, tX) into tMinX
       put max(tMaxX, tX) into tMaxX
       put max(tMaxY, tY) into tMaxY
-      SetObjectPosition sR[tN]["key"], tX, tY, kZ
+      Entity.SetPosition sR[tN]["key"], tX, tY, kZ
    end repeat
    if sDir > 0 and tMaxX > kRight - 30 or sDir < 0 and tMinX < kLeft + 30 then
       put -sDir into sDir
@@ -145,7 +144,7 @@ on Game.OnUpdate
    -- your shot
    if sShot is not empty then
       subtract kShotSpeed from sShotY
-      SetObjectPosition sShot, sShotX, sShotY, kZ
+      Entity.SetPosition sShot, sShotX, sShotY, kZ
       put false into tHit
       repeat for each key tN in sR
          if abs(sShotX - sR[tN]["x"] - sOffX) <= 24 and abs(sShotY - sR[tN]["y"] - sOffY) <= 18 then
@@ -179,7 +178,7 @@ on Game.OnUpdate
    end if
    repeat for each key tB in sBomb
       add 6 + sLevel to sBomb[tB]["y"]
-      SetObjectPosition sBomb[tB]["key"], sBomb[tB]["x"], sBomb[tB]["y"], kZ
+      Entity.SetPosition sBomb[tB]["key"], sBomb[tB]["x"], sBomb[tB]["y"], kZ
       put Raid.HitShield(sBomb[tB]["x"], sBomb[tB]["y"]) into tHit
       if not tHit and abs(sBomb[tB]["x"] - sCX) <= 22 and abs(sBomb[tB]["y"] - kCannonY) <= 16 then
          put true into tHit
