@@ -48,5 +48,7 @@ Game.Play
 
 `tools/headless_play.sh <Game> <Prefix> "<keys>:<steps> ..."` runs a game card's rules with no window (engine calls stubbed by `tools/engine_stubs.livecodescript`): it catches run-time errors and checks rules; it does not show the game.
 
+The stand-ins are the engine contract (`LIB_ig3d/ENGINE_CONTRACT.md`) as code: one for every call the contract lists and the XT engine has, and nothing else, so a game that passes headless calls only the contract. `python3 -I ../LIB_ig3d/tools/contract_check.py --stubs` checks that; without `--stubs` it lists what every game uses outside the contract.
+
 Every script here is compile-checked with `~/projects/LIB_MCP/tools/lcmcp compile` before
 it is committed.
