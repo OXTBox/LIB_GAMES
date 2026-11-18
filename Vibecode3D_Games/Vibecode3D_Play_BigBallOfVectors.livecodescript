@@ -9,8 +9,6 @@
 ##           hazard. Touch a hazard: no control for two seconds. Catch the quota. 5 levels.
 ######################################################################################
 
-global gObjectTransforms, gSceneObjects
-global gCameraYaw, gCameraPitch
 global bPaused, bPlaying
 
 local sBall, sX, sZ, sVX, sVZ, sR, sSides, sRogue, sAgent, sHaz, sSerial
@@ -23,14 +21,13 @@ constant kMaxEscapes = 8
 
 on Game.OnStart
    focus on nothing          -- arrow keys belong to the game, never to a menu or a field
-   Engine.ResetCamera
+   Camera.Reset
    Scene.ClearAll
    Particles.Clear
    HUD.Clear
    Collision.ClearRules
-   Engine.SetCam 0, 420, 300
-   put 0 into gCameraYaw
-   put -atan2(420, 340) into gCameraPitch
+   Camera.SetPosition 0, -420, -300
+   Camera.SetLook 0, -atan2(420, 340)
    put false into sOver
    put false into sWon
    put 0 into sTicks
@@ -47,10 +44,10 @@ on Ball.StartLevel pLevel
    put 0 into sCaught
    put 0 into sEscaped
    Scene.ClearAll
-   Mesh.Define "Ball.Floor", MeshGrid(12, 12, 80)
+   Mesh.Define "Ball.Floor", Mesh.Grid(12, 12, 80)
    get Entity.Spawn("Ball.Floor", 0, 4, 0, "#0A280A")
-   Mesh.Define "Ball.Agent", MeshPyramid(4, 12, 26)
-   Mesh.Define "Ball.Hazard", MeshPrism(5, 22, 8)
+   Mesh.Define "Ball.Agent", Mesh.Pyramid(4, 12, 26)
+   Mesh.Define "Ball.Hazard", Mesh.Prism(5, 22, 8)
    put 0 into sX
    put 0 into sZ
    put 0 into sVX
@@ -74,7 +71,7 @@ end Ball.StartLevel
 -- the polyhedron: more sides and bigger with every catch
 on Ball.Reshape
    if sBall is not empty then Entity.Kill sBall
-   Mesh.Define "Ball.Poly", MeshSphere(sR, max(2, sSides div 2), sSides)
+   Mesh.Define "Ball.Poly", Mesh.Sphere(sR, max(2, sSides div 2), sSides)
    put Entity.Spawn("Ball.Poly", sX, -sR, sZ, "cyan") into sBall
 end Ball.Reshape
 
@@ -137,8 +134,8 @@ on Game.OnUpdate
       put kEdge * sZ / abs(sZ) into sZ
       put -sVZ * 0.6 into sVZ
    end if
-   SetObjectPosition sBall, sX, -sR, sZ
-   SetObjectRotation sBall, sZ / sR, 0, -sX / sR          -- it rolls
+   Entity.SetPosition sBall, sX, -sR, sZ
+   Entity.SetRotation sBall, sZ / sR, 0, -sX / sR          -- it rolls
    -- agents wander, and run from the ball when it is near
    repeat for each key tK in sAgent
       put sAgent[tK]["x"] - sX into dx
@@ -188,15 +185,15 @@ on Game.OnUpdate
          end if
          next repeat
       end if
-      SetObjectPosition sAgent[tK]["key"], sAgent[tK]["x"], 0, sAgent[tK]["z"]
+      Entity.SetPosition sAgent[tK]["key"], sAgent[tK]["x"], 0, sAgent[tK]["z"]
    end repeat
    -- hazards drift; touching one sends the ball rogue
    repeat for each key tK in sHaz
       add 0.8 * sin(sHaz[tK]["dir"]) to sHaz[tK]["x"]
       add 0.8 * cos(sHaz[tK]["dir"]) to sHaz[tK]["z"]
       if abs(sHaz[tK]["x"]) > kEdge or abs(sHaz[tK]["z"]) > kEdge then add 3.14159 to sHaz[tK]["dir"]
-      SetObjectPosition sHaz[tK]["key"], sHaz[tK]["x"], -6, sHaz[tK]["z"]
-      SetObjectRotation sHaz[tK]["key"], 0, sTicks / 10, 0
+      Entity.SetPosition sHaz[tK]["key"], sHaz[tK]["x"], -6, sHaz[tK]["z"]
+      Entity.SetRotation sHaz[tK]["key"], 0, sTicks / 10, 0
       if sRogue <= 0 and abs(sHaz[tK]["x"] - sX) < sR + 16 and abs(sHaz[tK]["z"] - sZ) < sR + 16 then
          put 60 into sRogue
          FX.Sparks sX, -sR, sZ, 16, "#FF60D0"
