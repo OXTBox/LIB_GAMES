@@ -8,7 +8,6 @@
 ##           the next level, with more and faster fish and less air. 5 levels.
 ######################################################################################
 
-global gObjectTransforms, gSceneObjects
 global bPaused, bPlaying
 
 local sDiver, sX, sY, sFish, sPearl, sPearls, sAir, sAirMax, sSafe
@@ -23,7 +22,7 @@ constant kSwim = 7
 
 on Game.OnStart
    focus on nothing          -- arrow keys belong to the game, never to a menu or a field
-   Engine.ResetCamera
+   Camera.Reset
    Scene.ClearAll
    Particles.Clear
    HUD.Clear
@@ -41,10 +40,10 @@ on Dive.StartLevel pLevel
    put line pLevel of ("3,3,4,26" & cr & "4,3.6,5,24" & cr & "5,4.2,6,22" & cr & "6,4.8,7,20" & cr & "7,5.5,8,18") into tRow
    put item 4 of tRow * 30 into sAirMax
    Scene.ClearAll
-   Mesh.Define "Dive.Diver", MeshBox(34, 16, 12)
-   Mesh.Define "Dive.Fish", MeshPyramid(3, 14, 36)
-   Mesh.Define "Dive.Pearl", MeshSphere(8, 4, 6)
-   Mesh.Define "Dive.Line", MeshBox(kRight - kLeft, 3, 3)
+   Mesh.Define "Dive.Diver", Mesh.Box(34, 16, 12)
+   Mesh.Define "Dive.Fish", Mesh.Pyramid(3, 14, 36)
+   Mesh.Define "Dive.Pearl", Mesh.Sphere(8, 4, 6)
+   Mesh.Define "Dive.Line", Mesh.Box(kRight - kLeft, 3, 3)
    get Entity.Spawn("Dive.Line", 0, kSurface, kZ, "cyan")
    get Entity.Spawn("Dive.Line", 0, kBed + 14, kZ, "#8A5A2A")
    -- each fish keeps to its own depth and crosses again and again
@@ -56,7 +55,7 @@ on Dive.StartLevel pLevel
       put kLeft + ((tN * 211 + pLevel * 67) mod 900) into sFish[tN]["x"]
       put item 2 of tRow * tDir * (0.8 + (tN mod 3) * 0.2) into sFish[tN]["v"]
       put Entity.Spawn("Dive.Fish", sFish[tN]["x"], sFish[tN]["y"], kZ, "orange") into sFish[tN]["key"]
-      SetObjectRotation sFish[tN]["key"], 0, 0, tDir * 1.5708
+      Entity.SetRotation sFish[tN]["key"], 0, 0, tDir * 1.5708
    end repeat
    put empty into sPearl
    put item 3 of tRow into sPearls
@@ -104,7 +103,7 @@ on Game.OnUpdate
    if (65364 is among the items of tKeys or 115 is among the items of tKeys) then add kSwim to sY
    put max(kLeft + 20, min(kRight - 20, sX)) into sX
    put max(kSurface, min(kBed, sY)) into sY
-   SetObjectPosition sDiver, sX, sY, kZ
+   Entity.SetPosition sDiver, sX, sY, kZ
    if sY <= kSurface + 4 then
       put min(sAirMax, sAir + 12) into sAir
    else
@@ -116,7 +115,7 @@ on Game.OnUpdate
       add sFish[tN]["v"] to sFish[tN]["x"]
       if sFish[tN]["x"] > kRight + 40 then put kLeft - 40 into sFish[tN]["x"]
       if sFish[tN]["x"] < kLeft - 40 then put kRight + 40 into sFish[tN]["x"]
-      SetObjectPosition sFish[tN]["key"], sFish[tN]["x"], sFish[tN]["y"], kZ
+      Entity.SetPosition sFish[tN]["key"], sFish[tN]["x"], sFish[tN]["y"], kZ
       if sSafe = 0 and abs(sFish[tN]["x"] - sX) < 34 and abs(sFish[tN]["y"] - sY) < 20 then
          Dive.Hurt
          exit Game.OnUpdate
