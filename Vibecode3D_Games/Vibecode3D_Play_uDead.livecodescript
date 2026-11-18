@@ -944,8 +944,7 @@ on uDead.FetchAmmo pId, pDT
          put sNow + 0.5 into sE[pId]["next"]
          uDead.Ring sAmmo[tC]["x"], sAmmo[tC]["z"], "#FFE040", 0.8
          if sAmmo[tC]["left"] <= 0 then
-            Entity.Kill sAmmo[tC]["key"]
-            put Entity.Spawn("uDead.Crate", sAmmo[tC]["x"] * kM, -0.23 * kM, sAmmo[tC]["z"] * kM, "#4A4A4A") into sAmmo[tC]["key"]
+            Entity.SetColor sAmmo[tC]["key"], "#4A4A4A"     -- an empty crate goes grey
             put 0 into sJob["A"]["at"]
          end if
          uDead.Place pId, false
@@ -1197,11 +1196,10 @@ on uDead.BuildCast pCast, pArms
    end repeat
 end uDead.BuildCast
 
--- (re)make the figure of one of the cast for what it is now
+-- dress the figure of one of the cast for what it is now: its mesh and colour changed in
+-- place (Entity.SetMesh, Entity.SetColor), or made when it has none yet
 on uDead.Dress pId
    local tMesh, tColor, tE
-   if sE[pId]["key"] is not empty then Entity.Kill sE[pId]["key"]
-   put empty into sE[pId]["key"]
    switch sE[pId]["state"]
       case "alive"
          if sE[pId]["kind"] is "z" then
@@ -1234,7 +1232,13 @@ on uDead.Dress pId
    end switch
    if sE[pId]["tint"] is not empty and sE[pId]["state"] is "alive" then put sE[pId]["tint"] into tColor
    put tMesh into sE[pId]["mesh"]
-   put Entity.Spawn(tMesh, sE[pId]["x"] * kM, 0, sE[pId]["z"] * kM, tColor) into sE[pId]["key"]
+   if sE[pId]["key"] is not empty and Entity.Exists(sE[pId]["key"]) then
+      if Entity.Get(sE[pId]["key"], "mesh") is not tMesh then Entity.SetMesh sE[pId]["key"], tMesh
+      if Entity.Get(sE[pId]["key"], "color") is not tColor then Entity.SetColor sE[pId]["key"], tColor
+      Entity.SetPosition sE[pId]["key"], sE[pId]["x"] * kM, 0, sE[pId]["z"] * kM
+   else
+      put Entity.Spawn(tMesh, sE[pId]["x"] * kM, 0, sE[pId]["z"] * kM, tColor) into sE[pId]["key"]
+   end if
    put uDead.Euler(sE[pId]["yaw"]) into tE
    Entity.SetRotation sE[pId]["key"], item 1 of tE, item 2 of tE, item 3 of tE
 end uDead.Dress
