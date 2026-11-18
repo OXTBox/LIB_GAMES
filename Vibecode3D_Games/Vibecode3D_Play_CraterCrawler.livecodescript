@@ -18,7 +18,6 @@
 ##           (owner's notes of 15 Nov 3:49)
 ######################################################################################
 
-global gObjectTransforms, gSceneObjects
 global bPaused, bPlaying
 
 local sRover, sWheel, sDist, sSpeed, sY, sVY, sAir, sSlice, sCourse, sCourseN, sRock, sSaucer
@@ -35,7 +34,7 @@ constant kSection = 1800     -- between letters
 
 on Game.OnStart
    focus on nothing
-   Engine.ResetCamera
+   Camera.Reset
    Scene.ClearAll
    Particles.Clear
    HUD.Clear
@@ -61,11 +60,11 @@ on Crater.StartLevel pLevel
    Mesh.Define "Crater.Wheel", Crater.WheelMesh()
    Mesh.Define "Crater.Flat", Crater.FlatMesh()
    Mesh.Define "Crater.Hole", Crater.HoleMesh()
-   Mesh.Define "Crater.Rock", MeshPyramid(5, 26, 34)
+   Mesh.Define "Crater.Rock", Mesh.Pyramid(5, 26, 34)
    Mesh.Define "Crater.Saucer", Crater.SaucerMesh()
    Mesh.Define "Crater.Wreck", Crater.WreckMesh()
-   Mesh.Define "Crater.Shot", MeshBox(6, 6, 6)
-   Mesh.Define "Crater.Bomb", MeshBox(10, 10, 10)
+   Mesh.Define "Crater.Shot", Mesh.Box(6, 6, 6)
+   Mesh.Define "Crater.Bomb", Mesh.Box(10, 10, 10)
    Mesh.Define "Crater.Post", Crater.PostMesh()
    Mesh.Define "Crater.Mount", Crater.SkylineMesh()
    -- far mountains, slow
@@ -375,7 +374,7 @@ on Game.OnUpdate
          end if
          put tHole into sSlice[i]["type"]
       end if
-      SetObjectPosition sSlice[i]["key"], Crater.SX(tIdx * kSliceW), kGroundY, kZ
+      Entity.SetPosition sSlice[i]["key"], Crater.SX(tIdx * kSliceW), kGroundY, kZ
       -- rocks come into view with their slice
       if sRock[tIdx]["x"] is not empty and sRock[tIdx]["key"] is empty and sRock[tIdx]["gone"] is not true then
          if sRock[tIdx]["wreck"] is true then
@@ -396,9 +395,9 @@ on Game.OnUpdate
          next repeat
       end if
       if sRock[tK]["wreck"] is true then
-         SetObjectPosition sRock[tK]["key"], tSX, kGroundY - 4, kZ
+         Entity.SetPosition sRock[tK]["key"], tSX, kGroundY - 4, kZ
       else
-         SetObjectPosition sRock[tK]["key"], tSX, kGroundY - 17, kZ
+         Entity.SetPosition sRock[tK]["key"], tSX, kGroundY - 17, kZ
       end if
       if abs(tSX - kRoverX) < 50 then
          if sY > kGroundY - 40 then
@@ -419,12 +418,12 @@ on Game.OnUpdate
       end if
    end repeat
    -- the rover and its wheels
-   SetObjectPosition sRover, kRoverX, sY - 26, kZ
+   Entity.SetPosition sRover, kRoverX, sY - 26, kZ
    repeat with i = 1 to 6
       put sY - 8 into tD
       if sAir <= 0 and (sTicks + i) mod 8 < 2 then subtract 2 from tD
-      SetObjectPosition sWheel[i], kRoverX - 36 + (i - 1) * 14.4, tD, kZ - 16 + (i mod 2) * 32
-      SetObjectRotation sWheel[i], 0, 0, -sDist / 9
+      Entity.SetPosition sWheel[i], kRoverX - 36 + (i - 1) * 14.4, tD, kZ - 16 + (i mod 2) * 32
+      Entity.SetRotation sWheel[i], 0, 0, -sDist / 9
    end repeat
    Crater.Mountains
    Crater.Saucers
@@ -442,7 +441,7 @@ end Game.OnUpdate
 on Crater.Mountains
    local i
    repeat with i = 1 to 3
-      SetObjectPosition sMount[i], ((i * 1400 - sDist / 2) mod 4200) - 2100, kGroundY * 2, kZ * 2
+      Entity.SetPosition sMount[i], ((i * 1400 - sDist / 2) mod 4200) - 2100, kGroundY * 2, kZ * 2
    end repeat
 end Crater.Mountains
 
@@ -455,9 +454,9 @@ on Crater.Posts
       if tSX < 520 and sPost[tN] is empty then
          put Entity.Spawn("Crater.Post", tSX, kGroundY, kZ + 4, "0,255,120") into sPost[tN]
       end if
-      if sPost[tN] is not empty then SetObjectPosition sPost[tN], tSX, kGroundY, kZ + 4
+      if sPost[tN] is not empty then Entity.SetPosition sPost[tN], tSX, kGroundY, kZ + 4
    end if
-   if sPost[tN - 1] is not empty then SetObjectPosition sPost[tN - 1], Crater.SX((tN - 1) * kSection), kGroundY, kZ + 4
+   if sPost[tN - 1] is not empty then Entity.SetPosition sPost[tN - 1], Crater.SX((tN - 1) * kSection), kGroundY, kZ + 4
    -- passing a letter
    if (tN - 1) * kSection > sLastLetterD then
       put (tN - 1) * kSection into sLastLetterD
@@ -511,8 +510,8 @@ on Crater.Saucers
       if sSaucer[tK]["state"] is "fall" then next repeat
       add tVX to sSaucer[tK]["x"]
       put sSaucer[tK]["base"] + 14 * sin(sTicks / 20 + sSaucer[tK]["phase"]) into sSaucer[tK]["y"]
-      SetObjectPosition sSaucer[tK]["key"], sSaucer[tK]["x"], sSaucer[tK]["y"], kZ
-      SetObjectRotation sSaucer[tK]["key"], 0, sTicks / 8, 0
+      Entity.SetPosition sSaucer[tK]["key"], sSaucer[tK]["x"], sSaucer[tK]["y"], kZ
+      Entity.SetRotation sSaucer[tK]["key"], 0, sTicks / 8, 0
       if sSaucer[tK]["x"] * tDir > 600 then
          -- gone off the far side
          Entity.Kill sSaucer[tK]["key"]
@@ -579,8 +578,8 @@ on Crater.SaucerFall pK
    add 0.4 to sSaucer[pK]["vy"]
    add sSaucer[pK]["vy"] to sSaucer[pK]["y"]
    subtract sRollV * 0.5 from sSaucer[pK]["x"]
-   SetObjectPosition sSaucer[pK]["key"], sSaucer[pK]["x"], sSaucer[pK]["y"], kZ
-   SetObjectRotation sSaucer[pK]["key"], 0.5, sTicks / 3, 0.4
+   Entity.SetPosition sSaucer[pK]["key"], sSaucer[pK]["x"], sSaucer[pK]["y"], kZ
+   Entity.SetRotation sSaucer[pK]["key"], 0.5, sTicks / 3, 0.4
    if abs(sSaucer[pK]["x"] - kRoverX) < 44 and abs(sSaucer[pK]["y"] - (sY - 20)) < 30 then
       Entity.Kill sSaucer[pK]["key"]
       delete variable sSaucer[pK]
@@ -663,7 +662,7 @@ on Crater.Shots
          Entity.Kill sShot[tS]["key"]
          delete variable sShot[tS]
       else
-         SetObjectPosition sShot[tS]["key"], sShot[tS]["x"], sShot[tS]["y"], kZ
+         Entity.SetPosition sShot[tS]["key"], sShot[tS]["x"], sShot[tS]["y"], kZ
       end if
    end repeat
 end Crater.Shots
@@ -674,7 +673,7 @@ on Crater.Bombs
    repeat for each key tB in sBomb
       add 4 + sLevel * 0.5 to sBomb[tB]["y"]
       subtract 0.5 from sBomb[tB]["x"]
-      SetObjectPosition sBomb[tB]["key"], sBomb[tB]["x"], sBomb[tB]["y"], kZ
+      Entity.SetPosition sBomb[tB]["key"], sBomb[tB]["x"], sBomb[tB]["y"], kZ
       if abs(sBomb[tB]["x"] - kRoverX) < 44 and abs(sBomb[tB]["y"] - (sY - 20)) < 24 then
          Entity.Kill sBomb[tB]["key"]
          delete variable sBomb[tB]
