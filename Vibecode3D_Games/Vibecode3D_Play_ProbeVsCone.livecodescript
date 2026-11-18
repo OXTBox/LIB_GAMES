@@ -17,7 +17,6 @@
 ##           password complete. 5 levels.
 ######################################################################################
 
-global gObjectTransforms, gSceneObjects
 global bPaused, bPlaying
 global gNoMouse        -- true while an AI tests: aim by facing, never read the mouse
 
@@ -38,7 +37,7 @@ constant kWords = "KEY,CODE,LOGIC,PROBES,CONEDOWN"
 
 on Game.OnStart
    focus on nothing          -- arrow keys belong to the game, never to a menu or a field
-   Engine.ResetCamera
+   Camera.Reset
    Scene.ClearAll
    Particles.Clear
    HUD.Clear
@@ -70,10 +69,10 @@ on Probe.StartLevel
    Mesh.Define "Probe.Arena", Probe.FrameMesh()
    get Entity.Spawn("Probe.Arena", 0, 0, kZ, "#1C4A2A")
    -- the Cone
-   Mesh.Define "Probe.Cone", MeshPyramid(12, 34, 70)
+   Mesh.Define "Probe.Cone", Mesh.Pyramid(12, 34, 70)
    put Entity.Spawn("Probe.Cone", kBossX, kBossY, kZ, "#B060FF") into sBoss
    -- the shield: ring k has 6 + 4k slots, all filled
-   Mesh.Define "Probe.Cube", MeshBox(20, 20, 20)
+   Mesh.Define "Probe.Cube", Mesh.Box(20, 20, 20)
    put empty into sRing
    repeat with k = 1 to sRings
       put 6 + 4 * k into sRing[k]["n"]
@@ -84,10 +83,10 @@ on Probe.StartLevel
    -- the token list is filled as cubes break
    put empty into sTok
    put 0 into sTokN
-   Mesh.Define "Probe.Token", MeshSphere(7, 2, 4)
+   Mesh.Define "Probe.Token", Mesh.Sphere(7, 2, 4)
    -- the runner and the spear
    Mesh.Define "Probe.Man", Probe.ManMesh()
-   Mesh.Define "Probe.Spear", MeshBox(30, 4, 4)
+   Mesh.Define "Probe.Spear", Mesh.Box(30, 4, 4)
    put 0 into sPX
    put 230 into sPY
    put Entity.Spawn("Probe.Man", sPX, sPY, kZ, "#40E0FF") into sPlayer
@@ -202,7 +201,7 @@ on Probe.PutCube k, i
    put kBossX + Probe.Radius(k) * sin(a) into sRing[k][i]["x"]
    put kBossY - Probe.Radius(k) * cos(a) into sRing[k][i]["y"]
    if sRing[k][i]["key"] is empty then put Entity.Spawn("Probe.Cube", sRing[k][i]["x"], sRing[k][i]["y"], kZ, item k of "#FF60D0,#FF9040,#FFE060") into sRing[k][i]["key"]
-   SetObjectPosition sRing[k][i]["key"], sRing[k][i]["x"], sRing[k][i]["y"], kZ
+   Entity.SetPosition sRing[k][i]["key"], sRing[k][i]["x"], sRing[k][i]["y"], kZ
 end Probe.PutCube
 
 -- the shield update: each gap in a ring is filled by a cube from the ring inside it
@@ -268,7 +267,7 @@ on Game.OnUpdate
       put nx into sPX
       put ny into sPY
    end if
-   SetObjectPosition sPlayer, sPX, sPY, kZ
+   Entity.SetPosition sPlayer, sPX, sPY, kZ
    Probe.AimAt
    if 32 is among the items of tKeys and not (32 is among the items of sKeysWas) then Probe.Throw
    put tKeys into sKeysWas
@@ -280,7 +279,7 @@ on Game.OnUpdate
    Probe.MoveSpear
    Probe.MoveOrbiters
    Probe.Tokens
-   SetObjectRotation sBoss, 0, sTicks / 30, 0
+   Entity.SetRotation sBoss, 0, sTicks / 30, 0
    Probe.ShowHUD
 end Game.OnUpdate
 
@@ -300,7 +299,7 @@ on Probe.AimAt
       put "keys" into sAimMode
    end if
    if gNoMouse is not true then
-      put the mouseLoc into tM
+      put item 1 to 2 of Engine.Mouse() into tM
       if sMouseWas is not empty and tM is not sMouseWas then put "mouse" into sAimMode
       put tM into sMouseWas
    end if
@@ -318,17 +317,17 @@ on Probe.AimAt
    put sin(sAimAng) into sAimY
    if sTicks mod 2 is 0 then Probe.DrawRay
    -- the aim line, in front of the runner
-   SetObjectPosition sAim, sPX + sAimX * 62, sPY - 20 + sAimY * 62, kZ
-   SetObjectRotation sAim, 0, 0, sAimAng
-   SetObjectPosition sArm, sPX, sPY - 20, kZ
-   SetObjectRotation sArm, 0, 0, sAimAng
+   Entity.SetPosition sAim, sPX + sAimX * 62, sPY - 20 + sAimY * 62, kZ
+   Entity.SetRotation sAim, 0, 0, sAimAng
+   Entity.SetPosition sArm, sPX, sPY - 20, kZ
+   Entity.SetRotation sArm, 0, 0, sAimAng
    -- the spear rides in the hand while it's there; otherwise it's parked out of sight
    if sSpear["state"] is "hand" then
-      SetObjectPosition sHeld, sPX, sPY - 20, kZ
+      Entity.SetPosition sHeld, sPX, sPY - 20, kZ
    else
-      SetObjectPosition sHeld, 0, -5000, kZ
+      Entity.SetPosition sHeld, 0, -5000, kZ
    end if
-   SetObjectRotation sHeld, 0, 0, sAimAng
+   Entity.SetRotation sHeld, 0, 0, sAimAng
 end Probe.AimAt
 
 -- the dotted preview: straight to the first wall or bumper, then the first ricochet
@@ -413,9 +412,9 @@ on Probe.MakeOrbiters pCount, pSpeed
    local n, tShape
    put empty into sOrb
    put pCount into sOrbN
-   Mesh.Define "Probe.Tetra", MeshPyramid(3, 16, 26)
-   Mesh.Define "Probe.Octa", MeshSphere(15, 2, 4)
-   Mesh.Define "Probe.Box", MeshBox(22, 22, 22)
+   Mesh.Define "Probe.Tetra", Mesh.Pyramid(3, 16, 26)
+   Mesh.Define "Probe.Octa", Mesh.Sphere(15, 2, 4)
+   Mesh.Define "Probe.Box", Mesh.Box(22, 22, 22)
    repeat with n = 1 to pCount
       put item (n - 1) mod 3 + 1 of "Probe.Tetra,Probe.Octa,Probe.Box" into sOrb[n]["mesh"]
       put n * 2 * pi / pCount into sOrb[n]["a"]
@@ -445,8 +444,8 @@ on Probe.MoveOrbiters
       put min(r, kBossY - kTop - 18) into r          -- never out past the top of the arena
       put kBossX + r * cos(sOrb[n]["a"]) into sOrb[n]["x"]
       put kBossY + r * sin(sOrb[n]["a"]) into sOrb[n]["y"]
-      SetObjectPosition sOrb[n]["key"], sOrb[n]["x"], sOrb[n]["y"], kZ - 3
-      SetObjectRotation sOrb[n]["key"], sTicks / 6, sTicks / 9, 0
+      Entity.SetPosition sOrb[n]["key"], sOrb[n]["x"], sOrb[n]["y"], kZ - 3
+      Entity.SetRotation sOrb[n]["key"], sTicks / 6, sTicks / 9, 0
       -- the spear smashes it and ricochets off
       if sSpear["state"] is "flying" or sSpear["state"] is "loose" then
          put sSpear["x"] - sOrb[n]["x"] into dx
@@ -596,8 +595,8 @@ on Probe.MoveSpear
 end Probe.MoveSpear
 
 on Probe.PlaceSpear
-   SetObjectPosition sSpear["key"], sSpear["x"], sSpear["y"], kZ
-   SetObjectRotation sSpear["key"], 0, 0, atan2(sSpear["vy"], sSpear["vx"])
+   Entity.SetPosition sSpear["key"], sSpear["x"], sSpear["y"], kZ
+   Entity.SetRotation sSpear["key"], 0, 0, atan2(sSpear["vy"], sSpear["vx"])
 end Probe.PlaceSpear
 
 -------------------------------------------------------------------- keys
@@ -622,8 +621,8 @@ on Probe.Tokens
          put max(kTop + 10, min(kBottom - 10, sTok[t]["y"])) into sTok[t]["y"]
          put max(kLeft + 10, min(kRight - 10, sTok[t]["x"])) into sTok[t]["x"]
       end if
-      SetObjectPosition sTok[t]["key"], sTok[t]["x"], sTok[t]["y"], kZ - 2
-      SetObjectRotation sTok[t]["key"], 0, sTicks / 8, 0
+      Entity.SetPosition sTok[t]["key"], sTok[t]["x"], sTok[t]["y"], kZ - 2
+      Entity.SetRotation sTok[t]["key"], 0, sTicks / 8, 0
       if abs(sTok[t]["x"] - sPX) < 20 and abs(sTok[t]["y"] - (sPY - 10)) < 26 then
          Entity.Kill sTok[t]["key"]
          delete variable sTok[t]
