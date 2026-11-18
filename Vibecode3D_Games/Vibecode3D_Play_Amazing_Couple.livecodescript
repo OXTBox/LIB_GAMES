@@ -26,8 +26,6 @@
 ## NEEDS     ../LIB_BIT (+ editor/livecode/lib_cellmap), ../LIB_MAP and ../LIB_MOCAP/library.
 ######################################################################################
 
-global gObjectTransforms, gSceneObjects
-global gCameraYaw, gCameraPitch
 global gViewLeft, gViewTop, gViewRight, gViewBottom
 global bPaused, bPlaying
 
@@ -73,7 +71,7 @@ local sBallFound = 0, sBallLost = 0, sBallMsg, sBallMsgUntil
 
 on Game.OnStart
    focus on nothing          -- arrow keys belong to the game, never to a menu or a field
-   Engine.ResetCamera
+   Camera.Reset
    put Engine.Info("stepMS") into sStepMS
    if sStepMS is not a number then put 33 into sStepMS
    Scene.ClearAll
@@ -137,14 +135,14 @@ end Collision.Hit
 on Couple.LoadLibraries
    local tLib, tName
    repeat for each item tName in "LIB_BIT/livecode/lib_bit.livecodescript,LIB_MAP/livecode/lib_map.livecodescript,LIB_BIT/editor/livecode/lib_cellmap.livecodescript"
-      put Couple.FindFile(tName) into tLib
+      put Game.FindFile(tName) into tLib
       if tLib is empty then
          put "COUPLE: NOT FOUND " & toUpper(tName) into sError
          exit Couple.LoadLibraries
       end if
       start using stack tLib
    end repeat
-   put Couple.FindFile("LIB_BIT/editor/data/tags_default.txt") into tLib
+   put Game.FindFile("LIB_BIT/editor/data/tags_default.txt") into tLib
    if tLib is not empty then put CellMap.TagsFromText(CellMap.ReadText(tLib)) into sTags
 end Couple.LoadLibraries
 
@@ -155,7 +153,7 @@ on Couple.LoadClips
    put empty into sClip
    repeat for each item tName in kPromptWalk & comma & kPromptIdle & comma & kGlazeWalk & comma & kGlazeIdle & comma & kRun
       if sClip[tName]["frames"] is a number then next repeat
-      put Couple.FindFile("LIB_MOCAP/library/" & tName & "/" & tName & "_stick.txt") into tFile
+      put Game.FindFile("LIB_MOCAP/library/" & tName & "/" & tName & "_stick.txt") into tFile
       if tFile is empty then
          put "COUPLE: NO CLIP " & toUpper(tName) & " IN LIB_MOCAP/LIBRARY" into sError
          exit Couple.LoadClips
@@ -230,7 +228,7 @@ on Couple.NewMaze
    put empty into sNextMazeAt
    put empty into sMsgUntil
    put "maze_" & format("%02d", ((sSeed - 1) mod kMazeFiles) + 1) & ".cellmap" into tName
-   put Couple.FindFile("LIB_BIT/editor/maps/amazing_couple_mazes/" & tName) into sMazeFile
+   put Game.FindFile("LIB_BIT/editor/maps/amazing_couple_mazes/" & tName) into sMazeFile
    if sMazeFile is not empty and sTags is an array then
       Couple.MazeFromFile
    else
@@ -250,7 +248,7 @@ on Couple.NewMaze
    put (2 * kRooms) & comma & (2 * kRooms) into sExitCell
    Mesh.Define "Couple.Beacon", Couple.BeaconMesh()
    put Entity.Spawn("Couple.Beacon", Couple.CellX(2 * kRooms), 0, Couple.CellZ(2 * kRooms), "#FFD040") into sBeacon
-   SetObjectRotationSpeed sBeacon, 0, 0.05, 0
+   Entity.SetRotationSpeed sBeacon, 0, 0.05, 0
    -- the heroes, side by side in the first room, facing down the first corridor
    Couple.Spawn "PROMPT", kPromptColor, Couple.CellX(2) - 12, Couple.CellZ(2)
    Couple.Spawn "GLAZE", kGlazeColor, Couple.CellX(2) + 12, Couple.CellZ(2) - 20
@@ -534,9 +532,9 @@ on Couple.Animate pName
    end repeat
    put sHero[pName]["key"] into tKey
    Couple.SetMesh tKey, "Couple." & tClip & "." & trunc(sHero[pName]["frame"])
-   SetObjectPosition tKey, sHero[pName]["x"], 0, sHero[pName]["z"]
+   Entity.SetPosition tKey, sHero[pName]["x"], 0, sHero[pName]["z"]
    put Couple.Euler(sHero[pName]["yaw"], 0) into tE
-   SetObjectRotation tKey, item 1 of tE, item 2 of tE, item 3 of tE
+   Entity.SetRotation tKey, item 1 of tE, item 2 of tE, item 3 of tE
 end Couple.Animate
 
 -------------------------------------------------------------------- the ball
@@ -595,9 +593,9 @@ on Couple.BallReshape
    local tName
    if sBall["key"] is not empty then Entity.Kill sBall["key"]
    put "Couple.Ball." & sBall["sides"] into tName
-   Mesh.Define tName, MeshSphere(kBallR, max(2, sBall["sides"] div 2), sBall["sides"])
+   Mesh.Define tName, Mesh.Sphere(kBallR, max(2, sBall["sides"] div 2), sBall["sides"])
    put Entity.Spawn(tName, sBall["x"], -(kBallR + sBall["h"]), sBall["z"], kBallColor) into sBall["key"]
-   SetObjectRotationSpeed sBall["key"], 0.03, 0.05, 0
+   Entity.SetRotationSpeed sBall["key"], 0.03, 0.05, 0
 end Couple.BallReshape
 
 on Couple.BallUpdate
@@ -621,7 +619,7 @@ on Couple.BallUpdate
       put sHero[tName]["yaw"] into tYaw
       put sHero[tName]["x"] + sin(tYaw) * 18 into sBall["x"]
       put sHero[tName]["z"] + cos(tYaw) * 18 into sBall["z"]
-      SetObjectPosition sBall["key"], sBall["x"], -34, sBall["z"]
+      Entity.SetPosition sBall["key"], sBall["x"], -34, sBall["z"]
       exit Couple.BallUpdate
    end if
    -- resting on the floor (the first ball): still and whole until a hero touches it
@@ -672,7 +670,7 @@ on Couple.BallUpdate
    else
       put -sBall["vz"] into sBall["vz"]
    end if
-   SetObjectPosition sBall["key"], sBall["x"], -(kBallR + sBall["h"]), sBall["z"]
+   Entity.SetPosition sBall["key"], sBall["x"], -(kBallR + sBall["h"]), sBall["z"]
    -- a hero walking into it kicks it the way the hero faces (harder when running)
    if sBall["cool"] > 0 then subtract 1 from sBall["cool"]
    repeat for each item tName in "PROMPT,GLAZE"
@@ -818,9 +816,8 @@ on Couple.Camera pSnap
       put sCamZ + (tCZ - sCamZ) * tK into sCamZ
    end if
    put -1.0 * kM into tLY        -- chest height (up is -Y)
-   put atan2(tX - sCamX, tZ - sCamZ) into gCameraYaw
-   put -atan2(tLY - sCamY, sqrt((tX - sCamX) ^ 2 + (tZ - sCamZ) ^ 2)) into gCameraPitch
-   Engine.SetCam -sCamX, -sCamY, -sCamZ
+   Camera.SetLook atan2(tX - sCamX, tZ - sCamZ), -atan2(tLY - sCamY, sqrt((tX - sCamX) ^ 2 + (tZ - sCamZ) ^ 2))
+   Camera.SetPosition sCamX, sCamY, sCamZ
 end Couple.Camera
 
 on Couple.CheckExit
@@ -888,15 +885,12 @@ end Couple.State
 
 -- swap the mesh an object is drawn with (from Antack)
 on Couple.SetMesh pKey, pMesh
-   local tOut, tLine
-   if gObjectTransforms[pKey]["mesh"] is pMesh then exit Couple.SetMesh
-   repeat for each line tLine in gSceneObjects
-      if word 2 of tLine is pKey then put pMesh into word 1 of tLine
-      put tLine & cr after tOut
-   end repeat
-   delete the last char of tOut
-   put tOut into gSceneObjects
-   put pMesh into gObjectTransforms[pKey]["mesh"]
+   local tRadius
+   if Entity.Get(pKey, "mesh") is pMesh then exit Couple.SetMesh
+   -- Entity.SetMesh takes the new mesh's radius; this game keeps the old one
+   put Entity.Get(pKey, "radius") into tRadius
+   Entity.SetMesh pKey, pMesh
+   if tRadius is a number then Entity.Set pKey, "radius", tRadius
 end Couple.SetMesh
 
 -- engine rotation angles for a heading (from Antack.Euler; up is -Y)
@@ -960,46 +954,6 @@ function Couple.BeaconMesh
    end repeat
    return tM
 end Couple.BeaconMesh
-
--- where a file is (install/LAYOUT.md 5.1): this script's own folder first
--- (LIB_GAMES/Vibecode3D_Games/X/... is <script folder>/X/...), then Vibecode3D Common beside
--- it, then the folders above this stack, and last the owner's projects through WSL (his PC
--- only; the global bNoWSL, a test hook, turns that last one off)
-function Couple.FindFile pRelPath
-   local tPath, tTry, tShort, tDir, tErr
-   global bNoWSL
-   put pRelPath into tShort
-   if tShort begins with "LIB_GAMES/Vibecode3D_Games/" then delete char 1 to 27 of tShort
-   set the itemDel to "/"
-   -- the script's file, as the launcher or the game player set it on the stack
-   put empty into tDir
-   try
-      put the uScriptFile of (the long owner of me) into tDir
-   catch tErr
-      put empty into tDir
-   end try
-   replace "\" with "/" in tDir
-   if tDir contains "/" then
-      delete item -1 of tDir
-      put tDir & "/" & tShort into tTry
-      if there is a file tTry then return tTry
-      put item 1 to -2 of tDir & "/Vibecode3D Common/" into tTry
-      if there is a file (tTry & pRelPath) then return tTry & pRelPath
-      if there is a file (tTry & tShort) then return tTry & tShort
-   end if
-   put the effective filename of this stack into tPath
-   replace "\" with "/" in tPath
-   repeat 6 times
-      delete item -1 of tPath
-      if tPath is empty then exit repeat
-      put tPath & "/" & pRelPath into tTry
-      if there is a file tTry then return tTry
-   end repeat
-   if bNoWSL is true then return empty
-   put "//wsl$/Ubuntu/home/igame3d/projects/" & pRelPath into tTry
-   if there is a file tTry then return tTry
-   return empty
-end Couple.FindFile
 
 -- the arrows move you; a focused menu or field must never get them
 on arrowKey pKey
