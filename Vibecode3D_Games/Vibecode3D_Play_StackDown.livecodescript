@@ -8,7 +8,6 @@
 ##           to the top ends the game. 5 levels.
 ######################################################################################
 
-global gObjectTransforms, gSceneObjects
 global bPaused, bPlaying
 
 local sWell, sCellKey, sShape, sPC, sPR, sPieceKeys, sColor, sWas, sT, sEvery
@@ -21,7 +20,7 @@ constant kCell = 30
 
 on Game.OnStart
    focus on nothing          -- arrow keys belong to the game, never to a menu or a field
-   Engine.ResetCamera
+   Camera.Reset
    Scene.ClearAll
    Particles.Clear
    HUD.Clear
@@ -65,8 +64,8 @@ end Stack.StartLevel
 on Stack.Draw
    local tAt
    Scene.ClearAll
-   Mesh.Define "Stack.Block", MeshBox(kCell - 4, kCell - 4, 14)
-   Mesh.Define "Stack.Well", MeshBox(kCols * kCell + 8, kRows * kCell + 8, 4)
+   Mesh.Define "Stack.Block", Mesh.Box(kCell - 4, kCell - 4, 14)
+   Mesh.Define "Stack.Well", Mesh.Box(kCols * kCell + 8, kRows * kCell + 8, 4)
    get Entity.Spawn("Stack.Well", 0, 0, kZ, "#2E6F8E")
    repeat for each key tAt in sWell
       get Entity.Spawn("Stack.Block", Stack.X(item 1 of tAt), Stack.Y(item 2 of tAt), kZ, sWell[tAt])
@@ -102,7 +101,7 @@ on Stack.ShowPiece
    put 0 into tN
    repeat for each word tCell in sShape
       add 1 to tN
-      SetObjectPosition line tN of sPieceKeys, Stack.X(sPC + item 1 of tCell), Stack.Y(sPR + item 2 of tCell), kZ
+      Entity.SetPosition line tN of sPieceKeys, Stack.X(sPC + item 1 of tCell), Stack.Y(sPR + item 2 of tCell), kZ
    end repeat
 end Stack.ShowPiece
 
