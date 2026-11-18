@@ -9,8 +9,6 @@
 ##           costs a life. Clear the rows the level asks for. 5 levels.
 ######################################################################################
 
-global gObjectTransforms, gSceneObjects
-global gCameraYaw, gCameraPitch
 global bPaused, bPlaying
 
 local sOcc, sPC, sPR, sPlayer, sShape, sFoot, sFC, sFR, sFallY, sShadow
@@ -25,14 +23,13 @@ constant kShapes = "0,0 1,0 2,0|0,0 1,0 0,1 1,1|0,0 1,0 2,0 1,1|0,0 0,1 0,2 1,2|
 
 on Game.OnStart
    focus on nothing          -- arrow keys belong to the game, never to a menu or a field
-   Engine.ResetCamera
+   Camera.Reset
    Scene.ClearAll
    Particles.Clear
    HUD.Clear
    Collision.ClearRules
-   Engine.SetCam 0, 470, 380
-   put 0 into gCameraYaw
-   put -atan2(470, 440) into gCameraPitch
+   Camera.SetPosition 0, -470, -380
+   Camera.SetLook 0, -atan2(470, 440)
    put 1 into sLevel
    put false into sOver
    put false into sWon
@@ -57,9 +54,9 @@ on Lock.StartLevel
    put empty into sOcc
    put empty into sShape
    put empty into sShadow
-   Mesh.Define "Lock.Floor", MeshGrid(kN, kN, kS)
+   Mesh.Define "Lock.Floor", Mesh.Grid(kN, kN, kS)
    get Entity.Spawn("Lock.Floor", 0, 0, 0, "#1C4A2A")
-   Mesh.Define "Lock.Cube", MeshBox(kS - 4, kS - 4, kS - 4)
+   Mesh.Define "Lock.Cube", Mesh.Box(kS - 4, kS - 4, kS - 4)
    Mesh.Define "Lock.Man", Lock.ManMesh()
    put 3 into sPC
    put 6 into sPR
@@ -267,7 +264,7 @@ on Lock.ClearRows
          FX.Sparks Lock.X(c), -kS / 2, Lock.Z(r), 4, "#FFE060"
          repeat with l = 1 to 12
             put sOcc[c][r][l] into sOcc[c][r][l - 1]
-            if sOcc[c][r][l - 1] is not empty then SetObjectPosition sOcc[c][r][l - 1], Lock.X(c), -(l - 0.5) * kS, Lock.Z(r)
+            if sOcc[c][r][l - 1] is not empty then Entity.SetPosition sOcc[c][r][l - 1], Lock.X(c), -(l - 0.5) * kS, Lock.Z(r)
          end repeat
          put empty into sOcc[c][r][12]
       end repeat
@@ -353,8 +350,8 @@ on Game.OnUpdate
    if (dc is not 0 or dr is not 0) and (Lock.Pressed(65361, tKeys) or Lock.Pressed(97, tKeys) or Lock.Pressed(65363, tKeys) or Lock.Pressed(100, tKeys) or Lock.Pressed(65362, tKeys) or Lock.Pressed(119, tKeys) or Lock.Pressed(65364, tKeys) or Lock.Pressed(115, tKeys) or sTicks mod 6 is 0) then
       if dc is not 0 and Lock.Free(sPC + dc, sPR) then add dc to sPC
       if dr is not 0 and Lock.Free(sPC, sPR + dr) then add dr to sPR
-      SetObjectPosition sPlayer, Lock.X(sPC), 0, Lock.Z(sPR)
-      SetObjectRotation sPlayer, 0, atan2(dc, -dr), 0
+      Entity.SetPosition sPlayer, Lock.X(sPC), 0, Lock.Z(sPR)
+      Entity.SetRotation sPlayer, 0, atan2(dc, -dr), 0
    end if
    if Lock.Pressed(32, tKeys) and sShape is not empty then
       Lock.RotateFoot
@@ -373,7 +370,7 @@ on Game.OnUpdate
       if sFallY <= Lock.RestLevel() then
          Lock.Land
       else
-         SetObjectPosition sShape, Lock.X(sFC), -sFallY * kS, Lock.Z(sFR)
+         Entity.SetPosition sShape, Lock.X(sFC), -sFallY * kS, Lock.Z(sFR)
       end if
    end if
    Lock.ShowHUD
