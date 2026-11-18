@@ -22,7 +22,7 @@ constant kT = 5            -- half thickness of a paddle
 
 on Game.OnStart
    focus on nothing
-   Engine.ResetCamera
+   Camera.Reset
    Scene.ClearAll
    Particles.Clear
    HUD.Clear
@@ -58,9 +58,9 @@ on Cpong.StartLevel pLevel
    get Entity.Spawn("Cpong.Goals", 0, sCfg["cy"], kZ, sCfg["goalColor"])
    repeat with i = 1 to sPadN
       if sPad[i]["side"] is "L" or sPad[i]["side"] is "R" then
-         Mesh.Define "Cpong.Pad" & i, MeshBox(kT * 2, sPad[i]["half"] * 2, 6)
+         Mesh.Define "Cpong.Pad" & i, Mesh.Box(kT * 2, sPad[i]["half"] * 2, 6)
       else
-         Mesh.Define "Cpong.Pad" & i, MeshBox(sPad[i]["half"] * 2, kT * 2, 6)
+         Mesh.Define "Cpong.Pad" & i, Mesh.Box(sPad[i]["half"] * 2, kT * 2, 6)
       end if
       put 0 into sPad[i]["pos"]
       put Entity.Spawn("Cpong.Pad" & i, 0, 0, kZ, sPad[i]["color"]) into sPad[i]["key"]
@@ -185,16 +185,16 @@ on Cpong.PlacePad pJ
    if sPad[pJ]["side"] is "L" or sPad[pJ]["side"] is "R" then
       put sCfg["hh"] - sPad[pJ]["half"] into tRoom
       put max(-tRoom, min(tRoom, sPad[pJ]["pos"])) into sPad[pJ]["pos"]
-      SetObjectPosition sPad[pJ]["key"], sPad[pJ]["fx"], sCfg["cy"] + sPad[pJ]["pos"], kZ
+      Entity.SetPosition sPad[pJ]["key"], sPad[pJ]["fx"], sCfg["cy"] + sPad[pJ]["pos"], kZ
    else
       put sCfg["hw"] - sPad[pJ]["half"] into tRoom
       put max(-tRoom, min(tRoom, sPad[pJ]["pos"])) into sPad[pJ]["pos"]
-      SetObjectPosition sPad[pJ]["key"], sPad[pJ]["pos"], sCfg["cy"] + sPad[pJ]["fx"], kZ
+      Entity.SetPosition sPad[pJ]["key"], sPad[pJ]["pos"], sCfg["cy"] + sPad[pJ]["fx"], kZ
    end if
 end Cpong.PlacePad
 
 on Cpong.PlaceBall pB
-   SetObjectPosition sBall[pB]["key"], sBall[pB]["x"], sCfg["cy"] + sBall[pB]["y"], kZ
+   Entity.SetPosition sBall[pB]["key"], sBall[pB]["x"], sCfg["cy"] + sBall[pB]["y"], kZ
 end Cpong.PlaceBall
 
 on Cpong.MoveBall pB
@@ -356,7 +356,7 @@ end Cpong.Decor
 
 ## PART ball_square: the arcade block.
 function Cpong.BallMesh pS
-   return MeshBox(pS, pS, pS)
+   return Mesh.Box(pS, pS, pS)
 end Cpong.BallMesh
 
 ## PART control_keys: a player paddle. "arrows": up/down (side paddles) or left/right
