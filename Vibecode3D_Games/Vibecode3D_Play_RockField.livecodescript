@@ -8,7 +8,6 @@
 ##           life; three lives. Clear the field to move on. 5 levels.
 ######################################################################################
 
-global gObjectTransforms, gSceneObjects
 global bPaused, bPlaying
 
 local sShip, sX, sY, sVX, sVY, sA, sSafe, sFireWas
@@ -25,7 +24,7 @@ constant kShotSpeed = 14
 
 on Game.OnStart
    focus on nothing          -- arrow keys belong to the game, never to a menu or a field
-   Engine.ResetCamera
+   Camera.Reset
    Scene.ClearAll
    Particles.Clear
    HUD.Clear
@@ -43,10 +42,10 @@ on Rock.StartLevel pLevel
    put line pLevel of ("3,1.5,2" & cr & "4,1.9,2" & cr & "5,2.3,2" & cr & "5,2.7,3" & cr & "6,3.2,3") into tRow
    put item 3 of tRow into sSplit
    Scene.ClearAll
-   Mesh.Define "Rock.Ship", MeshPyramid(3, 14, 30)
-   Mesh.Define "Rock.Big", MeshPrism(7, 40, 20)
-   Mesh.Define "Rock.Small", MeshPrism(5, 18, 14)
-   Mesh.Define "Rock.Shot", MeshBox(5, 5, 5)
+   Mesh.Define "Rock.Ship", Mesh.Pyramid(3, 14, 30)
+   Mesh.Define "Rock.Big", Mesh.Prism(7, 40, 20)
+   Mesh.Define "Rock.Small", Mesh.Prism(5, 18, 14)
+   Mesh.Define "Rock.Shot", Mesh.Box(5, 5, 5)
    put empty into sRock
    put 0 into sRockN
    repeat with tN = 1 to item 1 of tRow
@@ -81,7 +80,7 @@ on Rock.Add pBig, pX, pY, pSpeed
    else
       put Entity.Spawn("Rock.Small", pX, pY, kZ, "yellow") into sRock[sRockN]["key"]
    end if
-   SetObjectRotationSpeed sRock[sRockN]["key"], 0, 0, (random(7) - 4) * 0.01
+   Entity.SetRotationSpeed sRock[sRockN]["key"], 0, 0, (random(7) - 4) * 0.01
 end Rock.Add
 
 function Rock.Wrap pV, pLow, pHigh
@@ -123,8 +122,8 @@ on Game.OnUpdate
    put sVY * 0.99 into sVY
    put Rock.Wrap(sX + sVX, kLeft, kRight) into sX
    put Rock.Wrap(sY + sVY, kTop, kBottom) into sY
-   SetObjectPosition sShip, sX, sY, kZ
-   SetObjectRotation sShip, 0, 0, sA
+   Entity.SetPosition sShip, sX, sY, kZ
+   Entity.SetRotation sShip, 0, 0, sA
    put (32 is among the items of tKeys) into tFire
    if tFire and sFireWas is not true and the number of lines of the keys of sShot < 4 then
       add 1 to sShotN
@@ -140,14 +139,14 @@ on Game.OnUpdate
    repeat for each key tN in sRock
       put Rock.Wrap(sRock[tN]["x"] + sRock[tN]["vx"], kLeft, kRight) into sRock[tN]["x"]
       put Rock.Wrap(sRock[tN]["y"] + sRock[tN]["vy"], kTop, kBottom) into sRock[tN]["y"]
-      SetObjectPosition sRock[tN]["key"], sRock[tN]["x"], sRock[tN]["y"], kZ
+      Entity.SetPosition sRock[tN]["key"], sRock[tN]["x"], sRock[tN]["y"], kZ
    end repeat
    -- shots fly, and split what they meet
    repeat for each key tS in sShot
       put Rock.Wrap(sShot[tS]["x"] + sShot[tS]["vx"], kLeft, kRight) into sShot[tS]["x"]
       put Rock.Wrap(sShot[tS]["y"] + sShot[tS]["vy"], kTop, kBottom) into sShot[tS]["y"]
       subtract 1 from sShot[tS]["life"]
-      SetObjectPosition sShot[tS]["key"], sShot[tS]["x"], sShot[tS]["y"], kZ
+      Entity.SetPosition sShot[tS]["key"], sShot[tS]["x"], sShot[tS]["y"], kZ
       put false into tHit
       repeat for each key tN in sRock
          put 20 into tR
