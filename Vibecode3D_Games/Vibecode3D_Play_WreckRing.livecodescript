@@ -12,7 +12,6 @@
 ##           has more cars (5 rounds). Wrecked yourself: a life, and the round again.
 ######################################################################################
 
-global gObjectTransforms, gSceneObjects
 global bPaused, bPlaying
 
 local sCar, sCarN, sPow, sPowN, sRamp, sNextPow, sLevel, sLives, sScore, sOver, sWon
@@ -26,7 +25,7 @@ constant kCarR = 20
 
 on Game.OnStart
    focus on nothing
-   Engine.ResetCamera
+   Camera.Reset
    Scene.ClearAll
    Particles.Clear
    HUD.Clear
@@ -50,9 +49,9 @@ on Wreck.StartLevel pLevel
    Mesh.Define "Wreck.Wall", Wreck.RingMesh(kR + 12, 24, 0)
    Mesh.Define "Wreck.Lava", Wreck.RingMesh(kLavaR, 12, 14)
    Mesh.Define "Wreck.Ramp", Wreck.RampMesh()
-   Mesh.Define "Wreck.Rocket", MeshPyramid(3, 12, 30)
+   Mesh.Define "Wreck.Rocket", Mesh.Pyramid(3, 12, 30)
    Mesh.Define "Wreck.Repair", Wreck.CrossMesh()
-   Mesh.Define "Wreck.Mine", MeshPyramid(6, 16, 10)
+   Mesh.Define "Wreck.Mine", Mesh.Pyramid(6, 16, 10)
    get Entity.Spawn("Wreck.Wall", 0, kCY, kZ, "180,180,200")
    get Entity.Spawn("Wreck.Lava", 0, kCY, kZ + 1, "255,60,0")
    -- ramps: on the ring around the pit, pointing at it
@@ -62,7 +61,7 @@ on Wreck.StartLevel pLevel
       put 190 * cos(tA) into sRamp[i]["x"]
       put kCY + 190 * sin(tA) into sRamp[i]["y"]
       put Entity.Spawn("Wreck.Ramp", sRamp[i]["x"], sRamp[i]["y"], kZ, "150,150,170") into sRamp[i]["key"]
-      SetObjectRotation sRamp[i]["key"], 0, 0, tA + 3.14159
+      Entity.SetRotation sRamp[i]["key"], 0, 0, tA + 3.14159
    end repeat
    -- the cars: you are car 1
    put empty into sCar
@@ -391,7 +390,7 @@ on Wreck.Damage pC, pN
       put 0 into sCar[pC]["hp"]
       put false into sCar[pC]["alive"]
       FX.Sparks sCar[pC]["x"], sCar[pC]["y"], kZ, 26, "255,120,40"
-      SetObjectRotation sCar[pC]["key"], 0.5, 0.4, sCar[pC]["ang"]
+      Entity.SetRotation sCar[pC]["key"], 0.5, 0.4, sCar[pC]["ang"]
       if pC > 1 then add 300 * sLevel to sScore
    end if
    put empty into sHUDWas
@@ -419,7 +418,7 @@ on Wreck.PowerUps
       put Entity.Spawn(item 2 of tKind, sPow[sPowN]["x"], sPow[sPowN]["y"], kZ, item 3 to 5 of tKind) into sPow[sPowN]["key"]
    end if
    repeat for each key tK in sPow
-      SetObjectRotation sPow[tK]["key"], 0, 0, sTicks / 10
+      Entity.SetRotation sPow[tK]["key"], 0, 0, sTicks / 10
       repeat with i = 1 to sCarN
          if not sCar[i]["alive"] or sCar[i]["air"] > 0 then next repeat
          if abs(sPow[tK]["x"] - sCar[i]["x"]) < 26 and abs(sPow[tK]["y"] - sCar[i]["y"]) < 26 then
@@ -451,8 +450,8 @@ on Wreck.Draw
    repeat with i = 1 to sCarN
       put 0 into tLift
       if sCar[i]["air"] > 0 then put 80 * sin(3.14159 * sCar[i]["air"] / 28) into tLift
-      SetObjectPosition sCar[i]["key"], sCar[i]["x"], sCar[i]["y"], kZ - tLift
-      if sCar[i]["alive"] then SetObjectRotation sCar[i]["key"], 0, 0, sCar[i]["ang"]
+      Entity.SetPosition sCar[i]["key"], sCar[i]["x"], sCar[i]["y"], kZ - tLift
+      if sCar[i]["alive"] then Entity.SetRotation sCar[i]["key"], 0, 0, sCar[i]["ang"]
    end repeat
 end Wreck.Draw
 
