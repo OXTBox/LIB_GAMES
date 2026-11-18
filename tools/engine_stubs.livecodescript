@@ -5,8 +5,8 @@ script "EngineContractStubs"
 --
 -- The CONTRACT part holds one stand-in for every call in LIB_ig3d/ENGINE_CONTRACT.md that the
 -- XT engine has today, and nothing else: a game that passes here calls only the contract.
--- A call the contract plans but XT lacks (Game.FindFile, Entity.Set...) has no stand-in on
--- purpose: a test must stop where the real engine would.
+-- A call the contract plans but XT lacks has no stand-in on purpose: a test must stop where
+-- the real engine would.
 -- Check it:  python3 -I LIB_ig3d/tools/contract_check.py --stubs
 --
 -- What the stand-ins keep true: an object exists from Entity.Spawn to Entity.Kill; a position,
@@ -39,6 +39,8 @@ function Engine.Info pKey
          return true
       case "paused"
          return (bPaused is true)
+      case "edition"
+         return "XT"
    end switch
    return empty
 end Engine.Info
@@ -326,6 +328,93 @@ end Weapon.FireAt
 
 on Sound.Play pType
 end Sound.Play
+
+------------------------------------------------------------------ added 18 Nov (A-93, A-96)
+-- The contract's calls written under their final names (LIB_ig3d/livecode/contract_calls).
+
+on Camera.SetLook pYaw, pPitch, pRoll
+   global gCameraRoll
+   if pYaw is a number then put pYaw into gCameraYaw
+   if pPitch is a number then put pPitch into gCameraPitch
+   if pRoll is a number then put pRoll into gCameraRoll
+end Camera.SetLook
+
+-- an unturned camera at the origin, as Engine.Info("projection") says: k 400, centre 400,300
+function Camera.WorldToScreen pX, pY, pZ
+   if pX is not a number or pY is not a number or pZ is not a number then return empty
+   if pZ < 1 then return empty
+   return (400 + pX * 400 / pZ) & comma & (300 + pY * 400 / pZ)
+end Camera.WorldToScreen
+
+function Scene.Objects pMesh
+   local tLine, tOut
+   repeat for each line tLine in gSceneObjects
+      if pMesh is empty or word 1 of tLine is pMesh then put word 2 of tLine & cr after tOut
+   end repeat
+   delete the last char of tOut
+   return tOut
+end Scene.Objects
+
+on Entity.SetMesh pId, pMesh
+   local tLine, tOut, tFound
+   if not Mesh.Has(pMesh) then return "Entity.SetMesh: no mesh" && pMesh
+   put false into tFound
+   repeat for each line tLine in gSceneObjects
+      if word 2 of tLine is pId and pId is not empty then
+         put pMesh into word 1 of tLine
+         put true into tFound
+      end if
+      put tLine & cr after tOut
+   end repeat
+   if not tFound then return "Entity.SetMesh: no object" && pId
+   delete the last char of tOut
+   put tOut into gSceneObjects
+   put pMesh into gObjectTransforms[pId]["mesh"]
+   return empty
+end Entity.SetMesh
+
+on Entity.Set pId, pProp, pValue
+   if not Scene.Has(pId) then return "Entity.Set: no object" && pId
+   if pProp is not among the items of "hp,ttl,radius" then return "Entity.Set: not a property:" && pProp & " (hp, ttl, radius)"
+   if pValue is empty and pProp is not "radius" then
+      delete variable gObjectTransforms[pId][pProp]
+      return empty
+   end if
+   if pValue is not a number then return "Entity.Set:" && pProp && "takes a number"
+   put pValue into gObjectTransforms[pId][pProp]
+   return empty
+end Entity.Set
+
+function Entity.Get pId, pProp
+   if not Scene.Has(pId) then return empty
+   if pProp is not among the items of "hp,ttl,radius,mesh,group" then return empty
+   return gObjectTransforms[pId][pProp]
+end Entity.Get
+
+function Mesh.Has pName
+   if pName is empty then return false
+   return pName is among the keys of sMeshes
+end Mesh.Has
+
+-- no optional parts in a headless run
+function Engine.Has pFeature
+   return false
+end Engine.Has
+
+-- the mouse resting in the middle of the view, button up; empty under Stub.NoMouse
+function Engine.Mouse
+   if gNoMouse is true then return empty
+   return "400,300,false"
+end Engine.Mouse
+
+-- the projects folder only (a test runs from WSL)
+function Game.FindFile pPath
+   local tTry
+   if pPath is empty then return empty
+   put "/home/igame3d/projects/" & pPath into tTry
+   if there is a file tTry then return tTry
+   return empty
+end Game.FindFile
 
 -- == DEBTS ==
 -- Engine internals that games under test still reach into (ENGINE_CONTRACT.md, "Debts").
