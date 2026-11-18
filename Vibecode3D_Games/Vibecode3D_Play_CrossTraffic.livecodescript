@@ -7,7 +7,6 @@
 ##           running out, costs a life; three lives. 5 levels.
 ######################################################################################
 
-global gObjectTransforms, gSceneObjects
 global bPaused, bPlaying
 
 local sWalker, sCol, sRow, sWas, sCar, sLanes, sLevel, sLives, sScore, sHome, sTime, sLimit
@@ -21,7 +20,7 @@ constant kCols = 17
 
 on Game.OnStart
    focus on nothing          -- arrow keys belong to the game, never to a menu or a field
-   Engine.ResetCamera
+   Camera.Reset
    Scene.ClearAll
    Particles.Clear
    HUD.Clear
@@ -47,9 +46,9 @@ on Cross.StartLevel pLevel
    put item 3 of tRow into tCars
    put 0 into sHome
    Scene.ClearAll
-   Mesh.Define "Cross.Walker", MeshBox(24, 30, 12)
-   Mesh.Define "Cross.Car", MeshBox(70, 30, 16)
-   Mesh.Define "Cross.Strip", MeshBox(kRight - kLeft, 4, 4)
+   Mesh.Define "Cross.Walker", Mesh.Box(24, 30, 12)
+   Mesh.Define "Cross.Car", Mesh.Box(70, 30, 16)
+   Mesh.Define "Cross.Strip", Mesh.Box(kRight - kLeft, 4, 4)
    get Entity.Spawn("Cross.Strip", 0, Cross.Y(0) + kHop / 2, kZ, "green")
    get Entity.Spawn("Cross.Strip", 0, Cross.Y(sLanes + 1) - kHop / 2, kZ, "yellow")
    put empty into sCar
@@ -118,12 +117,12 @@ on Game.OnUpdate
    if Cross.Pressed(65363, tKeys) then put min(kCols, sCol + 1) into sCol
    put (sCol - (kCols + 1) / 2) * kHop into tX
    put Cross.Y(sRow) into tY
-   SetObjectPosition sWalker, tX, tY, kZ
+   Entity.SetPosition sWalker, tX, tY, kZ
    repeat for each key tK in sCar
       add sCar[tK]["v"] to sCar[tK]["x"]
       if sCar[tK]["x"] > kRight + 50 then put kLeft - 50 into sCar[tK]["x"]
       if sCar[tK]["x"] < kLeft - 50 then put kRight + 50 into sCar[tK]["x"]
-      SetObjectPosition sCar[tK]["key"], sCar[tK]["x"], Cross.Y(sCar[tK]["lane"]), kZ
+      Entity.SetPosition sCar[tK]["key"], sCar[tK]["x"], Cross.Y(sCar[tK]["lane"]), kZ
       if sCar[tK]["lane"] = sRow and abs(sCar[tK]["x"] - tX) < 46 then
          Cross.Hurt tX, tY
          exit Game.OnUpdate
