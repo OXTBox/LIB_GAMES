@@ -10,7 +10,6 @@
 ##           life. Reach the flag at the end of each stage; 5 stages.
 ######################################################################################
 
-global gObjectTransforms, gSceneObjects
 global bPaused, bPlaying
 
 local sCar, sX, sY, sVX, sJump, sDist, sStageLen, sSlice, sThing, sThingN, sNextSpawn, sRivers
@@ -25,7 +24,7 @@ constant kJumpSteps = 26
 
 on Game.OnStart
    focus on nothing
-   Engine.ResetCamera
+   Camera.Reset
    Scene.ClearAll
    Particles.Clear
    HUD.Clear
@@ -43,8 +42,8 @@ on Rally.Build
    Mesh.Define "Rally.Car", Rally.CarMesh(40, 80)
    Mesh.Define "Rally.RoadCar", Rally.CarMesh(56, 96)
    Mesh.Define "Rally.Enemy", Rally.CarMesh(50, 90)
-   Mesh.Define "Rally.Rock", MeshPyramid(5, 18, 20)
-   Mesh.Define "Rally.Shadow", MeshBox(40, 80, 1)
+   Mesh.Define "Rally.Rock", Mesh.Pyramid(5, 18, 20)
+   Mesh.Define "Rally.Shadow", Mesh.Box(40, 80, 1)
    Mesh.Define "Rally.Slice", Rally.SliceMesh()
    Mesh.Define "Rally.Flag", Rally.FlagMesh()
    -- water: wavy lines right across the screen
@@ -237,16 +236,16 @@ on Game.OnUpdate
    put max(tCX - kHalfW - 40, min(tCX + kHalfW + 40, sX)) into sX
    -- your car rises toward the camera in a jump
    if tInAir then
-      SetObjectPosition sCar, sX, kCarY, kZ - 90 * sin(3.14159 * sJump / kJumpSteps)
+      Entity.SetPosition sCar, sX, kCarY, kZ - 90 * sin(3.14159 * sJump / kJumpSteps)
    else
-      SetObjectPosition sCar, sX, kCarY, kZ
+      Entity.SetPosition sCar, sX, kCarY, kZ
    end if
-   SetObjectRotation sCar, 0, 0, sVX * 0.04
+   Entity.SetRotation sCar, 0, 0, sVX * 0.04
    -- the road
    put sDist mod kSliceGap into tFrac
    repeat with i = 0 to kSlices
       put sDist - 280 + i * kSliceGap - tFrac into tW
-      SetObjectPosition sSlice[i], Rally.RoadX(tW), Rally.ScreenY(tW) - kSliceGap, kZ
+      Entity.SetPosition sSlice[i], Rally.RoadX(tW), Rally.ScreenY(tW) - kSliceGap, kZ
    end repeat
    -- new cars ahead
    if sDist >= sNextSpawn and sDist < sStageLen - 600 then
@@ -357,9 +356,9 @@ on Rally.Things pInAir, pLand
          next repeat
       end if
       if tY < -580 then
-         SetObjectPosition sThing[tT]["key"], 0, -900, kZ
+         Entity.SetPosition sThing[tT]["key"], 0, -900, kZ
       else
-         SetObjectPosition sThing[tT]["key"], sThing[tT]["x"], tY, kZ
+         Entity.SetPosition sThing[tT]["key"], sThing[tT]["x"], tY, kZ
       end if
    end repeat
 end Rally.Things
