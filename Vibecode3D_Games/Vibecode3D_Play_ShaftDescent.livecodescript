@@ -9,7 +9,6 @@
 ## RULES     a drone, or the air running out, costs a life (back to the top). 5 levels.
 ######################################################################################
 
-global gObjectTransforms, gSceneObjects
 global bPaused, bPlaying
 
 local sX, sY, sVX, sVY, sOnGround, sPlayer, sRows, sDrone, sDroneCount, sExitY, sExitX
@@ -29,7 +28,7 @@ constant kPH = 34              -- the runner's height
 
 on Game.OnStart
    focus on nothing          -- arrow keys belong to the game, never to a menu or a field
-   Engine.ResetCamera
+   Camera.Reset
    Scene.ClearAll
    Particles.Clear
    HUD.Clear
@@ -57,7 +56,7 @@ on Shaft.StartLevel
    put empty into sRows
    -- the shaft walls, one tall frame
    put item 1 of tRow * kRowGap + 400 into tW
-   Mesh.Define "Shaft.Wall", MeshBox(10, tW, 30)
+   Mesh.Define "Shaft.Wall", Mesh.Box(10, tW, 30)
    get Entity.Spawn("Shaft.Wall", -kHalfW - 6, tW / 2 - 300, kZ, "#1C4A2A")
    get Entity.Spawn("Shaft.Wall", kHalfW + 6, tW / 2 - 300, kZ, "#1C4A2A")
    -- rows of platforms, each with one or two gaps to drop through
@@ -80,12 +79,12 @@ on Shaft.StartLevel
    put (item 1 of tRow + 1) * kRowGap into sExitY
    Shaft.Platform item 1 of tRow + 1, -kHalfW, kHalfW, sExitY
    put (random(5) - 3) * 100 into sExitX
-   Mesh.Define "Shaft.Exit", MeshBox(80, 40, 20)
+   Mesh.Define "Shaft.Exit", Mesh.Box(80, 40, 20)
    get Entity.Spawn("Shaft.Exit", sExitX, sExitY - 20 - kThick / 2, kZ, "#40FF80")
    -- drones patrol along rows (never the first)
    put empty into sDrone
    put item 2 of tRow into sDroneCount
-   Mesh.Define "Shaft.Drone", MeshSphere(14, 2, 6)
+   Mesh.Define "Shaft.Drone", Mesh.Sphere(14, 2, 6)
    repeat with n = 1 to sDroneCount
       put 2 + (n * 7) mod (item 1 of tRow - 1) into r
       put r * kRowGap - 30 into sDrone[n]["y"]
@@ -112,7 +111,7 @@ on Shaft.Platform r, x1, x2, y
    local n
    put the number of lines of sRows[r] + 1 into n
    put x1 & comma & x2 & cr after sRows[r]
-   Mesh.Define "Shaft.P" & r & "_" & n, MeshBox(x2 - x1, kThick, 26)
+   Mesh.Define "Shaft.P" & r & "_" & n, Mesh.Box(x2 - x1, kThick, 26)
    get Entity.Spawn("Shaft.P" & r & "_" & n, (x1 + x2) / 2, y, kZ, "#FFB000")
 end Shaft.Platform
 
@@ -211,17 +210,17 @@ on Game.OnUpdate
          end repeat
       end if
    end if
-   SetObjectPosition sPlayer, sX, sY, kZ
-   SetObjectRotation sPlayer, 0, 0, sVX / 30
+   Entity.SetPosition sPlayer, sX, sY, kZ
+   Entity.SetRotation sPlayer, 0, 0, sVX / 30
    -- the camera follows, the runner a third of the way down the screen
    put sCamY + (sY + 60 - sCamY) * 0.15 into sCamY
-   Engine.SetCam 0, -sCamY, 0
+   Camera.SetPosition 0, sCamY, 0
    -- drones patrol
    repeat with n = 1 to sDroneCount
       add sDrone[n]["v"] to sDrone[n]["x"]
       if abs(sDrone[n]["x"]) > kHalfW - 20 then put -sDrone[n]["v"] into sDrone[n]["v"]
-      SetObjectPosition sDrone[n]["key"], sDrone[n]["x"], sDrone[n]["y"] + 6 * sin(sTicks / 9 + n), kZ
-      SetObjectRotation sDrone[n]["key"], 0, sTicks / 10, 0
+      Entity.SetPosition sDrone[n]["key"], sDrone[n]["x"], sDrone[n]["y"] + 6 * sin(sTicks / 9 + n), kZ
+      Entity.SetRotation sDrone[n]["key"], 0, sTicks / 10, 0
       if abs(sDrone[n]["x"] - sX) < 24 and abs(sDrone[n]["y"] - (sY - kPH / 2)) < 30 then
          Shaft.LoseLife "A DRONE GOT YOU"
          exit Game.OnUpdate
@@ -292,7 +291,7 @@ end Shaft.State
 
 on Game.OnStop
    HUD.Clear
-   Engine.ResetCamera
+   Camera.Reset
 end Game.OnStop
 
 -- the arrows move you; a focused menu or field must never get them
