@@ -9,7 +9,6 @@
 ##           Under 3 parts the ship can't flap any more. Distance is the score. 5 levels.
 ######################################################################################
 
-global gObjectTransforms, gSceneObjects
 global bPaused, bPlaying
 
 local sY, sVY, sParts, sPartKeys, sCols, sSerial, sNextX, sGapY, sDist, sLevel, sSafe
@@ -25,7 +24,7 @@ constant kFlap = -11
 constant kShape = "0,0,60,16|0,-18,26,14|-18,22,10,30|20,18,10,22|-36,0,14,8|36,0,14,8|26,34,18,8"
 
 on Game.OnStart
-   Engine.ResetCamera
+   Camera.Reset
    Scene.ClearAll
    Particles.Clear
    HUD.Clear
@@ -61,7 +60,7 @@ on Flop.NewShip
    repeat with n = 1 to sParts
       put item n of kShape into tPart
       set the itemDel to comma
-      Mesh.Define "Flop.Part" & n, MeshBox(item 3 of tPart, item 4 of tPart, 10)
+      Mesh.Define "Flop.Part" & n, Mesh.Box(item 3 of tPart, item 4 of tPart, 10)
       put Entity.Spawn("Flop.Part" & n, kShipX + item 1 of tPart, sY + item 2 of tPart, kZ, "#4C8CFF") into sPartKeys[n]
       set the itemDel to "|"
    end repeat
@@ -74,7 +73,7 @@ on Flop.NewTerrain
    put 0 into sSerial
    put 200 into sNextX
    put 0 into sGapY
-   Mesh.Define "Flop.Rock", MeshBox(kColW - 8, 600, 14)
+   Mesh.Define "Flop.Rock", Mesh.Box(kColW - 8, 600, 14)
    repeat 14 times
       Flop.AddColumn
    end repeat
@@ -134,8 +133,8 @@ on Game.OnUpdate
    repeat for each key tK in sCols
       subtract sScroll from sCols[tK]["x"]
       if sCols[tK]["top"] is not empty then
-         SetObjectPosition sCols[tK]["top"], sCols[tK]["x"], sCols[tK]["gap"] - sCols[tK]["h"] / 2 - 300, kZ
-         SetObjectPosition sCols[tK]["bot"], sCols[tK]["x"], sCols[tK]["gap"] + sCols[tK]["h"] / 2 + 300, kZ
+         Entity.SetPosition sCols[tK]["top"], sCols[tK]["x"], sCols[tK]["gap"] - sCols[tK]["h"] / 2 - 300, kZ
+         Entity.SetPosition sCols[tK]["bot"], sCols[tK]["x"], sCols[tK]["gap"] + sCols[tK]["h"] / 2 + 300, kZ
          -- a crash: the ship is 40 high at most; outside the gap while inside the column
          if sSafe <= 0 and abs(sCols[tK]["x"] - kShipX) < kColW / 2 + 28 and abs(sY - sCols[tK]["gap"]) > sCols[tK]["h"] / 2 - 22 then
             put true into tHit
@@ -170,7 +169,7 @@ on Game.OnUpdate
    repeat for each key n in sPartKeys
       put item n of kShape into tPart
       set the itemDel to comma
-      SetObjectPosition sPartKeys[n], kShipX + item 1 of tPart, sY + item 2 of tPart + 2 * sin((sTicks + n * 9) / 6), kZ
+      Entity.SetPosition sPartKeys[n], kShipX + item 1 of tPart, sY + item 2 of tPart + 2 * sin((sTicks + n * 9) / 6), kZ
       set the itemDel to "|"
    end repeat
    set the itemDel to comma
