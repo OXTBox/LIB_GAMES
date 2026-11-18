@@ -13,7 +13,6 @@
 ##           spin out red cars coming up from below). Reach the water: next level (5).
 ######################################################################################
 
-global gObjectTransforms, gSceneObjects
 global bPaused, bPlaying
 
 local sCar, sBoat, sX, sVX, sDist, sStageLen, sSlice, sSliceWet, sThing, sThingN, sNextSpawn
@@ -29,7 +28,7 @@ constant kWaterLen = 1100
 
 on Game.OnStart
    focus on nothing
-   Engine.ResetCamera
+   Camera.Reset
    Scene.ClearAll
    Particles.Clear
    HUD.Clear
@@ -52,10 +51,10 @@ on Int.Build
    Mesh.Define "Int.Truck", Int.TruckMesh()
    Mesh.Define "Int.Boat", Int.BoatMesh()
    Mesh.Define "Int.Heli", Int.HeliMesh()
-   Mesh.Define "Int.Shot", MeshBox(4, 14, 4)
-   Mesh.Define "Int.Missile", MeshPyramid(3, 6, 22)
-   Mesh.Define "Int.Bomb", MeshBox(12, 12, 12)
-   Mesh.Define "Int.Oil", MeshPrism(7, 26, 2)
+   Mesh.Define "Int.Shot", Mesh.Box(4, 14, 4)
+   Mesh.Define "Int.Missile", Mesh.Pyramid(3, 6, 22)
+   Mesh.Define "Int.Bomb", Mesh.Box(12, 12, 12)
+   Mesh.Define "Int.Oil", Mesh.Prism(7, 26, 2)
    Mesh.Define "Int.Slice", Int.SliceMesh(false)
    Mesh.Define "Int.Wave", Int.SliceMesh(true)
    put empty into sSlice
@@ -188,7 +187,7 @@ on Int.StartLevel pLevel
    put empty into sShot
    put 0 into sShotN
    put 400 into sNextSpawn
-   SetObjectPosition sBoat, 0, -900, kZ
+   Entity.SetPosition sBoat, 0, -900, kZ
    put empty into sHUDWas
 end Int.StartLevel
 
@@ -270,7 +269,7 @@ on Game.OnUpdate
    if not sWet and sDist >= tWetAt then
       put true into sWet
       FX.Sparks sX, kCarY, kZ, 16, "40,140,255"
-      SetObjectPosition sCar, 0, -900, kZ
+      Entity.SetPosition sCar, 0, -900, kZ
       put empty into sHUDWas
    end if
    put Int.RoadX(sDist) into tCX
@@ -281,22 +280,22 @@ on Game.OnUpdate
    end if
    put max(tCX - kHalfW - 40, min(tCX + kHalfW + 40, sX)) into sX
    if sWet then
-      SetObjectPosition sBoat, sX, kCarY + 6 * sin(sTicks / 5), kZ
-      SetObjectRotation sBoat, 0, 0, sVX * 0.05
+      Entity.SetPosition sBoat, sX, kCarY + 6 * sin(sTicks / 5), kZ
+      Entity.SetRotation sBoat, 0, 0, sVX * 0.05
    else
-      SetObjectPosition sCar, sX, kCarY, kZ
-      SetObjectRotation sCar, 0, 0, sVX * 0.04
+      Entity.SetPosition sCar, sX, kCarY, kZ
+      Entity.SetRotation sCar, 0, 0, sVX * 0.04
    end if
    -- road slices, water slices past the road's end
    put sDist mod kSliceGap into tFrac
    repeat with i = 0 to kSlices
       put sDist - 140 + i * kSliceGap - tFrac into tW
       if tW < tWetAt then
-         SetObjectPosition sSlice[i], Int.RoadX(tW), Int.ScreenY(tW) - kSliceGap, kZ
-         SetObjectPosition sSliceWet[i], 0, -900, kZ
+         Entity.SetPosition sSlice[i], Int.RoadX(tW), Int.ScreenY(tW) - kSliceGap, kZ
+         Entity.SetPosition sSliceWet[i], 0, -900, kZ
       else
-         SetObjectPosition sSlice[i], 0, -900, kZ
-         SetObjectPosition sSliceWet[i], Int.RoadX(tW), Int.ScreenY(tW) - kSliceGap, kZ
+         Entity.SetPosition sSlice[i], 0, -900, kZ
+         Entity.SetPosition sSliceWet[i], Int.RoadX(tW), Int.ScreenY(tW) - kSliceGap, kZ
       end if
    end repeat
    if sDist >= sNextSpawn and sDist < tWetAt - 300 then
@@ -366,7 +365,7 @@ on Int.Fire pKind, pX, pDummy
       put Entity.Spawn("Int.Shot", pX, kCarY - 50, kZ, "255,255,120") into sShot[sShotN]["key"]
    else
       put Entity.Spawn("Int.Missile", pX, kCarY - 50, kZ, "255,120,255") into sShot[sShotN]["key"]
-      SetObjectRotation sShot[sShotN]["key"], -1.5708, 0, 0
+      Entity.SetRotation sShot[sShotN]["key"], -1.5708, 0, 0
    end if
 end Int.Fire
 
@@ -374,13 +373,13 @@ end Int.Fire
 on Int.Helicopter
    local tY
    if sHeliX < 0 then
-      SetObjectPosition sHeli, 0, -900, kZ - 60
+      Entity.SetPosition sHeli, 0, -900, kZ - 60
       exit Int.Helicopter
    end if
    add max(-3, min(3, (sX - sHeliX) * 0.03)) to sHeliX
    put -180 + 20 * sin(sTicks / 20) into tY
-   SetObjectPosition sHeli, sHeliX, tY, kZ - 60
-   SetObjectRotation sHeli, 0, 0, sTicks / 2
+   Entity.SetPosition sHeli, sHeliX, tY, kZ - 60
+   Entity.SetRotation sHeli, 0, 0, sTicks / 2
    subtract 1 from sBombWait
    if sBombWait <= 0 then
       Int.AddThing "bomb", "Int.Bomb", sHeliX, sDist + (kCarY - tY), 0, "255,40,40"
@@ -420,7 +419,7 @@ on Int.Shots
          Entity.Kill sShot[tS]["key"]
          delete variable sShot[tS]
       else
-         SetObjectPosition sShot[tS]["key"], sShot[tS]["x"], sShot[tS]["y"], kZ
+         Entity.SetPosition sShot[tS]["key"], sShot[tS]["x"], sShot[tS]["y"], kZ
       end if
    end repeat
 end Int.Shots
@@ -445,7 +444,7 @@ on Int.Things
          case "enemy"
             if sThing[tT]["spin"] > 0 then
                subtract 1 from sThing[tT]["spin"]
-               SetObjectRotation sThing[tT]["key"], 0, 0, sThing[tT]["spin"] / 3
+               Entity.SetRotation sThing[tT]["key"], 0, 0, sThing[tT]["spin"] / 3
                if sThing[tT]["spin"] is 0 then
                   Int.Destroy tT
                   next repeat
@@ -461,7 +460,7 @@ on Int.Things
             break
          case "bomb"
             subtract 1 from sThing[tT]["fuse"]
-            SetObjectRotation sThing[tT]["key"], sTicks / 4, sTicks / 3, 0
+            Entity.SetRotation sThing[tT]["key"], sTicks / 4, sTicks / 3, 0
             if sThing[tT]["fuse"] <= 0 then
                FX.Sparks sThing[tT]["x"], Int.ScreenY(sThing[tT]["w"]), kZ, 20, "255,80,40"
                if abs(sThing[tT]["x"] - sX) < 60 and abs(sThing[tT]["w"] - sDist) < 60 then Int.Hurt
@@ -522,7 +521,7 @@ on Int.Things
          delete variable sThing[tT]
          next repeat
       end if
-      SetObjectPosition sThing[tT]["key"], sThing[tT]["x"], tY, kZ
+      Entity.SetPosition sThing[tT]["key"], sThing[tT]["x"], tY, kZ
    end repeat
 end Int.Things
 
