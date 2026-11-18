@@ -10,7 +10,6 @@
 ##           busier: 5 levels, every 1500 metres the next; after level 5 it just goes on.
 ######################################################################################
 
-global gObjectTransforms, gSceneObjects
 global bPaused, bPlaying
 
 local sCar, sLane, sCarX, sJumpT, sCarY, sThing, sThingN, sRail, sSide, sDist, sNextSpawn
@@ -24,7 +23,7 @@ constant kRailGap = 200
 
 on Game.OnStart
    focus on nothing
-   Engine.ResetCamera
+   Camera.Reset
    Scene.ClearAll
    Particles.Clear
    HUD.Clear
@@ -39,22 +38,22 @@ end Game.OnStart
 -- the world that never changes: sun, horizon, lane edges
 on Neon.Build
    local i, tW
-   Mesh.Define "Neon.Car", Mesh.Transform(MeshPyramid(3, 34, 70), 1.5708, 0, 0, 0, 0, 0, 1)
-   Mesh.Define "Neon.Rail", MeshBox(3 * kLaneW + 300, 1, 1)
-   Mesh.Define "Neon.Edge", MeshBox(2, 2, kFarZ)
-   Mesh.Define "Neon.Cassette", MeshBox(50, 30, 12)
-   Mesh.Define "Neon.Wall", MeshBox(kLaneW - 20, 40, 20)
-   Mesh.Define "Neon.Pillar", MeshPrism(6, 22, 160)
-   Mesh.Define "Neon.Chill", MeshBox(40, 40, 40)
-   Mesh.Define "Neon.Palm", MeshPyramid(4, 30, 220)
-   Mesh.Define "Neon.Glitch", MeshBox(26, 26, 26)
+   Mesh.Define "Neon.Car", Mesh.Transform(Mesh.Pyramid(3, 34, 70), 1.5708, 0, 0, 0, 0, 0, 1)
+   Mesh.Define "Neon.Rail", Mesh.Box(3 * kLaneW + 300, 1, 1)
+   Mesh.Define "Neon.Edge", Mesh.Box(2, 2, kFarZ)
+   Mesh.Define "Neon.Cassette", Mesh.Box(50, 30, 12)
+   Mesh.Define "Neon.Wall", Mesh.Box(kLaneW - 20, 40, 20)
+   Mesh.Define "Neon.Pillar", Mesh.Prism(6, 22, 160)
+   Mesh.Define "Neon.Chill", Mesh.Box(40, 40, 40)
+   Mesh.Define "Neon.Palm", Mesh.Pyramid(4, 30, 220)
+   Mesh.Define "Neon.Glitch", Mesh.Box(26, 26, 26)
    -- the sunset: stripes of a sun sitting on the horizon
    repeat with i = 1 to 7
       put round(2 * 3600 * sqrt(1 - ((i - 0.5) / 7) ^ 2)) into tW
-      Mesh.Define "Neon.Sun" & i, MeshBox(tW, 300 - i * 25, 1)
+      Mesh.Define "Neon.Sun" & i, Mesh.Box(tW, 300 - i * 25, 1)
       get Entity.Spawn("Neon.Sun" & i, 0, kGroundY - (i - 0.5) * 3600 / 7, 9000, Neon.SunColour(i))
    end repeat
-   Mesh.Define "Neon.Horizon", MeshBox(12000, 1, 1)
+   Mesh.Define "Neon.Horizon", Mesh.Box(12000, 1, 1)
    get Entity.Spawn("Neon.Horizon", 0, kGroundY, 9000, "magenta")
    put empty into sSide
    repeat with i = -2 to 2
@@ -140,8 +139,8 @@ on Game.OnUpdate
       subtract 1 from sJumpT
       put kGroundY - 14 - 110 * sin(3.14159 * sJumpT / 18) into sCarY
    end if
-   SetObjectPosition sCar, sCarX, sCarY, kCarZ
-   SetObjectRotation sCar, 1.5708, 0, ((sLane - 2) * kLaneW - sCarX) / 300
+   Entity.SetPosition sCar, sCarX, sCarY, kCarZ
+   Entity.SetRotation sCar, 1.5708, 0, ((sLane - 2) * kLaneW - sCarX) / 300
    -- time: the chill cube halves it for a while
    put sSpeed into tSpeed
    if sChill > 0 then
@@ -154,7 +153,7 @@ on Game.OnUpdate
    repeat for each key tK in sRail
       subtract tSpeed from sRail[tK]["z"]
       if sRail[tK]["z"] < kCarZ - 150 then add (kFarZ div kRailGap + 1) * kRailGap to sRail[tK]["z"]
-      SetObjectPosition sRail[tK]["key"], 0, kGroundY, sRail[tK]["z"]
+      Entity.SetPosition sRail[tK]["key"], 0, kGroundY, sRail[tK]["z"]
    end repeat
    -- new things far ahead
    if sDist >= sNextSpawn then
@@ -172,9 +171,9 @@ on Game.OnUpdate
          put tY into sThing[tT]["y"]
       end if
       if sThing[tT]["kind"] is among the items of "cassette,chill" then
-         SetObjectRotation sThing[tT]["key"], 0, sDist / 60, 0
+         Entity.SetRotation sThing[tT]["key"], 0, sDist / 60, 0
       end if
-      SetObjectPosition sThing[tT]["key"], tX, tY, tZ
+      Entity.SetPosition sThing[tT]["key"], tX, tY, tZ
       put false into tHit
       if abs(tZ - kCarZ) < 40 and abs(tX - sCarX) < kLaneW * 0.55 then
          switch sThing[tT]["kind"]
