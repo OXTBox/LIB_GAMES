@@ -8,7 +8,6 @@
 ##           wins the level; lose a level and you play it again. 5 levels.
 ######################################################################################
 
-global gObjectTransforms, gSceneObjects
 global bPaused, bPlaying
 
 local sBatL, sBatR, sBall, sLY, sRY, sBX, sBY, sDX, sDY, sServe
@@ -23,7 +22,7 @@ constant kBatX = 420
 constant kBatSpeed = 11
 
 on Game.OnStart
-   Engine.ResetCamera
+   Camera.Reset
    Scene.ClearAll
    Particles.Clear
    HUD.Clear
@@ -44,9 +43,9 @@ on Duel.StartLevel pLevel
    put 0 into sYou
    put 0 into sCpu
    Scene.ClearAll
-   Mesh.Define "Duel.Bat", MeshBox(14, sBatH, 14)
-   Mesh.Define "Duel.Ball", MeshBox(16, 16, 16)
-   Mesh.Define "Duel.Edge", MeshBox(kRight - kLeft, 4, 4)
+   Mesh.Define "Duel.Bat", Mesh.Box(14, sBatH, 14)
+   Mesh.Define "Duel.Ball", Mesh.Box(16, 16, 16)
+   Mesh.Define "Duel.Edge", Mesh.Box(kRight - kLeft, 4, 4)
    get Entity.Spawn("Duel.Edge", 0, kTop - 10, kZ, "#2E6F8E")
    get Entity.Spawn("Duel.Edge", 0, kBottom + 10, kZ, "#2E6F8E")
    put 0 into sLY
@@ -83,7 +82,7 @@ on Game.OnUpdate
    if 65362 is among the items of tKeys then subtract kBatSpeed from sLY
    if 65364 is among the items of tKeys then add kBatSpeed to sLY
    put max(kTop + tHalf, min(kBottom - tHalf, sLY)) into sLY
-   SetObjectPosition sBatL, -kBatX, sLY, kZ
+   Entity.SetPosition sBatL, -kBatX, sLY, kZ
    if sOver then
       if 32 is among the items of tKeys then
          put false into sOver
@@ -102,7 +101,7 @@ on Game.OnUpdate
    if tAim > sRY + 6 then add min(sCpuSpeed, tAim - sRY) to sRY
    if tAim < sRY - 6 then subtract min(sCpuSpeed, sRY - tAim) from sRY
    put max(kTop + tHalf, min(kBottom - tHalf, sRY)) into sRY
-   SetObjectPosition sBatR, kBatX, sRY, kZ
+   Entity.SetPosition sBatR, kBatX, sRY, kZ
    -- the ball
    add sDX to sBX
    add sDY to sBY
@@ -124,7 +123,7 @@ on Game.OnUpdate
       put (sBY - sRY) / tHalf * sSpeed * 0.9 into sDY
       FX.Sparks sBX, sBY, kZ, 5, "orange"
    end if
-   SetObjectPosition sBall, sBX, sBY, kZ
+   Entity.SetPosition sBall, sBX, sBY, kZ
    if sBX > kRight + 20 then
       add 1 to sYou
       Duel.Point -1
