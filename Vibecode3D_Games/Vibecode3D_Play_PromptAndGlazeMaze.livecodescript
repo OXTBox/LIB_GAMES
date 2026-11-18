@@ -10,7 +10,6 @@
 ## RULES     a patrol touching either agent costs a life. Collect every dot. 5 levels.
 ######################################################################################
 
-global gObjectTransforms, gSceneObjects
 global bPaused, bPlaying
 
 local sDotsKey, sMap, sDots, sDotsLeft, sAgent, sActive, sFoe, sFoeCount, sPoly, sHeld
@@ -25,7 +24,7 @@ constant kColors = "#FF5050,#40FF80"
 
 on Game.OnStart
    focus on nothing          -- arrow keys belong to the game, never to a menu or a field
-   Engine.ResetCamera
+   Camera.Reset
    Scene.ClearAll
    Particles.Clear
    HUD.Clear
@@ -95,8 +94,8 @@ on Maze.StartLevel
    set the itemDel to comma
    Maze.BuildWalls
    Maze.BuildDots
-   Mesh.Define "Maze.Agent", MeshPyramid(4, 14, 26)
-   Mesh.Define "Maze.Foe", MeshSphere(13, 2, 5)
+   Mesh.Define "Maze.Agent", Mesh.Pyramid(4, 14, 26)
+   Mesh.Define "Maze.Foe", Mesh.Sphere(13, 2, 5)
    repeat with c = 1 to 2
       put Entity.Spawn("Maze.Agent", Maze.X(sAgent[c]["x"]), Maze.Y(sAgent[c]["y"]), kZ, item c of kColors) into sAgent[c]["key"]
    end repeat
@@ -258,8 +257,8 @@ on Maze.MoveAgent n, pWant
    if d is not "0,0" then put d into sAgent[n]["face"]
    add item 1 of d * kAgentSpeed to sAgent[n]["x"]
    add item 2 of d * kAgentSpeed to sAgent[n]["y"]
-   SetObjectPosition sAgent[n]["key"], Maze.X(sAgent[n]["x"]), Maze.Y(sAgent[n]["y"]), kZ
-   SetObjectRotation sAgent[n]["key"], 0, 0, atan2(item 1 of sAgent[n]["face"], -item 2 of sAgent[n]["face"])
+   Entity.SetPosition sAgent[n]["key"], Maze.X(sAgent[n]["x"]), Maze.Y(sAgent[n]["y"]), kZ
+   Entity.SetRotation sAgent[n]["key"], 0, 0, atan2(item 1 of sAgent[n]["face"], -item 2 of sAgent[n]["face"])
 end Maze.MoveAgent
 
 on Maze.Eat n, x, y
@@ -298,7 +297,7 @@ on Maze.MoveFoe n
          Maze.Recolor n, "#FFB000"
          put item 1 of line 1 of sFoe["starts"] into sFoe[n]["x"]
          put item 2 of line 1 of sFoe["starts"] into sFoe[n]["y"]
-         SetObjectPosition sFoe[n]["key"], Maze.X(sFoe[n]["x"]), Maze.Y(sFoe[n]["y"]), kZ
+         Entity.SetPosition sFoe[n]["key"], Maze.X(sFoe[n]["x"]), Maze.Y(sFoe[n]["y"]), kZ
       end if
       exit Maze.MoveFoe
    end if
@@ -329,8 +328,8 @@ on Maze.MoveFoe n
    end if
    add item 1 of sFoe[n]["dir"] * sFoeSpeed to sFoe[n]["x"]
    add item 2 of sFoe[n]["dir"] * sFoeSpeed to sFoe[n]["y"]
-   SetObjectPosition sFoe[n]["key"], Maze.X(sFoe[n]["x"]), Maze.Y(sFoe[n]["y"]), kZ
-   SetObjectRotation sFoe[n]["key"], 0, sTicks / 12, 0
+   Entity.SetPosition sFoe[n]["key"], Maze.X(sFoe[n]["x"]), Maze.Y(sFoe[n]["y"]), kZ
+   Entity.SetRotation sFoe[n]["key"], 0, sTicks / 12, 0
 end Maze.MoveFoe
 
 on Maze.Recolor n, pColor
@@ -357,7 +356,7 @@ end Maze.Throw
 
 on Maze.PolyMesh
    if sPoly["key"] is not empty then Entity.Kill sPoly["key"]
-   Mesh.Define "Maze.Poly", MeshSphere(15, 2, sPoly["sides"])
+   Mesh.Define "Maze.Poly", Mesh.Sphere(15, 2, sPoly["sides"])
    put Entity.Spawn("Maze.Poly", Maze.X(sPoly["x"]), Maze.Y(sPoly["y"]), kZ - 2, "#FFE060") into sPoly["key"]
 end Maze.PolyMesh
 
@@ -383,8 +382,8 @@ on Maze.MovePoly
    end if
    add item 1 of sPoly["dir"] * 0.25 to sPoly["x"]
    add item 2 of sPoly["dir"] * 0.25 to sPoly["y"]
-   SetObjectPosition sPoly["key"], Maze.X(sPoly["x"]), Maze.Y(sPoly["y"]), kZ - 2
-   SetObjectRotation sPoly["key"], sTicks / 5, sTicks / 7, 0
+   Entity.SetPosition sPoly["key"], Maze.X(sPoly["x"]), Maze.Y(sPoly["y"]), kZ - 2
+   Entity.SetRotation sPoly["key"], sTicks / 5, sTicks / 7, 0
 end Maze.MovePoly
 
 on Maze.PolyStrike
@@ -446,12 +445,12 @@ on Maze.LoseLife a
       put sAgent[n]["x0"] into sAgent[n]["x"]
       put sAgent[n]["y0"] into sAgent[n]["y"]
       put "0,0" into sAgent[n]["dir"]
-      SetObjectPosition sAgent[n]["key"], Maze.X(sAgent[n]["x"]), Maze.Y(sAgent[n]["y"]), kZ
+      Entity.SetPosition sAgent[n]["key"], Maze.X(sAgent[n]["x"]), Maze.Y(sAgent[n]["y"]), kZ
    end repeat
    repeat with n = 1 to sFoeCount
       put item 1 of line ((n - 1) mod the number of lines of sFoe["starts"]) + 1 of sFoe["starts"] into sFoe[n]["x"]
       put item 2 of line ((n - 1) mod the number of lines of sFoe["starts"]) + 1 of sFoe["starts"] into sFoe[n]["y"]
-      SetObjectPosition sFoe[n]["key"], Maze.X(sFoe[n]["x"]), Maze.Y(sFoe[n]["y"]), kZ
+      Entity.SetPosition sFoe[n]["key"], Maze.X(sFoe[n]["x"]), Maze.Y(sFoe[n]["y"]), kZ
    end repeat
    put 45 into sPause
 end Maze.LoseLife
