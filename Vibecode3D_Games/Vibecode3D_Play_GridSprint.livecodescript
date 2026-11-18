@@ -12,7 +12,6 @@
 ##           runs out you lose a life. Finish first to go to the next level (5 levels).
 ######################################################################################
 
-global gObjectTransforms, gSceneObjects
 global bPaused, bPlaying
 
 local sCar, sRail, sSlice, sSign, sSignPool, sRival, sGate, sMount
@@ -33,7 +32,7 @@ constant kHighTop = 40
 
 on Game.OnStart
    focus on nothing
-   Engine.ResetCamera
+   Camera.Reset
    Scene.ClearAll
    Particles.Clear
    HUD.Clear
@@ -53,10 +52,10 @@ on Grid.StartLevel pLevel
    Grid.BuildTrack item 2 of tRow
    Mesh.Define "Grid.Car", Grid.CarMesh()
    Mesh.Define "Grid.Rail", Grid.RailMesh()
-   Mesh.Define "Grid.Sign", MeshBox(40, 60, 6)
-   Mesh.Define "Grid.Rival", MeshBox(80, 40, 120)
+   Mesh.Define "Grid.Sign", Mesh.Box(40, 60, 6)
+   Mesh.Define "Grid.Rival", Mesh.Box(80, 40, 120)
    Mesh.Define "Grid.Gate", Grid.GateMesh()
-   Mesh.Define "Grid.Mount", MeshPyramid(4, 3200, 1600)
+   Mesh.Define "Grid.Mount", Mesh.Pyramid(4, 3200, 1600)
    put empty into sRail
    repeat with i = 0 to kSlices
       put Entity.Spawn("Grid.Rail", 0, kGroundY, kCarZ + i * kGap, "255,190,0") into sRail[i]
@@ -427,19 +426,19 @@ on Grid.DrawRoad
       add Grid.CurveAt(sDist + tZ - kCarZ) to tDX
       add tDX to tX
       put tX - sOff into sSlice[i]
-      SetObjectPosition sRail[i], tX - sOff, kGroundY, tZ
+      Entity.SetPosition sRail[i], tX - sOff, kGroundY, tZ
    end repeat
    -- the car (it spins when it hits a sign)
    if sSpin > 0 then
-      SetObjectRotation sCar, 0, sSpin / 2.5, 0
+      Entity.SetRotation sCar, 0, sSpin / 2.5, 0
    else
-      SetObjectRotation sCar, 0, Grid.CurveAt(sDist) * -0.03, 0
+      Entity.SetRotation sCar, 0, Grid.CurveAt(sDist) * -0.03, 0
    end if
-   SetObjectPosition sCar, 0, kGroundY - 17, kCarZ
+   Entity.SetPosition sCar, 0, kGroundY - 17, kCarZ
    -- far mountains slide as the road turns
    repeat with i = 1 to 5
       put ((i * 4400 - sHeading * 6000) mod 22000) - 11000 into tX
-      SetObjectPosition sMount[i], tX, kGroundY - 800, 12000
+      Entity.SetPosition sMount[i], tX, kGroundY - 800, 12000
    end repeat
    -- the nearest signs ahead, from the pool
    put 0 into tN
@@ -449,27 +448,27 @@ on Grid.DrawRoad
       if tRel < -100 then add sLapLen to tRel
       if tRel > -100 and tRel < kSlices * kGap - 100 and tN < 8 then
          add 1 to tN
-         SetObjectPosition sSignPool[tN], Grid.RoadX(tRel) + sSign[tK]["off"], kGroundY - 30, kCarZ + tRel
+         Entity.SetPosition sSignPool[tN], Grid.RoadX(tRel) + sSign[tK]["off"], kGroundY - 30, kCarZ + tRel
       end if
    end repeat
    repeat with i = tN + 1 to 8
-      SetObjectPosition sSignPool[i], 0, kGroundY - 30, -3000
+      Entity.SetPosition sSignPool[i], 0, kGroundY - 30, -3000
    end repeat
    -- the next gate
    put (sDist - kStartLine) mod (sLapLen / 4) into tD
    put sLapLen / 4 - tD into tRel
    if tRel < kSlices * kGap - 100 then
-      SetObjectPosition sGate, Grid.RoadX(tRel), kGroundY, kCarZ + tRel
+      Entity.SetPosition sGate, Grid.RoadX(tRel), kGroundY, kCarZ + tRel
    else
-      SetObjectPosition sGate, 0, kGroundY, -3000
+      Entity.SetPosition sGate, 0, kGroundY, -3000
    end if
    -- rivals in view
    repeat with i = 1 to 7
       put sRival[i]["d"] - sDist into tRel
       if tRel > -150 and tRel < kSlices * kGap - 100 then
-         SetObjectPosition sRival[i]["key"], Grid.RoadX(tRel) + sRival[i]["off"], kGroundY - 20, kCarZ + tRel
+         Entity.SetPosition sRival[i]["key"], Grid.RoadX(tRel) + sRival[i]["off"], kGroundY - 20, kCarZ + tRel
       else
-         SetObjectPosition sRival[i]["key"], 0, kGroundY - 20, -3000
+         Entity.SetPosition sRival[i]["key"], 0, kGroundY - 20, -3000
       end if
    end repeat
 end Grid.DrawRoad
