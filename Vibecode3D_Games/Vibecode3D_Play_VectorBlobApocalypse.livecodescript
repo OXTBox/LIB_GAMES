@@ -8,8 +8,6 @@
 ##           Clear the wave to finish the level. 5 levels.
 ######################################################################################
 
-global gObjectTransforms, gSceneObjects
-global gCameraYaw, gCameraPitch
 global bPaused, bPlaying
 
 local sGun, sAim, sBlob, sShot, sSerial, sLevel, sLives, sScore, sOver, sCool, sTicks
@@ -23,15 +21,14 @@ constant kSmallR = 18
 
 on Game.OnStart
    focus on nothing          -- arrow keys belong to the game, never to a menu or a field
-   Engine.ResetCamera
+   Camera.Reset
    Scene.ClearAll
    Particles.Clear
    HUD.Clear
    Collision.ClearRules
    -- above the ground, looking down at an angle
-   Engine.SetCam 0, 420, 300
-   put 0 into gCameraYaw
-   put -atan2(420, 340) into gCameraPitch
+   Camera.SetPosition 0, -420, -300
+   Camera.SetLook 0, -atan2(420, 340)
    put 3 into sLives
    put 0 into sScore
    put false into sOver
@@ -47,12 +44,12 @@ on Blob.StartLevel pLevel
    put item 2 of tRow into sBlobSpeed
    put item 3 of tRow into sSplit
    Scene.ClearAll
-   Mesh.Define "Blob.Floor", MeshGrid(12, 12, 80)
+   Mesh.Define "Blob.Floor", Mesh.Grid(12, 12, 80)
    get Entity.Spawn("Blob.Floor", 0, 4, 0, "#0A280A")
-   Mesh.Define "Blob.Gun", MeshPyramid(3, 18, 44)
-   Mesh.Define "Blob.Big", MeshSphere(kBigR, 3, 6)
-   Mesh.Define "Blob.Small", MeshSphere(kSmallR, 2, 5)
-   Mesh.Define "Blob.Shot", MeshBox(6, 6, 16)
+   Mesh.Define "Blob.Gun", Mesh.Pyramid(3, 18, 44)
+   Mesh.Define "Blob.Big", Mesh.Sphere(kBigR, 3, 6)
+   Mesh.Define "Blob.Small", Mesh.Sphere(kSmallR, 2, 5)
+   Mesh.Define "Blob.Shot", Mesh.Box(6, 6, 16)
    put Entity.Spawn("Blob.Gun", 0, -12, 0, "cyan") into sGun
    put 0 into sAim
    put empty into sBlob
@@ -96,7 +93,7 @@ on Game.OnUpdate
    end if
    if (65361 is among the items of tKeys or 97 is among the items of tKeys) then subtract kSpin from sAim
    if (65363 is among the items of tKeys or 100 is among the items of tKeys) then add kSpin to sAim
-   SetObjectRotation sGun, 1.5708, sAim, 0        -- the pyramid lies down and points along the aim
+   Entity.SetRotation sGun, 1.5708, sAim, 0        -- the pyramid lies down and points along the aim
    -- shooting: one shot every 5 steps while Space is held
    if sCool > 0 then subtract 1 from sCool
    if 32 is among the items of tKeys and sCool <= 0 then
@@ -106,7 +103,7 @@ on Game.OnUpdate
       put kShotSpeed * sin(sAim) into sShot[sSerial]["dx"]
       put kShotSpeed * cos(sAim) into sShot[sSerial]["dz"]
       put Entity.Spawn("Blob.Shot", sShot[sSerial]["x"], -14, sShot[sSerial]["z"], "white") into sShot[sSerial]["key"]
-      SetObjectRotation sShot[sSerial]["key"], 0, sAim, 0
+      Entity.SetRotation sShot[sSerial]["key"], 0, sAim, 0
       put 5 into sCool
    end if
    -- shots fly; the first blob one touches is hit
@@ -141,7 +138,7 @@ on Game.OnUpdate
          Entity.Kill sShot[tK]["key"]
          delete variable sShot[tK]
       else
-         SetObjectPosition sShot[tK]["key"], sShot[tK]["x"], -14, sShot[tK]["z"]
+         Entity.SetPosition sShot[tK]["key"], sShot[tK]["x"], -14, sShot[tK]["z"]
       end if
    end repeat
    -- blobs jitter their way in
@@ -166,7 +163,7 @@ on Game.OnUpdate
       subtract sBlob[tB]["z"] / d * sBlobSpeed - (random(9) - 5) * 0.8 from sBlob[tB]["z"]
       put kSmallR into r
       if sBlob[tB]["kind"] is "big" then put kBigR into r
-      SetObjectPosition sBlob[tB]["key"], sBlob[tB]["x"], -r - 3 * sin((sTicks + tB * 7) / 4), sBlob[tB]["z"]
+      Entity.SetPosition sBlob[tB]["key"], sBlob[tB]["x"], -r - 3 * sin((sTicks + tB * 7) / 4), sBlob[tB]["z"]
    end repeat
    if tLeft is 0 and not sOver then
       if sLevel >= 5 then
