@@ -11,7 +11,6 @@
 ##           first for the full bonus; last place costs a life. 5 courses.
 ######################################################################################
 
-global gObjectTransforms, gSceneObjects
 global bPaused, bPlaying
 
 local sBike, sX, sY, sVX, sVY, sAng, sAir, sPeak, sSlope, sH, sMud, sPts, sSlice, sCan
@@ -28,7 +27,7 @@ constant kGrav = 0.45
 
 on Game.OnStart
    focus on nothing
-   Engine.ResetCamera
+   Camera.Reset
    Scene.ClearAll
    Particles.Clear
    HUD.Clear
@@ -54,7 +53,7 @@ on Ramp.StartLevel pLevel
    Scene.ClearAll
    Mesh.Define "Ramp.Bike", Ramp.BikeMesh()
    Mesh.Define "Ramp.Mud", Ramp.MudMesh()
-   Mesh.Define "Ramp.Can", MeshBox(16, 22, 10)
+   Mesh.Define "Ramp.Can", Mesh.Box(16, 22, 10)
    Mesh.Define "Ramp.Flag", Ramp.FlagMesh()
    Ramp.MakeCourse
    put empty into sSlice
@@ -352,8 +351,8 @@ on Game.OnUpdate
       end if
    end if
    if sHeat > 0 and not Ramp.Down(32, tKeys) and sCool <= 0 then put max(0, sHeat - 0.1) into sHeat
-   SetObjectPosition sBike, kBikeX, kBase - sY, kZ
-   SetObjectRotation sBike, 0, 0, -sAng
+   Entity.SetPosition sBike, kBikeX, kBase - sY, kZ
+   Entity.SetRotation sBike, 0, 0, -sAng
    if tMud and sTicks mod 3 is 0 then FX.Sparks kBikeX - 20, kBase - sY, kZ, 2, "140,90,40"
    -- fuel cans
    if sCan[tIdx] is true then
@@ -365,7 +364,7 @@ on Game.OnUpdate
    Ramp.DrawGround
    Ramp.Riders
    if sX >= sPts * kSeg and sDone is 0 then Ramp.CrossLine 0
-   SetObjectPosition sFinish, kBikeX + sPts * kSeg - sX, kBase - Ramp.H(sPts * kSeg), kZ + 1
+   Entity.SetPosition sFinish, kBikeX + sPts * kSeg - sX, kBase - Ramp.H(sPts * kSeg), kZ + 1
    if sMsgT > 0 then
       subtract 1 from sMsgT
       if sMsgT is 0 then put empty into sMsg
@@ -420,7 +419,7 @@ on Ramp.DrawGround
          end if
          put tName into sSlice[i]["type"]
       end if
-      SetObjectPosition sSlice[i]["key"], kBikeX + tIdx * kSeg - sX, kBase - sH[max(0, tIdx)], kZ
+      Entity.SetPosition sSlice[i]["key"], kBikeX + tIdx * kSeg - sX, kBase - sH[max(0, tIdx)], kZ
    end repeat
 end Ramp.DrawGround
 
@@ -448,11 +447,11 @@ on Ramp.Riders
       end if
       put kZ + i * 70 into tZ
       -- the lanes behind are further away: place them so they line up with your ground
-      SetObjectPosition sRider[i]["key"], (kBikeX + sRider[i]["x"] - sX) * tZ / kZ, (kBase - sRider[i]["y"]) * tZ / kZ - i * 14, tZ
+      Entity.SetPosition sRider[i]["key"], (kBikeX + sRider[i]["x"] - sX) * tZ / kZ, (kBase - sRider[i]["y"]) * tZ / kZ - i * 14, tZ
       if sRider[i]["air"] then
-         SetObjectRotation sRider[i]["key"], 0, 0, 0.15
+         Entity.SetRotation sRider[i]["key"], 0, 0, 0.15
       else
-         SetObjectRotation sRider[i]["key"], 0, 0, -atan((Ramp.H(sRider[i]["x"] + 20) - Ramp.H(sRider[i]["x"] - 20)) / 40)
+         Entity.SetRotation sRider[i]["key"], 0, 0, -atan((Ramp.H(sRider[i]["x"] + 20) - Ramp.H(sRider[i]["x"] - 20)) / 40)
       end if
       if sRider[i]["x"] >= sPts * kSeg and sRider[i]["done"] is empty then
          put true into sRider[i]["done"]
