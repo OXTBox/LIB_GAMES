@@ -12,7 +12,6 @@
 ##           next race (5). An empty tank or no lives: game over.
 ######################################################################################
 
-global gObjectTransforms, gSceneObjects
 global bPaused, bPlaying
 
 local sCar, sCarX, sSpeed, sDist, sRaceLen, sRail, sThing, sThingN, sNextSpawn, sFuel, sSpin
@@ -28,7 +27,7 @@ constant kHalfW = 260        -- four lanes
 
 on Game.OnStart
    focus on nothing
-   Engine.ResetCamera
+   Camera.Reset
    Scene.ClearAll
    Particles.Clear
    HUD.Clear
@@ -45,13 +44,13 @@ on Fuel.Build
    local i
    Mesh.Define "Fuel.Car", Fuel.CarMesh()
    Mesh.Define "Fuel.Slice", Fuel.SliceMesh()
-   Mesh.Define "Fuel.Traffic", MeshBox(70, 50, 120)
-   Mesh.Define "Fuel.Can", MeshPrism(6, 18, 40)
-   Mesh.Define "Fuel.Oil", MeshPrism(9, 40, 2)
+   Mesh.Define "Fuel.Traffic", Mesh.Box(70, 50, 120)
+   Mesh.Define "Fuel.Can", Mesh.Prism(6, 18, 40)
+   Mesh.Define "Fuel.Oil", Mesh.Prism(9, 40, 2)
    Mesh.Define "Fuel.Finish", Fuel.FinishMesh()
-   Mesh.Define "Fuel.Post", MeshPrism(4, 6, 120)
-   Mesh.Define "Fuel.GaugeBar", MeshBox(4, 4, 1)
-   Mesh.Define "Fuel.Horizon", MeshBox(30000, 1, 1)
+   Mesh.Define "Fuel.Post", Mesh.Prism(4, 6, 120)
+   Mesh.Define "Fuel.GaugeBar", Mesh.Box(4, 4, 1)
+   Mesh.Define "Fuel.Horizon", Mesh.Box(30000, 1, 1)
    get Entity.Spawn("Fuel.Horizon", 0, kGroundY, 12000, "120,120,140")
    put Entity.Spawn("Fuel.Car", 0, kGroundY - 16, kCarZ, "255,220,0") into sCar
    put empty into sRail
@@ -184,16 +183,16 @@ on Game.OnUpdate
       -- spinning on oil: no control
       subtract 1 from sSpin
       put sSpeed * 0.94 into sSpeed
-      SetObjectRotation sCar, 0, sSpin / 2, 0
+      Entity.SetRotation sCar, 0, sSpin / 2, 0
    else
       if Fuel.Down(65362, tKeys) or Fuel.Down(119, tKeys) then put min(sTop, sSpeed + 0.4) into sSpeed
       if Fuel.Down(65364, tKeys) or Fuel.Down(115, tKeys) then put max(sTop * 0.3, sSpeed - 0.6) into sSpeed
       if Fuel.Down(65361, tKeys) or Fuel.Down(97, tKeys) then subtract 5 + sSpeed * 0.12 from sCarX
       if Fuel.Down(65363, tKeys) or Fuel.Down(100, tKeys) then add 5 + sSpeed * 0.12 to sCarX
-      SetObjectRotation sCar, 0, 0, 0
+      Entity.SetRotation sCar, 0, 0, 0
    end if
    put max(-kHalfW + 34, min(kHalfW - 34, sCarX)) into sCarX
-   SetObjectPosition sCar, sCarX, kGroundY - 16, kCarZ
+   Entity.SetPosition sCar, sCarX, kGroundY - 16, kCarZ
    add sSpeed to sDist
    add sSpeed / 20 to sScore
    -- the tank drains, faster at speed
@@ -207,7 +206,7 @@ on Game.OnUpdate
    repeat for each key tK in sRail
       subtract sSpeed from sRail[tK]["z"]
       if sRail[tK]["z"] < kCarZ - 260 then add (kFarZ div kRailGap + 1) * kRailGap to sRail[tK]["z"]
-      SetObjectPosition sRail[tK]["key"], 0, kGroundY, sRail[tK]["z"]
+      Entity.SetPosition sRail[tK]["key"], 0, kGroundY, sRail[tK]["z"]
    end repeat
    if sDist >= sNextSpawn and sDist < sRaceLen - 1500 then
       Fuel.Spawn
@@ -235,8 +234,8 @@ on Game.OnUpdate
          end if
       end if
       put sThing[tT]["x"] into tX
-      if sThing[tT]["kind"] is "can" then SetObjectRotation sThing[tT]["key"], 0, sTicks / 8, 0
-      SetObjectPosition sThing[tT]["key"], tX, sThing[tT]["y"], tZ
+      if sThing[tT]["kind"] is "can" then Entity.SetRotation sThing[tT]["key"], 0, sTicks / 8, 0
+      Entity.SetPosition sThing[tT]["key"], tX, sThing[tT]["y"], tZ
       switch sThing[tT]["kind"]
          case "can"
             -- grab it with Space when it is beside you
