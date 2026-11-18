@@ -8,7 +8,6 @@
 ##           faster; survive the wave to score it. 5 waves.
 ######################################################################################
 
-global gObjectTransforms, gSceneObjects
 global bPaused, bPlaying
 
 local sShip, sX, sY, sCube, sCubeN, sRing, sWaveLeft, sNextCube, sTicks, sDash, sDashRest
@@ -22,7 +21,7 @@ constant kMove = 9
 
 on Game.OnStart
    focus on nothing
-   Engine.ResetCamera
+   Camera.Reset
    Scene.ClearAll
    Particles.Clear
    HUD.Clear
@@ -41,8 +40,8 @@ on Dodge.StartLevel pLevel
    put (item 1 of tRow) * 14 into sSpeed
    put item 2 of tRow into sWaveLeft
    Scene.ClearAll
-   Mesh.Define "Dodge.Ship", Mesh.Transform(MeshPyramid(4, 22, 44), 1.5708, 0, 0, 0, 0, 0, 1)
-   Mesh.Define "Dodge.Cube", MeshBox(70, 70, 70)
+   Mesh.Define "Dodge.Ship", Mesh.Transform(Mesh.Pyramid(4, 22, 44), 1.5708, 0, 0, 0, 0, 0, 1)
+   Mesh.Define "Dodge.Cube", Mesh.Box(70, 70, 70)
    Mesh.Define "Dodge.Ring", Dodge.RingMesh()
    put empty into sRing
    repeat with i = 0 to kFarZ div kRingGap
@@ -115,11 +114,11 @@ on Game.OnUpdate
    if sDash > 0 then subtract 1 from sDash
    if sDashRest > 0 then subtract 1 from sDashRest
    if sHurt > 0 then subtract 1 from sHurt
-   SetObjectPosition sShip, sX, sY, kShipZ
+   Entity.SetPosition sShip, sX, sY, kShipZ
    if sDash > 0 then
-      SetObjectRotation sShip, 1.5708, 0, sTicks / 2
+      Entity.SetRotation sShip, 1.5708, 0, sTicks / 2
    else
-      SetObjectRotation sShip, 1.5708, 0, 0
+      Entity.SetRotation sShip, 1.5708, 0, 0
    end if
    -- the tunnel rushes past
    repeat for each key tK in sRing
@@ -127,7 +126,7 @@ on Game.OnUpdate
    end repeat
    repeat for each key tK in sRing
       if sRing[tK]["z"] < kShipZ - 200 then add (kFarZ div kRingGap + 1) * kRingGap to sRing[tK]["z"]
-      SetObjectPosition sRing[tK]["key"], 0, 0, sRing[tK]["z"]
+      Entity.SetPosition sRing[tK]["key"], 0, 0, sRing[tK]["z"]
    end repeat
    -- the wave: cubes from the corners, aimed at a point near where you are now
    subtract 1 from sNextCube
@@ -143,8 +142,8 @@ on Game.OnUpdate
       put (kFarZ - (tZ - kShipZ)) / kFarZ into tK
       put sCube[tC]["x0"] + (sCube[tC]["ax"] - sCube[tC]["x0"]) * min(1, tK * 1.3) into sCube[tC]["x"]
       put sCube[tC]["y0"] + (sCube[tC]["ay"] - sCube[tC]["y0"]) * min(1, tK * 1.3) into sCube[tC]["y"]
-      SetObjectPosition sCube[tC]["key"], sCube[tC]["x"], sCube[tC]["y"], tZ
-      SetObjectRotation sCube[tC]["key"], sTicks / 20, sTicks / 15, 0
+      Entity.SetPosition sCube[tC]["key"], sCube[tC]["x"], sCube[tC]["y"], tZ
+      Entity.SetRotation sCube[tC]["key"], sTicks / 20, sTicks / 15, 0
       if abs(tZ - kShipZ) < 40 and sDash <= 0 and sHurt <= 0 \
             and abs(sCube[tC]["x"] - sX) < 55 and abs(sCube[tC]["y"] - sY) < 55 then
          subtract 1 from sLives
