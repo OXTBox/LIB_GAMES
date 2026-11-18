@@ -11,7 +11,6 @@
 ##           RIGHT for the hills (busier, double points). Finish 5 stages to win.
 ######################################################################################
 
-global gObjectTransforms, gSceneObjects
 global bPaused, bPlaying
 
 local sCar, sCarX, sSpeed, sTop, sDist, sStageLen, sRail, sThing, sThingN, sNextSpawn
@@ -28,7 +27,7 @@ constant kStageTime = 1500   -- steps on the clock at a stage start (about 50 se
 
 on Game.OnStart
    focus on nothing
-   Engine.ResetCamera
+   Camera.Reset
    Scene.ClearAll
    Particles.Clear
    HUD.Clear
@@ -47,13 +46,13 @@ on Coast.Build
    local i, tM, tA
    Mesh.Define "Coast.Car", Coast.CarMesh()
    Mesh.Define "Coast.Slice", Coast.SliceMesh()
-   Mesh.Define "Coast.Traffic", MeshBox(64, 36, 110)
-   Mesh.Define "Coast.Truck", MeshBox(110, 90, 230)
-   Mesh.Define "Coast.Bonus", MeshBox(50, 50, 50)
+   Mesh.Define "Coast.Traffic", Mesh.Box(64, 36, 110)
+   Mesh.Define "Coast.Truck", Mesh.Box(110, 90, 230)
+   Mesh.Define "Coast.Bonus", Mesh.Box(50, 50, 50)
    Mesh.Define "Coast.Gate", Coast.GateMesh()
-   Mesh.Define "Coast.Fork", MeshBox(40, 50, 900)
-   Mesh.Define "Coast.Palm", MeshPyramid(5, 50, 260)
-   Mesh.Define "Coast.Trunk", MeshPrism(4, 8, 200)
+   Mesh.Define "Coast.Fork", Mesh.Box(40, 50, 900)
+   Mesh.Define "Coast.Palm", Mesh.Pyramid(5, 50, 260)
+   Mesh.Define "Coast.Trunk", Mesh.Prism(4, 8, 200)
    -- the sun: a ring of lines in the sky
    put Mesh.New() into tM
    repeat with i = 0 to 11
@@ -65,7 +64,7 @@ on Coast.Build
    end repeat
    Mesh.Define "Coast.Sun", tM
    get Entity.Spawn("Coast.Sun", 3500, kGroundY - 3200, 12000, "255,220,60")
-   Mesh.Define "Coast.Horizon", MeshBox(30000, 1, 1)
+   Mesh.Define "Coast.Horizon", Mesh.Box(30000, 1, 1)
    get Entity.Spawn("Coast.Horizon", 0, kGroundY, 12000, "0,140,255")
    put Entity.Spawn("Coast.Car", 0, kGroundY - 16, kCarZ, "255,255,255") into sCar
    put empty into sRail
@@ -221,8 +220,8 @@ on Game.OnUpdate
    if Coast.Down(65363, tKeys) or Coast.Down(100, tKeys) then add 4 + sSpeed * 0.15 to sCarX
    put tKeys into sKeysWas
    put max(-kHalfW + 30, min(kHalfW - 30, sCarX)) into sCarX
-   SetObjectPosition sCar, sCarX, kGroundY - 16, kCarZ
-   SetObjectRotation sCar, 0, 0, 0
+   Entity.SetPosition sCar, sCarX, kGroundY - 16, kCarZ
+   Entity.SetRotation sCar, 0, 0, 0
    add sSpeed to sDist
    if sHills then
       add sSpeed / 5 to sScore
@@ -239,7 +238,7 @@ on Game.OnUpdate
    repeat for each key tK in sRail
       subtract sSpeed from sRail[tK]["z"]
       if sRail[tK]["z"] < kCarZ - 260 then add (kFarZ div kRailGap + 1) * kRailGap to sRail[tK]["z"]
-      SetObjectPosition sRail[tK]["key"], 0, kGroundY, sRail[tK]["z"]
+      Entity.SetPosition sRail[tK]["key"], 0, kGroundY, sRail[tK]["z"]
    end repeat
    -- new things ahead (none near the fork)
    if sDist >= sNextSpawn and sDist < sStageLen - 2600 then
@@ -252,8 +251,8 @@ on Game.OnUpdate
       subtract sSpeed - sThing[tT]["v"] from sThing[tT]["z"]
       put sThing[tT]["z"] into tZ
       put sThing[tT]["x"] into tX
-      if sThing[tT]["kind"] is "bonus" then SetObjectRotation sThing[tT]["key"], 0, sTicks / 10, sTicks / 14
-      SetObjectPosition sThing[tT]["key"], tX, sThing[tT]["y"], tZ
+      if sThing[tT]["kind"] is "bonus" then Entity.SetRotation sThing[tT]["key"], 0, sTicks / 10, sTicks / 14
+      Entity.SetPosition sThing[tT]["key"], tX, sThing[tT]["y"], tZ
       if sThing[tT]["kind"] is "trunk" then next repeat
       put false into tHit
       if abs(tZ - kCarZ) < (sThing[tT]["len"] + 140) / 2 and abs(tX - sCarX) < (sThing[tT]["w"] + 70) / 2 then
