@@ -29,8 +29,6 @@
 ## NEEDS     ../LIB_MOCAP/library (clips) and ../LIB_MOCAP/livecode/anim_list.livecodescript
 ######################################################################################
 
-global gObjectTransforms, gSceneObjects
-global gCameraYaw, gCameraPitch
 global gViewLeft, gViewTop, gViewRight, gViewBottom
 global bPaused, bPlaying
 global gNoMouse
@@ -95,7 +93,7 @@ local sBanter, sLastEx, sTalk, sTalkNext, sTalkClearAt, sLastTalk, sSaid
 
 on Game.OnStart
    focus on nothing          -- arrow keys belong to the game, never to a menu or a field
-   Engine.ResetCamera
+   Camera.Reset
    put Engine.Info("stepMS") into sStepMS
    if sStepMS is not a number then put 33 into sStepMS
    Scene.ClearAll
@@ -165,8 +163,8 @@ on VT.LoadClips
    VT.LoadClip "idleG", kGlazeIdle, 1, kMaxIdleFrames
    VT.LoadClip "run", kRun, empty, empty
    if sError is not empty then exit VT.LoadClips
-   put VT.FindFile("LIB_MOCAP/livecode/anim_list.livecodescript") into tLib
-   put VT.FindFile("LIB_GAMES/Vibecode3D_Games/Animations/VectorToss.anims.txt") into tList
+   put Game.FindFile("LIB_MOCAP/livecode/anim_list.livecodescript") into tLib
+   put Game.FindFile("LIB_GAMES/Vibecode3D_Games/Animations/VectorToss.anims.txt") into tList
    if tLib is empty or tList is empty then exit VT.LoadClips      -- no list: idles stand in
    start using stack tLib
    put Anims.Read(tList) into tA
@@ -181,7 +179,7 @@ end VT.LoadClips
 -- own cycle when it has one (walks, runs), else up to kMaxIdleFrames
 on VT.LoadClip pKey, pName, pFrom, pTo
    local tFile, tText, tLine, tEdges, tFrame, tKept, tM, tV, i, tJoints, tE, tA, tB
-   put VT.FindFile("LIB_MOCAP/library/" & pName & "/" & pName & "_stick.txt") into tFile
+   put Game.FindFile("LIB_MOCAP/library/" & pName & "/" & pName & "_stick.txt") into tFile
    if tFile is empty then
       put "VECTOR TOSS: NO CLIP " & toUpper(pName) & " IN LIB_MOCAP/LIBRARY" into sError
       exit VT.LoadClip
@@ -257,13 +255,13 @@ on VT.NewMatch
    VT.Spawn "PROMPT", kPromptColor, -1, "idleP"
    VT.Spawn "GLAZE", kGlazeColor, 1, "idleG"
    put "PROMPT" into sActive
-   Mesh.Define "VT.Ball", MeshSphere(kBallR, 4, 7)
+   Mesh.Define "VT.Ball", Mesh.Sphere(kBallR, 4, 7)
    Mesh.Define "VT.Shadow", VT.RingMesh(kBallR + 2, 12)
    Mesh.Define "VT.Dot", VT.DotMesh()
    Mesh.Define "VT.Mark", VT.RingMesh(14, 16)
    put empty into sBall
    put Entity.Spawn("VT.Ball", 0, -kHandH, 0, kBallColor) into sBall["key"]
-   SetObjectRotationSpeed sBall["key"], 0.03, 0.05, 0
+   Entity.SetRotationSpeed sBall["key"], 0.03, 0.05, 0
    put Entity.Spawn("VT.Shadow", 0, -1, 0, "#5A6A80") into sBall["shadow"]
    put Entity.Spawn("VT.Ball", 0, 0, -100000, "#506070") into sGhost
    put Entity.Spawn("VT.Mark", 0, 0, -100000, "#FFD040") into sMark
@@ -347,9 +345,8 @@ on VT.Camera
    put -kCamUp into tCY
    put -kHalfD - kCamBack into tCZ
    put -36 into tLY
-   put 0 into gCameraYaw
-   put -atan2(tLY - tCY, -tCZ) into gCameraPitch
-   Engine.SetCam -tCX, -tCY, -tCZ
+   Camera.SetLook 0, -atan2(tLY - tCY, -tCZ)
+   Camera.SetPosition tCX, tCY, tCZ
 end VT.Camera
 
 -------------------------------------------------------------------- heroes
@@ -511,8 +508,11 @@ end VT.Aim
 function VT.MouseFloor
    if sTestAim is not empty then return sTestAim
    if gNoMouse is true then return empty
+   local tM
+   put Engine.Mouse() into tM
+   if tM is empty then return empty
    try
-      return Engine.ScreenToFloor(the mouseH, the mouseV, 0)
+      return Camera.ScreenToFloor(item 1 of tM, item 2 of tM, 0)
    catch tErr
       return empty
    end try
@@ -792,8 +792,8 @@ on VT.BallStep
          end repeat
       end if
    end if
-   SetObjectPosition sBall["key"], sBall["x"], -sBall["h"], sBall["z"]
-   SetObjectPosition sBall["shadow"], sBall["x"], -1, sBall["z"]
+   Entity.SetPosition sBall["key"], sBall["x"], -sBall["h"], sBall["z"]
+   Entity.SetPosition sBall["shadow"], sBall["x"], -1, sBall["z"]
 end VT.BallStep
 
 function VT.CanCatch pName
@@ -1061,18 +1061,18 @@ on VT.Preview
       put VT.GhostLand() into tXZ
       put item 1 of tXZ into tLX
       put item 2 of tXZ into tLZ
-      SetObjectPosition sGhost, tLX, -kBallR, tLZ
+      Entity.SetPosition sGhost, tLX, -kBallR, tLZ
    else
-      SetObjectPosition sGhost, 0, 0, -100000
+      Entity.SetPosition sGhost, 0, 0, -100000
       if sBall["state"] is "loose" and sShowLand and sLandX is a number then
          put sLandX into tLX
          put sLandZ into tLZ
       end if
    end if
    if tLX is empty then
-      SetObjectPosition sMark, 0, 0, -100000
+      Entity.SetPosition sMark, 0, 0, -100000
    else
-      SetObjectPosition sMark, tLX, -1, tLZ
+      Entity.SetPosition sMark, tLX, -1, tLZ
    end if
 end VT.Preview
 
@@ -1158,13 +1158,13 @@ on VT.Animate pName
    if sHero[pName]["state"] is "hang" then VT.HangPose pName, tKey
    if sHero[pName]["state"] is "hang" then
       -- dangling: a little sway and swing, nothing under the feet
-      SetObjectPosition tKey, sHero[pName]["x"] + sin(sTicks * 0.17) * 3, -(sHero[pName]["h"] - abs(sin(sTicks * 0.085)) * 2), sHero[pName]["z"]
+      Entity.SetPosition tKey, sHero[pName]["x"] + sin(sTicks * 0.17) * 3, -(sHero[pName]["h"] - abs(sin(sTicks * 0.085)) * 2), sHero[pName]["z"]
       put VT.Euler(sHero[pName]["yaw"], sin(sTicks * 0.17) * 0.14) into tE
    else
-      SetObjectPosition tKey, sHero[pName]["x"], -sHero[pName]["h"], sHero[pName]["z"]
+      Entity.SetPosition tKey, sHero[pName]["x"], -sHero[pName]["h"], sHero[pName]["z"]
       put VT.Euler(sHero[pName]["yaw"], 0) into tE
    end if
-   SetObjectRotation tKey, item 1 of tE, item 2 of tE, item 3 of tE
+   Entity.SetRotation tKey, item 1 of tE, item 2 of tE, item 3 of tE
 end VT.Animate
 
 -- dangling: Harold Lloyd's hang from the list (played forward, then back if the hang outlasts it);
@@ -1210,7 +1210,7 @@ end VT.TurnToward
 on VT.LoadBanter
    local tFile, tText, tLine, n
    put empty into sBanter
-   put VT.FindFile("LIB_GAMES/Vibecode3D_Games/VectorToss/banter.txt") into tFile
+   put Game.FindFile("LIB_GAMES/Vibecode3D_Games/VectorToss/banter.txt") into tFile
    if tFile is not empty then
       put textDecode(url ("binfile:" & tFile), "UTF-8") into tText
       replace numToCodepoint(13) with empty in tText
@@ -1373,8 +1373,8 @@ on VT.ShowWalls
    local tH, tName, tSide
    put 2 * round(sWallH / 2) into tH
    if tH < 2 then
-      SetObjectPosition sWall[-1], 0, 0, -100000
-      SetObjectPosition sWall[1], 0, 0, -100000
+      Entity.SetPosition sWall[-1], 0, 0, -100000
+      Entity.SetPosition sWall[1], 0, 0, -100000
       exit VT.ShowWalls
    end if
    put "VT.Wall." & tH into tName
@@ -1384,7 +1384,7 @@ on VT.ShowWalls
    end if
    repeat for each item tSide in "-1,1"
       VT.SetMesh sWall[tSide], tName
-      SetObjectPosition sWall[tSide], tSide * sWallX, 0, 0
+      Entity.SetPosition sWall[tSide], tSide * sWallX, 0, 0
    end repeat
 end VT.ShowWalls
 
@@ -1828,15 +1828,12 @@ end VT.ClipFrames
 
 -- swap the mesh an object is drawn with (from Antack)
 on VT.SetMesh pKey, pMesh
-   local tOut, tLine
-   if gObjectTransforms[pKey]["mesh"] is pMesh then exit VT.SetMesh
-   repeat for each line tLine in gSceneObjects
-      if word 2 of tLine is pKey then put pMesh into word 1 of tLine
-      put tLine & cr after tOut
-   end repeat
-   delete the last char of tOut
-   put tOut into gSceneObjects
-   put pMesh into gObjectTransforms[pKey]["mesh"]
+   local tRadius
+   if Entity.Get(pKey, "mesh") is pMesh then exit VT.SetMesh
+   -- Entity.SetMesh takes the new mesh's radius; this game keeps the old one
+   put Entity.Get(pKey, "radius") into tRadius
+   Entity.SetMesh pKey, pMesh
+   if tRadius is a number then Entity.Set pKey, "radius", tRadius
 end VT.SetMesh
 
 -- engine rotation angles for a heading (from Antack.Euler; up is -Y)
@@ -1887,48 +1884,6 @@ function VT.DotMesh
    put VT.Line(tM, 0, 0, -2, 0, 0, 2) into tA
    return tM
 end VT.DotMesh
-
--- where a file is (install/LAYOUT.md 5.1): this script's own folder first
--- (LIB_GAMES/Vibecode3D_Games/X/... is <script folder>/X/...), then Vibecode3D Common beside
--- it, then the folders above this stack, and last the owner's projects through WSL (his PC
--- only; the global bNoWSL, a test hook, turns that last one off)
-function VT.FindFile pRelPath
-   local tPath, tTry, tShort, tDir, tErr
-   global bNoWSL
-   put pRelPath into tShort
-   if tShort begins with "LIB_GAMES/Vibecode3D_Games/" then delete char 1 to 27 of tShort
-   set the itemDel to "/"
-   -- the script's file, as the launcher or the game player set it on the stack
-   put empty into tDir
-   try
-      put the uScriptFile of (the long owner of me) into tDir
-   catch tErr
-      put empty into tDir
-   end try
-   replace "\" with "/" in tDir
-   if tDir contains "/" then
-      delete item -1 of tDir
-      put tDir & "/" & tShort into tTry
-      if there is a file tTry then return tTry
-      put item 1 to -2 of tDir & "/Vibecode3D Common/" into tTry
-      if there is a file (tTry & pRelPath) then return tTry & pRelPath
-      if there is a file (tTry & tShort) then return tTry & tShort
-   end if
-   put the effective filename of this stack into tPath
-   replace "\" with "/" in tPath
-   repeat 6 times
-      delete item -1 of tPath
-      if tPath is empty then exit repeat
-      put tPath & "/" & pRelPath into tTry
-      if there is a file tTry then return tTry
-   end repeat
-   if bNoWSL is true then return empty
-   put "//wsl$/Ubuntu/home/igame3d/projects/" & pRelPath into tTry
-   if there is a file tTry then return tTry
-   put "/home/igame3d/projects/" & pRelPath into tTry
-   if there is a file tTry then return tTry
-   return empty
-end VT.FindFile
 
 -- the arrows move you; a focused menu or field must never get them
 on arrowKey pKey
