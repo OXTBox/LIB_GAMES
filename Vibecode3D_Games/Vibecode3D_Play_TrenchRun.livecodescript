@@ -10,8 +10,6 @@
 ##           and the knocked-out pillboxes come back. Survive 5 laps.
 ######################################################################################
 
-global gObjectTransforms, gSceneObjects
-global gCameraYaw, gCameraPitch
 global bPaused, bPlaying
 
 local sTheta, sSpin, sPX, sPH, sRing, sBox, sBoxN, sShot, sFoeShot, sSerial, sLap, sLapAt
@@ -26,7 +24,7 @@ constant kBoxes = 14
 
 on Game.OnStart
    focus on nothing          -- arrow keys belong to the game, never to a menu or a field
-   Engine.ResetCamera
+   Camera.Reset
    Scene.ClearAll
    Particles.Clear
    HUD.Clear
@@ -48,8 +46,8 @@ on Game.OnStart
    Trench.SetSpeed
    Trench.BuildRing
    Trench.MakeBoxes
-   Mesh.Define "Trench.Shot", MeshBox(4, 4, 18)
-   Mesh.Define "Trench.FoeShot", MeshSphere(5, 2, 4)
+   Mesh.Define "Trench.Shot", Mesh.Box(4, 4, 18)
+   Mesh.Define "Trench.FoeShot", Mesh.Sphere(5, 2, 4)
    Trench.Camera
    Trench.Say "THE TRENCH: SLIDE, CLIMB, FIRE.  SURVIVE 5 LAPS", 3
 end Game.OnStart
@@ -101,7 +99,7 @@ end Trench.BuildRing
 -- pillboxes on the floor, spread round the ring (never right at the start)
 on Trench.MakeBoxes
    local n
-   Mesh.Define "Trench.Box", MeshBox(26, 22, 26)
+   Mesh.Define "Trench.Box", Mesh.Box(26, 22, 26)
    put empty into sBox
    put kBoxes into sBoxN
    repeat with n = 1 to kBoxes
@@ -113,9 +111,8 @@ on Trench.MakeBoxes
 end Trench.MakeBoxes
 
 on Trench.Camera
-   Engine.SetCam -sPX, -(Trench.Y(0, sPH)), 0
-   put 0 into gCameraYaw
-   put 0.12 into gCameraPitch
+   Camera.SetPosition sPX, Trench.Y(0, sPH), 0
+   Camera.SetLook 0, 0.12
 end Trench.Camera
 
 function Trench.Keys
@@ -148,7 +145,7 @@ on Game.OnUpdate
    put tKeys into sKeysWas
    -- the ring turns towards you
    subtract sSpin from sTheta
-   SetObjectRotation sRing, sTheta, 0, 0
+   Entity.SetRotation sRing, sTheta, 0, 0
    if -sTheta - sLapAt >= 2 * pi then Trench.NextLap
    Trench.Camera
    Trench.MoveBoxes
@@ -181,8 +178,8 @@ on Trench.MoveBoxes
       if sBox[n]["key"] is empty then next repeat
       put sBox[n]["a"] + sTheta into a
       put a - 2 * pi * round(a / (2 * pi)) into tA          -- -pi..pi: 0 is where you are
-      SetObjectPosition sBox[n]["key"], sBox[n]["x"], Trench.Y(tA, 11), Trench.Z(tA, 11)
-      SetObjectRotation sBox[n]["key"], tA, 0, 0
+      Entity.SetPosition sBox[n]["key"], sBox[n]["x"], Trench.Y(tA, 11), Trench.Z(tA, 11)
+      Entity.SetRotation sBox[n]["key"], tA, 0, 0
       -- near and ahead: it fires at you
       if sBox[n]["cool"] > 0 then subtract 1 from sBox[n]["cool"]
       if tA > 0.2 and tA < 0.5 and sBox[n]["cool"] <= 0 then
@@ -227,8 +224,8 @@ on Trench.MoveShots
       put max(8, sShot[k]["h"] - 0.9) into sShot[k]["h"]
       subtract 1 from sShot[k]["life"]
       put sShot[k]["a"] + sTheta into tA
-      SetObjectPosition sShot[k]["key"], sShot[k]["x"], Trench.Y(tA, sShot[k]["h"]), Trench.Z(tA, sShot[k]["h"])
-      SetObjectRotation sShot[k]["key"], tA, 0, 0
+      Entity.SetPosition sShot[k]["key"], sShot[k]["x"], Trench.Y(tA, sShot[k]["h"]), Trench.Z(tA, sShot[k]["h"])
+      Entity.SetRotation sShot[k]["key"], tA, 0, 0
       repeat with n = 1 to sBoxN
          if sBox[n]["key"] is empty then next repeat
          if abs(sBox[n]["a"] - sShot[k]["a"] - 2 * pi * round((sBox[n]["a"] - sShot[k]["a"]) / (2 * pi))) * kR < 22 and abs(sBox[n]["x"] - sShot[k]["x"]) < 26 and sShot[k]["h"] < 40 then
@@ -252,7 +249,7 @@ on Trench.MoveShots
       add sFoeShot[k]["vy"] to sFoeShot[k]["y"]
       add sFoeShot[k]["vz"] to sFoeShot[k]["z"]
       subtract 1 from sFoeShot[k]["life"]
-      SetObjectPosition sFoeShot[k]["key"], sFoeShot[k]["x"], sFoeShot[k]["y"], sFoeShot[k]["z"]
+      Entity.SetPosition sFoeShot[k]["key"], sFoeShot[k]["x"], sFoeShot[k]["y"], sFoeShot[k]["z"]
       if abs(sFoeShot[k]["x"] - sPX) < 12 and abs(sFoeShot[k]["y"] - tPY) < 12 and abs(sFoeShot[k]["z"]) < 14 then
          put 0 into sFoeShot[k]["life"]
          subtract 1 from sShields
