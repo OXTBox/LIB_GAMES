@@ -21,7 +21,6 @@
 ##  8:08 PM: 3D camera on the right button and set angles, top-down stays the default)
 ######################################################################################
 
-global gObjectTransforms, gSceneObjects
 global bPaused, bPlaying
 global gCameraYaw, gCameraPitch, gNoMouse, gViewBottom
 
@@ -44,7 +43,7 @@ constant kCamSets = 4        -- set camera angles (Light.CamSet)
 
 on Game.OnStart
    focus on nothing
-   Engine.ResetCamera
+   Camera.Reset
    Scene.ClearAll
    Particles.Clear
    HUD.Clear
@@ -77,7 +76,7 @@ on Light.StartLevel pLevel
    Mesh.Define "Light.Floor" & pLevel, Light.ArenaMesh(tW, tH, true)
    get Entity.Spawn("Light.Floor" & pLevel, 0, kCY, kZ, "0,60,80")
    Mesh.Define "Light.Bike", Light.BikeMesh()
-   Mesh.Define "Light.Boost", MeshPyramid(4, 10, 14)
+   Mesh.Define "Light.Boost", Mesh.Pyramid(4, 10, 14)
    Mesh.Define "Light.Piece", Light.LineMesh(kPiece * kCell)
    Mesh.Define "Light.Dot", Light.LineMesh(6)
    repeat with i = 0 to 12
@@ -153,7 +152,7 @@ on Light.PlaceBike pB, pCX, pCY, pDX, pDY
    put 0 into sBike[pB]["boost"]
    put pB into sGrid[pCX & "," & pCY]
    put Entity.Spawn("Light.Bike", Light.PX(pCX), Light.PY(pCY), kZ, sBike[pB]["color"]) into sBike[pB]["key"]
-   SetObjectRotation sBike[pB]["key"], 0, 0, atan2(pDY, pDX)
+   Entity.SetRotation sBike[pB]["key"], 0, 0, atan2(pDY, pDX)
 end Light.PlaceBike
 
 function Light.PX pCX
@@ -293,11 +292,11 @@ on Light.Bits
          put tTicks into sBit[i]["ticks"]
       end if
       if sBit[i]["t"] < 90 and (sTicks div 4) mod 2 is 0 then
-         SetObjectPosition sBit[i]["key"], 0, -900, kZ
+         Entity.SetPosition sBit[i]["key"], 0, -900, kZ
       else
-         SetObjectPosition sBit[i]["key"], Light.PX(sBit[i]["cx"]), Light.PY(sBit[i]["cy"]), kZ
+         Entity.SetPosition sBit[i]["key"], Light.PX(sBit[i]["cx"]), Light.PY(sBit[i]["cy"]), kZ
       end if
-      SetObjectRotation sBit[i]["key"], 0, 0, sTicks / 6
+      Entity.SetRotation sBit[i]["key"], 0, 0, sTicks / 6
    end repeat
 end Light.Bits
 
@@ -398,7 +397,7 @@ on Light.DrawRun pN, pFrom, pTo
    else
       put Entity.Spawn(Light.LenName(pFrom - pTo), tSX, tSY, kZ, sBike[tB]["color"]) into tKey
    end if
-   SetObjectRotation tKey, 0, 0, atan2(sSeg[pN]["dy"], sSeg[pN]["dx"])
+   Entity.SetRotation tKey, 0, 0, atan2(sSeg[pN]["dy"], sSeg[pN]["dx"])
    put tKey & cr after sSeg[pN]["keys"]
 end Light.DrawRun
 
@@ -492,7 +491,7 @@ on Game.OnUpdate
          Light.Step i
       end repeat
       if sBike[i]["alive"] then
-         SetObjectPosition sBike[i]["key"], Light.PX(sBike[i]["cx"]) + sBike[i]["dx"] * sBike[i]["sub"] * kCell, Light.PY(sBike[i]["cy"]) + sBike[i]["dy"] * sBike[i]["sub"] * kCell, kZ
+         Entity.SetPosition sBike[i]["key"], Light.PX(sBike[i]["cx"]) + sBike[i]["dx"] * sBike[i]["sub"] * kCell, Light.PY(sBike[i]["cy"]) + sBike[i]["dy"] * sBike[i]["sub"] * kCell, kZ
       end if
    end repeat
    if sBoost > 0 then
@@ -533,7 +532,7 @@ on Light.Step pB
       Light.CloseSegment pB
       put sBike[pB]["wantx"] into sBike[pB]["dx"]
       put sBike[pB]["wanty"] into sBike[pB]["dy"]
-      SetObjectRotation sBike[pB]["key"], 0, 0, atan2(sBike[pB]["dy"], sBike[pB]["dx"])
+      Entity.SetRotation sBike[pB]["key"], 0, 0, atan2(sBike[pB]["dy"], sBike[pB]["dx"])
    end if
    put sBike[pB]["cx"] + sBike[pB]["dx"] into tNX
    put sBike[pB]["cy"] + sBike[pB]["dy"] into tNY
@@ -570,7 +569,7 @@ on Light.AddPiece pB
    put Light.PX(sBike[pB]["cx"] - sBike[pB]["dx"] * kPiece) into tSX
    put Light.PY(sBike[pB]["cy"] - sBike[pB]["dy"] * kPiece) into tSY
    put Entity.Spawn("Light.Piece", tSX, tSY, kZ, sBike[pB]["color"]) into tKey
-   SetObjectRotation tKey, 0, 0, atan2(sBike[pB]["dy"], sBike[pB]["dx"])
+   Entity.SetRotation tKey, 0, 0, atan2(sBike[pB]["dy"], sBike[pB]["dx"])
    put tKey & cr after sBike[pB]["pieces"]
 end Light.AddPiece
 
@@ -594,7 +593,7 @@ on Light.CloseSegment pB
    put Light.PX(sBike[pB]["cx"] - sBike[pB]["dx"] * tLen) into tSX
    put Light.PY(sBike[pB]["cy"] - sBike[pB]["dy"] * tLen) into tSY
    put Entity.Spawn(Light.LenName(tLen), tSX, tSY, kZ, sBike[pB]["color"]) into tKey
-   SetObjectRotation tKey, 0, 0, atan2(sBike[pB]["dy"], sBike[pB]["dx"])
+   Entity.SetRotation tKey, 0, 0, atan2(sBike[pB]["dy"], sBike[pB]["dx"])
    put tKey & cr into sSeg[sSegN]["keys"]
 end Light.CloseSegment
 
@@ -650,7 +649,7 @@ on Light.Crash pB
    put false into sBike[pB]["alive"]
    Light.CloseSegment pB
    FX.Sparks Light.PX(sBike[pB]["cx"]), Light.PY(sBike[pB]["cy"]), kZ, 22, sBike[pB]["color"]
-   SetObjectPosition sBike[pB]["key"], 0, -900, kZ
+   Entity.SetPosition sBike[pB]["key"], 0, -900, kZ
    if pB > 1 then
       add 100 * sLevel to sScore
       put empty into sHUDWas
@@ -817,9 +816,8 @@ on Light.ApplyCam
       put 0 into sCamT
       if sCamFlat then exit Light.ApplyCam
       -- exactly the plain top-down camera
-      Engine.SetCam 0, 0, 0
-      put 0 into gCameraYaw
-      put 0 into gCameraPitch
+      Camera.SetPosition 0, 0, 0
+      Camera.SetLook 0, 0
       put true into sCamFlat
       exit Light.ApplyCam
    end if
@@ -831,9 +829,8 @@ on Light.ApplyCam
    put tR * sin(sCamT) * sin(sCamS) into tOX
    put tR * sin(sCamT) * cos(sCamS) into tOY
    put -tR * cos(sCamT) into tOZ
-   Engine.SetCam -tOX, -(tPY + tOY), -(kZ + tOZ)
-   put atan2(-tOX, -tOZ) into gCameraYaw
-   put -atan2(-tOY, sqrt(tOX ^ 2 + tOZ ^ 2)) into gCameraPitch
+   Camera.SetPosition tOX, tPY + tOY, kZ + tOZ
+   Camera.SetLook atan2(-tOX, -tOZ), -atan2(-tOY, sqrt(tOX ^ 2 + tOZ ^ 2))
 end Light.ApplyCam
 
 on Light.CamHUD
