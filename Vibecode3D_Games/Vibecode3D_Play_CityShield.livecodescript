@@ -9,7 +9,6 @@
 ##           game. 5 levels.
 ######################################################################################
 
-global gObjectTransforms, gSceneObjects
 global bPaused, bPlaying
 
 local sCross, sAX, sAY, sCity, sStreak, sStreakN, sToCome, sNextAt, sBurst, sBurstN, sBursts
@@ -24,7 +23,7 @@ constant kAimSpeed = 12
 
 on Game.OnStart
    focus on nothing          -- arrow keys belong to the game, never to a menu or a field
-   Engine.ResetCamera
+   Camera.Reset
    Scene.ClearAll
    Particles.Clear
    HUD.Clear
@@ -46,10 +45,10 @@ on City.StartLevel pLevel
    put item 3 of tRow into sBursts
    put item 4 of tRow into sRadius
    Scene.ClearAll
-   Mesh.Define "City.Block", MeshBox(70, 40, 20)
-   Mesh.Define "City.Streak", MeshBox(6, 18, 6)
-   Mesh.Define "City.Cross", MeshPrism(4, 14, 4)
-   Mesh.Define "City.Burst", MeshPrism(12, 10, 4)
+   Mesh.Define "City.Block", Mesh.Box(70, 40, 20)
+   Mesh.Define "City.Streak", Mesh.Box(6, 18, 6)
+   Mesh.Define "City.Cross", Mesh.Prism(4, 14, 4)
+   Mesh.Define "City.Burst", Mesh.Prism(12, 10, 4)
    -- the blocks still standing carry over from level to level
    repeat with tN = 1 to 6
       if pLevel = 1 then put true into sCity[tN]["up"]
@@ -98,7 +97,7 @@ on Game.OnUpdate
    if (65364 is among the items of tKeys or 115 is among the items of tKeys) then add kAimSpeed to sAY
    put max(kLeft, min(kRight, sAX)) into sAX
    put max(kTop, min(kGround - 60, sAY)) into sAY
-   SetObjectPosition sCross, sAX, sAY, kZ
+   Entity.SetPosition sCross, sAX, sAY, kZ
    if tSpace and sSpaceWas is not true and sBursts > 0 then
       subtract 1 from sBursts
       add 1 to sBurstN
@@ -146,7 +145,7 @@ on Game.OnUpdate
    repeat for each key tN in sStreak
       add sStreak[tN]["vx"] to sStreak[tN]["x"]
       add sStreak[tN]["vy"] to sStreak[tN]["y"]
-      SetObjectPosition sStreak[tN]["key"], sStreak[tN]["x"], sStreak[tN]["y"], kZ
+      Entity.SetPosition sStreak[tN]["key"], sStreak[tN]["x"], sStreak[tN]["y"], kZ
       put false into tHit
       repeat for each key tB in sBurst
          put sRadius * min(1, sBurst[tB]["age"] / 15) into tR
