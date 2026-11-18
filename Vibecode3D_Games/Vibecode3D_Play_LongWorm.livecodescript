@@ -7,7 +7,6 @@
 ##           a life; three lives. Eat the level's food to move on. 5 levels.
 ######################################################################################
 
-global gObjectTransforms, gSceneObjects
 global bPaused, bPlaying
 
 local sBody, sKeys, sLen, sDC, sDR, sWantC, sWantR, sGrow, sFood, sFoodKey, sWall
@@ -20,7 +19,7 @@ constant kCell = 30
 
 on Game.OnStart
    focus on nothing          -- arrow keys belong to the game, never to a menu or a field
-   Engine.ResetCamera
+   Camera.Reset
    Scene.ClearAll
    Particles.Clear
    HUD.Clear
@@ -48,10 +47,10 @@ on Worm.StartLevel pLevel
    put item 3 of tRow into sLen
    put item 4 of tRow into tWalls
    Scene.ClearAll
-   Mesh.Define "Worm.Seg", MeshBox(kCell - 6, kCell - 6, 14)
-   Mesh.Define "Worm.Food", MeshBox(14, 14, 14)
-   Mesh.Define "Worm.Wall", MeshBox(kCell - 2, kCell - 2, 20)
-   Mesh.Define "Worm.Rim", MeshBox(kCols * kCell + 8, kRows * kCell + 8, 4)
+   Mesh.Define "Worm.Seg", Mesh.Box(kCell - 6, kCell - 6, 14)
+   Mesh.Define "Worm.Food", Mesh.Box(14, 14, 14)
+   Mesh.Define "Worm.Wall", Mesh.Box(kCell - 2, kCell - 2, 20)
+   Mesh.Define "Worm.Rim", Mesh.Box(kCols * kCell + 8, kRows * kCell + 8, 4)
    get Entity.Spawn("Worm.Rim", 0, 0, kZ, "#2E6F8E")
    -- walls: the same places every time for a level, never on the worm's row
    put empty into sWall
@@ -91,7 +90,7 @@ on Worm.PlaceFood
       exit repeat
    end repeat
    put tC & comma & tR into sFood
-   SetObjectPosition sFoodKey, Worm.X(tC), Worm.Y(tR), kZ
+   Entity.SetPosition sFoodKey, Worm.X(tC), Worm.Y(tR), kZ
 end Worm.PlaceFood
 
 function Worm.Keys
@@ -163,7 +162,7 @@ on Game.OnUpdate
       delete the last line of sKeys
       put tHead & cr before sBody
       put tTail & cr before sKeys
-      SetObjectPosition tTail, Worm.X(tC), Worm.Y(tR), kZ
+      Entity.SetPosition tTail, Worm.X(tC), Worm.Y(tR), kZ
    end if
    if tHead is sFood then
       add 1 to sEaten
