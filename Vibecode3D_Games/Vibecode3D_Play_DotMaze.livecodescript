@@ -8,7 +8,6 @@
 ##           with more and faster chasers. 5 levels.
 ######################################################################################
 
-global gObjectTransforms, gSceneObjects
 global bPaused, bPlaying
 
 local sMaze, sDot, sDots, sYou, sC, sR, sDC, sDR, sWantC, sWantR, sT
@@ -21,7 +20,7 @@ constant kRows = 13
 
 on Game.OnStart
    focus on nothing          -- arrow keys belong to the game, never to a menu or a field
-   Engine.ResetCamera
+   Camera.Reset
    Scene.ClearAll
    Particles.Clear
    HUD.Clear
@@ -67,10 +66,10 @@ on Maze.StartLevel pLevel
    put item 2 of tRow into sChaseEvery
    put item 3 of tRow into sYouEvery
    Scene.ClearAll
-   Mesh.Define "Maze.Wall", MeshBox(kCell - 4, kCell - 4, 16)
-   Mesh.Define "Maze.Dot", MeshBox(6, 6, 6)
-   Mesh.Define "Maze.You", MeshPrism(8, 14, 12)
-   Mesh.Define "Maze.Chaser", MeshPyramid(4, 16, 22)
+   Mesh.Define "Maze.Wall", Mesh.Box(kCell - 4, kCell - 4, 16)
+   Mesh.Define "Maze.Dot", Mesh.Box(6, 6, 6)
+   Mesh.Define "Maze.You", Mesh.Prism(8, 14, 12)
+   Mesh.Define "Maze.Chaser", Mesh.Pyramid(4, 16, 22)
    put empty into sDot
    put 0 into sDots
    repeat with tR = 1 to kRows
@@ -108,9 +107,9 @@ on Maze.Reset
    repeat for each key tN in sChaser
       put item (tN * 2 - 1) of "2,2,18,2,2,12,18,12" into sChaser[tN]["c"]
       put item (tN * 2) of "2,2,18,2,2,12,18,12" into sChaser[tN]["r"]
-      SetObjectPosition sChaser[tN]["key"], Maze.X(sChaser[tN]["c"]), Maze.Y(sChaser[tN]["r"]), kZ
+      Entity.SetPosition sChaser[tN]["key"], Maze.X(sChaser[tN]["c"]), Maze.Y(sChaser[tN]["r"]), kZ
    end repeat
-   SetObjectPosition sYou, Maze.X(sC), Maze.Y(sR), kZ
+   Entity.SetPosition sYou, Maze.X(sC), Maze.Y(sR), kZ
    put empty into sHUDWas
 end Maze.Reset
 
@@ -162,7 +161,7 @@ on Game.OnUpdate
          add sDC to sC
          add sDR to sR
       end if
-      SetObjectPosition sYou, Maze.X(sC), Maze.Y(sR), kZ
+      Entity.SetPosition sYou, Maze.X(sC), Maze.Y(sR), kZ
       if sDot[sC & comma & sR] is not empty then
          Entity.Kill sDot[sC & comma & sR]
          delete variable sDot[sC & comma & sR]
@@ -191,7 +190,7 @@ on Game.OnUpdate
          put item 2 of tBest into sChaser[tN]["dr"]
          add sChaser[tN]["dc"] to sChaser[tN]["c"]
          add sChaser[tN]["dr"] to sChaser[tN]["r"]
-         SetObjectPosition sChaser[tN]["key"], Maze.X(sChaser[tN]["c"]), Maze.Y(sChaser[tN]["r"]), kZ
+         Entity.SetPosition sChaser[tN]["key"], Maze.X(sChaser[tN]["c"]), Maze.Y(sChaser[tN]["r"]), kZ
       end repeat
    end if
    repeat for each key tN in sChaser
