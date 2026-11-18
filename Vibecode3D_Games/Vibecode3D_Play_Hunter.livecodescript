@@ -8,6 +8,8 @@
 ##   LEFT click     grab a gem (or crack a rock you're standing next to)
 ##   RIGHT click    shoot, one shot per click, 12 per clip
 ##   R              reload        Escape  pause menu (again: Developer card)
+##   In the Game Player these can be changed (... > Controls...): the actions are in
+##   Vibecode3D_Play_Hunter.input.txt and read through LIB_INPUT (Input.Axis, Input.Down).
 ##
 ## RULES
 ##   Every rock hides a gem. Shoot it (2 hits) or crack it up close with left clicks:
@@ -41,6 +43,7 @@ local sGridN = 8, sGridS = 170, sHalf, sH, sPh1, sPh2, sPh3
 local sPX = 0, sPZ = 0, sFootY = 0, sVY = 0, sOnGround = true, sMouseReady = false
 local sShield = 100, sShieldDelay = 0, sInvuln = 0, sLives = 3
 local sAmmo = 12, sReloadTicks = 0
+local sUseInput = false   -- true when the player loaded LIB_INPUT with this game's actions
 -- Game
 local sStepMS = 33, sTicks = 0, sLevel = 1, sGems = 0, sValue = 0, sKills = 0
 local sRocks, sRockGem, sRockPos, sAirGems, sGroundGems, sEnemies
@@ -51,6 +54,7 @@ local sMsgTicks = 0, sGameOverTicks = 0, sHudAmmo, sHudShield, sHudGems
 
 on Game.OnStart
    focus on nothing          -- arrow keys belong to the game, never to a menu or a field
+   Hunter.FindInput
    Engine.ResetCamera
    put Engine.Info("stepMS") into sStepMS
    Scene.ClearAll
@@ -409,8 +413,20 @@ on Hunter.CenterMouse
    set the screenMouseLoc to globalLoc(round(CenterX) & comma & round(CenterY))
 end Hunter.CenterMouse
 
+## Did the player load LIB_INPUT with this game's actions? (Without it: the key codes below.)
+on Hunter.FindInput
+   local tErr
+   put false into sUseInput
+   try
+      put ("move_x" is among the lines of Input.Actions()) into sUseInput
+   catch tErr
+      put false into sUseInput
+   end try
+end Hunter.FindInput
+
 ## WASD / arrows, sprint, jump, reload, and staying out of the rocks.
 on Hunter.Move
+   local tRun, tJump, tReload
    put the keysDown into tKeys
    put 0 into tF
    put 0 into tS
@@ -426,12 +442,24 @@ on Hunter.Move
       send "Reselect.browse" to me in 600 milliseconds
       exit Hunter.Move
    end if
-   if 119 is among the items of tKeys or 87 is among the items of tKeys or 65362 is among the items of tKeys then add 1 to tF
-   if 115 is among the items of tKeys or 83 is among the items of tKeys or 65364 is among the items of tKeys then subtract 1 from tF
-   if 100 is among the items of tKeys or 68 is among the items of tKeys or 65363 is among the items of tKeys then add 1 to tS
-   if 97 is among the items of tKeys or 65 is among the items of tKeys or 65361 is among the items of tKeys then subtract 1 from tS
+   if sUseInput then
+      -- the actions (LIB_INPUT): a stick gives part of the way, a key the whole way
+      put Input.Axis("move_y") into tF
+      put Input.Axis("move_x") into tS
+      put Input.Down("run") into tRun
+      put Input.Down("jump") into tJump
+      put Input.Down("reload") into tReload
+   else
+      if 119 is among the items of tKeys or 87 is among the items of tKeys or 65362 is among the items of tKeys then add 1 to tF
+      if 115 is among the items of tKeys or 83 is among the items of tKeys or 65364 is among the items of tKeys then subtract 1 from tF
+      if 100 is among the items of tKeys or 68 is among the items of tKeys or 65363 is among the items of tKeys then add 1 to tS
+      if 97 is among the items of tKeys or 65 is among the items of tKeys or 65361 is among the items of tKeys then subtract 1 from tS
+      put (65505 is among the items of tKeys or 65506 is among the items of tKeys) into tRun
+      put (32 is among the items of tKeys) into tJump
+      put (114 is among the items of tKeys or 82 is among the items of tKeys) into tReload
+   end if
    put 5.5 into tSpeed
-   if 65505 is among the items of tKeys or 65506 is among the items of tKeys then put 9 into tSpeed
+   if tRun then put 9 into tSpeed
    if tF is not 0 and tS is not 0 then multiply tSpeed by 0.7071
 
    -- Forward and right on the ground, from the yaw.
@@ -459,7 +487,7 @@ on Hunter.Move
    put Hunter.HeightAt(sPX,sPZ) into tGround
    if sOnGround then
       put tGround into sFootY
-      if 32 is among the items of tKeys then
+      if tJump then
          put -9 into sVY
          put false into sOnGround
       end if
@@ -474,7 +502,7 @@ on Hunter.Move
    end if
 
    -- Reload.
-   if (114 is among the items of tKeys or 82 is among the items of tKeys) and sReloadTicks = 0 and sAmmo < kMaxAmmo then
+   if tReload and sReloadTicks = 0 and sAmmo < kMaxAmmo then
       put kReloadTicks into sReloadTicks
       Sound.Play "Bullet"
       Hunter.ShowHUD

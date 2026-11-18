@@ -1,0 +1,9 @@
+# Gem Hunter: its actions (LIB_INPUT). The Game Player reads this file; change keys in ... > Controls...
+# action, kind, the words shown, then the inputs (an axis: the negative side, the positive side, a whole stick).
+# Looking, grabbing and shooting stay on the mouse (Game.OnClick).
+input	1
+move_y	axis	Back / Forward	key:S|key:Down|pad:LY+	key:W|key:Up|pad:LY-
+move_x	axis	Step left / Step right	key:A|key:Left	key:D|key:Right	pad:LX
+run	button	Sprint	key:Shift|pad:LB
+jump	button	Jump	key:Space|pad:A
+reload	button	Reload	key:R|pad:X
