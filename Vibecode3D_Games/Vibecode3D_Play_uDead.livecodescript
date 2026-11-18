@@ -23,7 +23,6 @@
 ##           No living left: you win the level. No dead left: you lost it.
 ######################################################################################
 
-global gObjectTransforms, gSceneObjects
 global gCameraYaw, gCameraPitch
 global CenterX, CenterY
 global gViewLeft, gViewTop, gViewRight, gViewBottom
@@ -81,7 +80,7 @@ local sNades, sNextCheck, sCountZ, sCountH, sHUDWas, sMsg, sMsgUntil, sNextLevel
 
 on Game.OnStart
    focus on nothing          -- arrow keys belong to the game, never to a menu or a field
-   Engine.ResetCamera
+   Camera.Reset
    put Engine.Info("stepMS") into sStepMS
    Scene.ClearAll
    Particles.Clear
@@ -164,49 +163,9 @@ end Collision.Hit
 
 -------------------------------------------------------------------- data
 
--- where a file is (install/LAYOUT.md 5.1): this script's own folder first
--- (LIB_GAMES/Vibecode3D_Games/X/... is <script folder>/X/...), then Vibecode3D Common beside
--- it, then the folders above this stack, and last the owner's projects through WSL (his PC
--- only; the global bNoWSL, a test hook, turns that last one off)
-function uDead.FindFile pRelPath
-   local tPath, tTry, tShort, tDir, tErr
-   global bNoWSL
-   put pRelPath into tShort
-   if tShort begins with "LIB_GAMES/Vibecode3D_Games/" then delete char 1 to 27 of tShort
-   set the itemDel to "/"
-   -- the script's file, as the launcher or the game player set it on the stack
-   put empty into tDir
-   try
-      put the uScriptFile of (the long owner of me) into tDir
-   catch tErr
-      put empty into tDir
-   end try
-   replace "\" with "/" in tDir
-   if tDir contains "/" then
-      delete item -1 of tDir
-      put tDir & "/" & tShort into tTry
-      if there is a file tTry then return tTry
-      put item 1 to -2 of tDir & "/Vibecode3D Common/" into tTry
-      if there is a file (tTry & pRelPath) then return tTry & pRelPath
-      if there is a file (tTry & tShort) then return tTry & tShort
-   end if
-   put the effective filename of this stack into tPath
-   replace "\" with "/" in tPath
-   repeat 6 times
-      delete item -1 of tPath
-      if tPath is empty then exit repeat
-      put tPath & "/" & pRelPath into tTry
-      if there is a file tTry then return tTry
-   end repeat
-   if bNoWSL is true then return empty
-   put "//wsl$/Ubuntu/home/igame3d/projects/" & pRelPath into tTry
-   if there is a file tTry then return tTry
-   return empty
-end uDead.FindFile
-
 on uDead.LoadData
    local tFile, tLine
-   put uDead.FindFile("LIB_GAMES/Vibecode3D_Games/uDead/udead_levels.txt") into tFile
+   put Game.FindFile("LIB_GAMES/Vibecode3D_Games/uDead/udead_levels.txt") into tFile
    if tFile is empty then
       put "UDEAD: LEVELS FILE NOT FOUND (LIB_GAMES/VIBECODE3D_GAMES/UDEAD)" into sError
       exit uDead.LoadData
@@ -924,7 +883,7 @@ on uDead.MakeMeshes
    Mesh.Define "uDead.Z1", uDead.Figure(0.14, true, false)
    Mesh.Define "uDead.Z2", uDead.Figure(-0.14, true, false)
    Mesh.Define "uDead.Body", uDead.BodyMesh()
-   Mesh.Define "uDead.Nade", MeshBox(5, 5, 5)
+   Mesh.Define "uDead.Nade", Mesh.Box(5, 5, 5)
    -- show, don't tell: rings on the ground (shots, noise) in six sizes, and a blood mark
    local tR
    repeat with tR = 1 to 6
@@ -959,7 +918,7 @@ on uDead.PlaceCrates
    put empty into sAmmo
    put 0 into sAmmoN
    if sLegacy is true then exit uDead.PlaceCrates      -- the 2009 maps: no crates
-   Mesh.Define "uDead.Crate", MeshBox(0.6 * kM, 0.45 * kM, 0.4 * kM)
+   Mesh.Define "uDead.Crate", Mesh.Box(0.6 * kM, 0.45 * kM, 0.4 * kM)
    repeat with n = 1 to kCrates
       put uDead.GenSpot(12, 400) into tSpot
       if tSpot is empty then next repeat
@@ -1043,7 +1002,7 @@ on uDead.Bleed pId
    if sNow < sE[pId]["bleedAt"] then exit uDead.Bleed
    put sNow + 0.45 into sE[pId]["bleedAt"]
    put Entity.Spawn("uDead.Blood", sE[pId]["x"] * kM, 0, sE[pId]["z"] * kM, "#B01010") into tKey
-   SetObjectRotation tKey, 0, random(314) / 100, 0
+   Entity.SetRotation tKey, 0, random(314) / 100, 0
    put tKey & cr after sBlood
    if the number of lines of sBlood > kBloodMax then
       Entity.Kill line 1 of sBlood
@@ -1159,8 +1118,7 @@ on uDead.BuildCast pCast, pArms
       if item 1 of tLine is "player" then
          put item 2 of tLine into sPX
          put item 3 of tLine into sPZ
-         put item 4 of tLine * pi / 180 into gCameraYaw
-         put 0 into gCameraPitch
+         Camera.SetLook item 4 of tLine * pi / 180, 0
          next repeat
       end if
       add 1 to sNextId
@@ -1278,7 +1236,7 @@ on uDead.Dress pId
    put tMesh into sE[pId]["mesh"]
    put Entity.Spawn(tMesh, sE[pId]["x"] * kM, 0, sE[pId]["z"] * kM, tColor) into sE[pId]["key"]
    put uDead.Euler(sE[pId]["yaw"]) into tE
-   SetObjectRotation sE[pId]["key"], item 1 of tE, item 2 of tE, item 3 of tE
+   Entity.SetRotation sE[pId]["key"], item 1 of tE, item 2 of tE, item 3 of tE
 end uDead.Dress
 
 function uDead.Euler pYaw
@@ -1289,24 +1247,21 @@ function uDead.Euler pYaw
 end uDead.Euler
 
 on uDead.SetMesh pKey, pMesh
-   local tOut, tLine
-   if gObjectTransforms[pKey]["mesh"] is pMesh then exit uDead.SetMesh
-   repeat for each line tLine in gSceneObjects
-      if word 2 of tLine is pKey then put pMesh into word 1 of tLine
-      put tLine & cr after tOut
-   end repeat
-   delete the last char of tOut
-   put tOut into gSceneObjects
-   put pMesh into gObjectTransforms[pKey]["mesh"]
+   local tRadius
+   if Entity.Get(pKey, "mesh") is pMesh then exit uDead.SetMesh
+   -- Entity.SetMesh takes the new mesh's radius; this game keeps the old one
+   put Entity.Get(pKey, "radius") into tRadius
+   Entity.SetMesh pKey, pMesh
+   if tRadius is a number then Entity.Set pKey, "radius", tRadius
 end uDead.SetMesh
 
 -- put a figure where its record says, walking frame and all
 on uDead.Place pId, pMoved
    local tE, tBase
    if pMoved and sE[pId]["kind"] is "z" then uDead.Bleed pId
-   SetObjectPosition sE[pId]["key"], sE[pId]["x"] * kM, 0, sE[pId]["z"] * kM
+   Entity.SetPosition sE[pId]["key"], sE[pId]["x"] * kM, 0, sE[pId]["z"] * kM
    put uDead.Euler(sE[pId]["yaw"]) into tE
-   SetObjectRotation sE[pId]["key"], item 1 of tE, item 2 of tE, item 3 of tE
+   Entity.SetRotation sE[pId]["key"], item 1 of tE, item 2 of tE, item 3 of tE
    if pMoved and sTicks mod 8 = pId mod 8 then
       put 3 - sE[pId]["frame"] into sE[pId]["frame"]
       put char 1 to -2 of sE[pId]["mesh"] into tBase
@@ -1905,7 +1860,7 @@ on uDead.Grenades
          put sNades[tN]["x0"] + (sNades[tN]["x1"] - sNades[tN]["x0"]) * tT / 0.9 into tX
          put sNades[tN]["z0"] + (sNades[tN]["z1"] - sNades[tN]["z0"]) * tT / 0.9 into tZ
          put 1.4 * (1 - tT / 0.9) + 2.2 * (tT / 0.9) * (1 - tT / 0.9) + 0.08 into tUp
-         SetObjectPosition sNades[tN]["key"], tX * kM, -tUp * kM, tZ * kM
+         Entity.SetPosition sNades[tN]["key"], tX * kM, -tUp * kM, tZ * kM
       else if tT >= 1.7 then
          put sNades[tN]["x1"] into tX
          put sNades[tN]["z1"] into tZ
@@ -2048,7 +2003,7 @@ on uDead.Look
          put 0 into dy
       end if
       add dx * kMouseSens to gCameraYaw
-      put max(-1.35, min(1.35, gCameraPitch - dy * kMouseSens)) into gCameraPitch
+      Camera.SetLook empty, max(-1.35, min(1.35, gCameraPitch - dy * kMouseSens))
    end if
    set the screenMouseLoc to globalLoc(round(CenterX) & comma & round(CenterY))
    put true into sMouseReady
@@ -2093,7 +2048,7 @@ function uDead.Sign pV
 end uDead.Sign
 
 on uDead.Camera
-   Engine.SetCam -sPX * kM, kEye * kM, -sPZ * kM
+   Camera.SetPosition sPX * kM, -kEye * kM, sPZ * kM
 end uDead.Camera
 
 -- tests: stand somewhere, look somewhere (metres from the map corner, radians)
