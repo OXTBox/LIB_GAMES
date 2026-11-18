@@ -8,7 +8,6 @@
 ##           your bat sets its angle. 5 levels: faster ball, quicker computer, more blocks.
 ######################################################################################
 
-global gObjectTransforms, gSceneObjects
 global bPaused, bPlaying
 
 local sBat, sCpu, sBall, sBatX, sBatY, sCpuX, sCpuY, sBX, sBY, sBZ, sDX, sDY, sDZ
@@ -24,7 +23,7 @@ constant kBatSpeed = 13
 
 on Game.OnStart
    focus on nothing          -- arrow keys belong to the game, never to a menu or a field
-   Engine.ResetCamera
+   Camera.Reset
    Scene.ClearAll
    Particles.Clear
    HUD.Clear
@@ -46,9 +45,9 @@ on Pong.StartLevel pLevel
    Scene.ClearAll
    Pong.MakeCourt
    get Entity.Spawn("Pong.Court", 0, 0, 0, "#2060A0")
-   Mesh.Define "Pong.Bat", MeshBox(kBatW * 2, kBatH * 2, 6)
-   Mesh.Define "Pong.Ball", MeshBox(22, 22, 22)
-   Mesh.Define "Pong.Block", MeshBox(110, 90, 60)
+   Mesh.Define "Pong.Bat", Mesh.Box(kBatW * 2, kBatH * 2, 6)
+   Mesh.Define "Pong.Ball", Mesh.Box(22, 22, 22)
+   Mesh.Define "Pong.Block", Mesh.Box(110, 90, 60)
    put Entity.Spawn("Pong.Bat", 0, 0, kNear, "cyan") into sBat
    put Entity.Spawn("Pong.Bat", 0, 0, kFar, "#FF5050") into sCpu
    put Entity.Spawn("Pong.Ball", 0, 0, kNear + 30, "white") into sBall
@@ -115,7 +114,7 @@ on Game.OnUpdate
    if (65364 is among the items of tKeys or 115 is among the items of tKeys) then add kBatSpeed to sBatY
    put max(-kW + kBatW, min(kW - kBatW, sBatX)) into sBatX
    put max(-kH + kBatH, min(kH - kBatH, sBatY)) into sBatY
-   SetObjectPosition sBat, sBatX, sBatY, kNear
+   Entity.SetPosition sBat, sBatX, sBatY, kNear
    if sServe then
       put sBatX into sBX
       put sBatY into sBY
@@ -126,7 +125,7 @@ on Game.OnUpdate
          put -sSpeed * 0.2 into sDY
          put sSpeed into sDZ
       end if
-      SetObjectPosition sBall, sBX, sBY, sBZ
+      Entity.SetPosition sBall, sBX, sBY, sBZ
       Pong.ShowHUD
       exit Game.OnUpdate
    end if
@@ -163,7 +162,7 @@ on Game.OnUpdate
    add max(-sCpuSpeed, min(sCpuSpeed, tWant)) to sCpuX
    put sBY - sCpuY into tWant
    add max(-sCpuSpeed, min(sCpuSpeed, tWant)) to sCpuY
-   SetObjectPosition sCpu, sCpuX, sCpuY, kFar
+   Entity.SetPosition sCpu, sCpuX, sCpuY, kFar
    -- your bat: where the ball meets it sets the angle
    if sDZ < 0 and sBZ <= kNear + 14 then
       if abs(sBX - sBatX) <= kBatW + 11 and abs(sBY - sBatY) <= kBatH + 11 then
@@ -188,7 +187,7 @@ on Game.OnUpdate
          Pong.Point
       end if
    end if
-   SetObjectPosition sBall, sBX, sBY, sBZ
+   Entity.SetPosition sBall, sBX, sBY, sBZ
    Pong.ShowHUD
 end Game.OnUpdate
 
