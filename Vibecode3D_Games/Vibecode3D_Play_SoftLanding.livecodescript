@@ -8,7 +8,6 @@
 ##           three landers. 5 levels: stronger gravity, less fuel, a narrower pad.
 ######################################################################################
 
-global gObjectTransforms, gSceneObjects
 global bPaused, bPlaying
 
 local sLander, sX, sY, sVX, sVY, sFuel, sGround, sPadCol, sPadW
@@ -25,7 +24,7 @@ constant kSide = 0.07
 
 on Game.OnStart
    focus on nothing          -- arrow keys belong to the game, never to a menu or a field
-   Engine.ResetCamera
+   Camera.Reset
    Scene.ClearAll
    Particles.Clear
    HUD.Clear
@@ -45,7 +44,7 @@ on Land.StartLevel pLevel
    put item 3 of tRow into sPadW
    put item 4 of tRow into sMaxSpeed
    Scene.ClearAll
-   Mesh.Define "Land.Lander", MeshPyramid(4, 16, 26)
+   Mesh.Define "Land.Lander", Mesh.Pyramid(4, 16, 26)
    -- rough ground: a column of rock every 50 units, the pad flat and low
    put 4 + (pLevel * 5) mod (kCols - 8) into sPadCol
    put empty into sGround
@@ -53,7 +52,7 @@ on Land.StartLevel pLevel
       put 40 + ((tC * 37 + pLevel * 53) mod 7) * 22 into tH
       if tC >= sPadCol and tC < sPadCol + sPadW then put 30 into tH
       put kBottom - tH into sGround[tC]
-      Mesh.Define "Land.Rock" & tC, MeshBox(kColW, tH, 20)
+      Mesh.Define "Land.Rock" & tC, Mesh.Box(kColW, tH, 20)
       if tC >= sPadCol and tC < sPadCol + sPadW then
          get Entity.Spawn("Land.Rock" & tC, kLeft + (tC - 0.5) * kColW, kBottom - tH / 2, kZ, "yellow")
       else
@@ -132,7 +131,7 @@ on Game.OnUpdate
       put 0 into sVX
    end if
    if sY < kTop then put kTop into sY
-   SetObjectPosition sLander, sX, sY, kZ
+   Entity.SetPosition sLander, sX, sY, kZ
    put max(1, min(kCols, trunc((sX - kLeft) / kColW) + 1)) into tC
    if sY + 13 >= sGround[tC] then
       if tC >= sPadCol and tC < sPadCol + sPadW and sVY <= sMaxSpeed and abs(sVX) <= sMaxSpeed then
