@@ -9,7 +9,6 @@
 ##           on the right; the level's last screen ends it. 5 levels.
 ######################################################################################
 
-global gObjectTransforms, gSceneObjects
 global bPaused, bPlaying
 
 local sRunner, sX, sY, sVY, sOnVine, sJumpWas
@@ -28,7 +27,7 @@ constant kVineTop = -120
 
 on Game.OnStart
    focus on nothing          -- arrow keys belong to the game, never to a menu or a field
-   Engine.ResetCamera
+   Camera.Reset
    Scene.ClearAll
    Particles.Clear
    HUD.Clear
@@ -57,10 +56,10 @@ on Vine.BuildScreen
    put item 4 of tRow into tGems
    put sLevel * 31 + sScreen * 17 into tSeed
    Scene.ClearAll
-   Mesh.Define "Vine.Runner", MeshBox(22, 46, 12)
-   Mesh.Define "Vine.Log", MeshPrism(8, 16, 30)
-   Mesh.Define "Vine.Gem", MeshPyramid(4, 12, 18)
-   Mesh.Define "Vine.Rope", MeshBox(4, kVineLen, 4)
+   Mesh.Define "Vine.Runner", Mesh.Box(22, 46, 12)
+   Mesh.Define "Vine.Log", Mesh.Prism(8, 16, 30)
+   Mesh.Define "Vine.Gem", Mesh.Pyramid(4, 12, 18)
+   Mesh.Define "Vine.Rope", Mesh.Box(4, kVineLen, 4)
    -- the last pit of every second screen is water with a vine
    put (sScreen mod 2 = 0) into sHasVine
    put empty into sPit
@@ -70,7 +69,7 @@ on Vine.BuildScreen
       if sHasVine and tN = tPits then put 230 into tW
       put tX into sPit[tN]["x1"]
       put tX + tW into sPit[tN]["x2"]
-      Mesh.Define "Vine.Pit" & tN, MeshBox(tW, 60, 30)
+      Mesh.Define "Vine.Pit" & tN, Mesh.Box(tW, 60, 30)
       if tW > 100 then
          get Entity.Spawn("Vine.Pit" & tN, tX + tW / 2, kGround + 30, kZ, "cyan")
          put tX + tW / 2 into sVineX
@@ -109,13 +108,13 @@ on Vine.Floor
    repeat for each line tN in tKeys
       put sPit[tN]["x1"] - tFrom into tW
       if tW > 2 then
-         Mesh.Define "Vine.Floor" & tN, MeshBox(tW, 6, 30)
+         Mesh.Define "Vine.Floor" & tN, Mesh.Box(tW, 6, 30)
          get Entity.Spawn("Vine.Floor" & tN, tFrom + tW / 2, kGround + 3, kZ, "green")
       end if
       put sPit[tN]["x2"] into tFrom
    end repeat
    put kRight - tFrom into tW
-   Mesh.Define "Vine.FloorEnd", MeshBox(tW, 6, 30)
+   Mesh.Define "Vine.FloorEnd", Mesh.Box(tW, 6, 30)
    get Entity.Spawn("Vine.FloorEnd", tFrom + tW / 2, kGround + 3, kZ, "green")
 end Vine.Floor
 
@@ -157,8 +156,8 @@ on Game.OnUpdate
       put sin(sVineT) * 0.75 into tA
       put sVineX + sin(tA) * kVineLen into tTipX
       put kVineTop + cos(tA) * kVineLen into tTipY
-      SetObjectPosition sVineKey, sVineX + sin(tA) * kVineLen / 2, kVineTop + cos(tA) * kVineLen / 2, kZ
-      SetObjectRotation sVineKey, 0, 0, -tA
+      Entity.SetPosition sVineKey, sVineX + sin(tA) * kVineLen / 2, kVineTop + cos(tA) * kVineLen / 2, kZ
+      Entity.SetRotation sVineKey, 0, 0, -tA
    end if
    if sOnVine then
       put tTipX into sX
@@ -190,12 +189,12 @@ on Game.OnUpdate
          put true into sOnVine
       end if
    end if
-   SetObjectPosition sRunner, sX, sY - 23, kZ
+   Entity.SetPosition sRunner, sX, sY - 23, kZ
    -- logs roll left and come round again
    repeat for each key tN in sLog
       subtract sLogSpeed from sLog[tN]["x"]
       if sLog[tN]["x"] < kLeft - 40 then put kRight + 40 + random(200) into sLog[tN]["x"]
-      SetObjectPosition sLog[tN]["key"], sLog[tN]["x"], kGround - 16, kZ
+      Entity.SetPosition sLog[tN]["key"], sLog[tN]["x"], kGround - 16, kZ
       if not sOnVine and abs(sLog[tN]["x"] - sX) < 26 and sY > kGround - 30 then
          Vine.Hurt
          exit Game.OnUpdate
