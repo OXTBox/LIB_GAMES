@@ -11,7 +11,6 @@
 ##           level (5).
 ######################################################################################
 
-global gObjectTransforms, gSceneObjects
 global bPaused, bPlaying
 
 local sTaxi, sX, sY, sDirX, sDirY, sBlock, sBlockN, sCar, sFare, sDest, sRide, sRideT
@@ -28,7 +27,7 @@ constant kTaxiR = 14         -- the taxi's half size for walls
 
 on Game.OnStart
    focus on nothing
-   Engine.ResetCamera
+   Camera.Reset
    Scene.ClearAll
    Particles.Clear
    HUD.Clear
@@ -60,9 +59,9 @@ on Fare.StartLevel pLevel
    Scene.ClearAll
    Mesh.Define "Fare.Taxi", Fare.TaxiMesh()
    Mesh.Define "Fare.Car", Fare.CarMesh()
-   Mesh.Define "Fare.Fare", MeshPyramid(6, 14, 26)
+   Mesh.Define "Fare.Fare", Mesh.Pyramid(6, 14, 26)
    Mesh.Define "Fare.Dest", Fare.RingMesh(26)
-   Mesh.Define "Fare.Works", MeshBox(kStreet - 6, 14, 10)
+   Mesh.Define "Fare.Works", Mesh.Box(kStreet - 6, 14, 10)
    put Fare.BlockW() into tW
    put Fare.BlockH() into tH
    Mesh.Define "Fare.Block", Fare.BlockMesh(tW, tH)
@@ -85,7 +84,7 @@ on Fare.StartLevel pLevel
    Fare.AddBlock 0, kTop + 490 + 50, 600, 50
    Fare.AddBlock kLeft - 50, kTop + 245, 50, 400
    Fare.AddBlock -kLeft + 50, kTop + 245, 50, 400
-   Mesh.Define "Fare.Edge", MeshBox(880, 490, 2)
+   Mesh.Define "Fare.Edge", Mesh.Box(880, 490, 2)
    get Entity.Spawn("Fare.Edge", 0, kTop + 245, kZ + 5, "80,80,120")
    -- roadworks: one less street each level after the first
    repeat with tN = 1 to pLevel - 1
@@ -151,7 +150,7 @@ on Fare.AddCar pN
    put item random(3) of "0,255,120|255,80,80|120,160,255" into tCol
    set the itemDel to comma
    put Entity.Spawn("Fare.Car", sCar[pN]["x"], sCar[pN]["y"], kZ, tCol) into sCar[pN]["key"]
-   if sCar[pN]["axis"] is "v" then SetObjectRotation sCar[pN]["key"], 0, 0, 1.5708
+   if sCar[pN]["axis"] is "v" then Entity.SetRotation sCar[pN]["key"], 0, 0, 1.5708
 end Fare.AddCar
 
 function Fare.TaxiMesh
@@ -233,8 +232,8 @@ on Fare.NewFare
    put Fare.Spot(sX, sY) into tP
    put item 1 of tP into sFare["x"]
    put item 2 of tP into sFare["y"]
-   SetObjectPosition sFare["key"], sFare["x"], sFare["y"], kZ - 10
-   SetObjectPosition sDest["key"], 0, -900, kZ
+   Entity.SetPosition sFare["key"], sFare["x"], sFare["y"], kZ - 10
+   Entity.SetPosition sDest["key"], 0, -900, kZ
    put false into sRide
 end Fare.NewFare
 
@@ -312,8 +311,8 @@ on Game.OnUpdate
    if not Fare.Solid(tNX, sY, kTaxiR) then put tNX into sX
    put sY + sDirY * tV into tNY
    if not Fare.Solid(sX, tNY, kTaxiR) then put tNY into sY
-   SetObjectPosition sTaxi, sX, sY, kZ
-   SetObjectRotation sTaxi, 0, 0, atan2(sDirY, sDirX)
+   Entity.SetPosition sTaxi, sX, sY, kZ
+   Entity.SetRotation sTaxi, 0, 0, atan2(sDirY, sDirX)
    -- traffic
    put 0 into tTip
    repeat for each key tK in sCar
@@ -328,7 +327,7 @@ on Game.OnUpdate
          if sCar[tK]["y"] > kTop + 520 then put kTop - 30 into sCar[tK]["y"]
          if sCar[tK]["y"] < kTop - 30 then put kTop + 520 into sCar[tK]["y"]
       end if
-      SetObjectPosition sCar[tK]["key"], sCar[tK]["x"], sCar[tK]["y"], kZ
+      Entity.SetPosition sCar[tK]["key"], sCar[tK]["x"], sCar[tK]["y"], kZ
       put max(abs(sCar[tK]["x"] - sX), abs(sCar[tK]["y"] - sY)) into tGap
       if tGap < 26 and sBump <= 0 then
          -- a crash: three seconds lost
@@ -354,22 +353,22 @@ on Game.OnUpdate
    end if
    -- the fare
    if not sRide then
-      SetObjectRotation sFare["key"], 0, 0, sTicks / 10
+      Entity.SetRotation sFare["key"], 0, 0, sTicks / 10
       if abs(sFare["x"] - sX) < 26 and abs(sFare["y"] - sY) < 26 then
          put true into sRide
          put 0 into sRideT
          get Fare.Spot(sX, sY)
          put item 1 of it into sDest["x"]
          put item 2 of it into sDest["y"]
-         SetObjectPosition sFare["key"], 0, -900, kZ
-         SetObjectPosition sDest["key"], sDest["x"], sDest["y"], kZ - 2
+         Entity.SetPosition sFare["key"], 0, -900, kZ
+         Entity.SetPosition sDest["key"], sDest["x"], sDest["y"], kZ - 2
          FX.Sparks sX, sY, kZ, 8, "255,0,255"
          put "TAKE ME TO THE YELLOW MARK!" into sMsg
          put 40 into sMsgT
       end if
    else
       add 1 to sRideT
-      SetObjectRotation sDest["key"], 0, 0, sTicks / 12
+      Entity.SetRotation sDest["key"], 0, 0, sTicks / 12
       if abs(sDest["x"] - sX) < 30 and abs(sDest["y"] - sY) < 30 then
          add 1 to sDelivered
          add 100 + max(0, 300 - sRideT) div 3 to sScore
