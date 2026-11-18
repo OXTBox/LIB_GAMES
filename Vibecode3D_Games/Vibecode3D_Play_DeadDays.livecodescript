@@ -13,8 +13,6 @@
 ##           3 lives; losing a life starts the place over. 3 places.
 ######################################################################################
 
-global gObjectTransforms, gSceneObjects
-global gCameraYaw, gCameraPitch
 global bPaused, bPlaying
 
 local sMap, sP, sZ, sZN, sRobot, sWalls, sDoor, sGoal, sPick, sKeysWas, sTestKeys
@@ -26,7 +24,7 @@ constant kDT = 0.0333       -- seconds a step (30 a second)
 
 on Game.OnStart
    focus on nothing
-   Engine.ResetCamera
+   Camera.Reset
    HUD.Clear
    Collision.ClearRules
    put 3 into sLives
@@ -293,12 +291,12 @@ on DD.PlaceBuilding pName, pB, pX, pZ, pTurn
    if sTools["v3d_buildings"] then
       Mesh.Define "DD.B." & pName, pB["mesh"]
    else
-      Mesh.Define "DD.B." & pName, MeshBox(pB["w"] * kM, 8 * kM, pB["d"] * kM)
+      Mesh.Define "DD.B." & pName, Mesh.Box(pB["w"] * kM, 8 * kM, pB["d"] * kM)
    end if
    put Entity.Spawn("DD.B." & pName, pX * kM, 0, pZ * kM, "#7FA8C8") into tKey
    put 1 into tF
    if pTurn then
-      SetObjectRotation tKey, 0, 3.14159, 0
+      Entity.SetRotation tKey, 0, 3.14159, 0
       put -1 into tF
    end if
    DD.Wall pX - pB["w"] / 2, pZ - pB["d"] / 2, pX + pB["w"] / 2, pZ + pB["d"] / 2
@@ -324,17 +322,17 @@ on DD.PropUp pName, pX, pZ, pRot, pUp
    if sTools["v3d_props"] then
       Mesh.Define "DD.P." & pName, Prop.Make(pName)
    else
-      Mesh.Define "DD.P." & pName, MeshBox(1 * kM, 1 * kM, 1 * kM)
+      Mesh.Define "DD.P." & pName, Mesh.Box(1 * kM, 1 * kM, 1 * kM)
    end if
    put Entity.Spawn("DD.P." & pName, pX * kM, -pUp * kM, pZ * kM, "#C0C0C0") into tKey
-   if pRot is not 0 then SetObjectRotation tKey, 0, pRot, 0
+   if pRot is not 0 then Entity.SetRotation tKey, 0, pRot, 0
 end DD.PropUp
 
 on DD.MakePerson pMesh, pRole, pColor
    if sTools["v3d_figures"] then
       Mesh.Define pMesh, Fig.Make(pRole)
    else
-      Mesh.Define pMesh, MeshBox(0.5 * kM, 1.8 * kM, 0.3 * kM)
+      Mesh.Define pMesh, Mesh.Box(0.5 * kM, 1.8 * kM, 0.3 * kM)
    end if
 end DD.MakePerson
 
@@ -357,7 +355,7 @@ on DD.AddPick pWeapon, pX, pZ
    if sTools["v3d_props"] then
       Mesh.Define "DD.G." & pWeapon, Prop.Make(pWeapon)
    else
-      Mesh.Define "DD.G." & pWeapon, MeshBox(1 * kM, 0.2 * kM, 0.2 * kM)
+      Mesh.Define "DD.G." & pWeapon, Mesh.Box(1 * kM, 0.2 * kM, 0.2 * kM)
    end if
    put Entity.Spawn("DD.G." & pWeapon, pX * kM, 0, pZ * kM, "#FFFF60") into tKey
    put pWeapon & "," & pX & "," & pZ & "," & tKey & cr after sPick
@@ -442,8 +440,8 @@ on Game.OnUpdate
    end if
    DD.Places
    if sOver then exit Game.OnUpdate
-   SetObjectPosition sP["key"], sP["x"] * kM, -sP["y"] * kM, sP["z"] * kM
-   SetObjectRotation sP["key"], 0, sP["h"] + 3.14159, 0
+   Entity.SetPosition sP["key"], sP["x"] * kM, -sP["y"] * kM, sP["z"] * kM
+   Entity.SetRotation sP["key"], 0, sP["h"] + 3.14159, 0
    DD.Camera
    if sMsgT > 0 then
       subtract 1 from sMsgT
@@ -569,8 +567,8 @@ on DD.Dead
          subtract 12 * kDT from sP["hp"]
          if sTicks mod 15 is 0 then FX.Sparks sP["x"] * kM, -1.4 * kM, sP["z"] * kM, 5, "#FF4040"
       end if
-      SetObjectPosition sZ[k]["key"], sZ[k]["x"] * kM, 0, sZ[k]["z"] * kM
-      SetObjectRotation sZ[k]["key"], 0, atan2(tDX, tDZ) + 3.14159, 0
+      Entity.SetPosition sZ[k]["key"], sZ[k]["x"] * kM, 0, sZ[k]["z"] * kM
+      Entity.SetRotation sZ[k]["key"], 0, atan2(tDX, tDZ) + 3.14159, 0
    end repeat
    if sP["hp"] <= 0 then
       subtract 1 from sLives
@@ -620,11 +618,11 @@ on DD.Robot
       DD.HurtZombie tBest, 1, false
    end if
    if sP["floor"] is 2 then
-      SetObjectPosition sRobot["key"], sRobot["x"] * kM, -sP["y"] * kM, sRobot["z"] * kM
+      Entity.SetPosition sRobot["key"], sRobot["x"] * kM, -sP["y"] * kM, sRobot["z"] * kM
    else
-      SetObjectPosition sRobot["key"], sRobot["x"] * kM, 0, sRobot["z"] * kM
+      Entity.SetPosition sRobot["key"], sRobot["x"] * kM, 0, sRobot["z"] * kM
    end if
-   if tD > 0.01 then SetObjectRotation sRobot["key"], 0, atan2(tDX, tDZ) + 3.14159, 0
+   if tD > 0.01 then Entity.SetRotation sRobot["key"], 0, atan2(tDX, tDZ) + 3.14159, 0
 end DD.Robot
 
 -- weapons lying about: walk over one
@@ -682,9 +680,8 @@ on DD.Camera
    put tTX - tCX into tDX
    put tTY - tCY into tDY
    put tTZ - tCZ into tDZ
-   Engine.SetCam -tCX, -tCY, -tCZ
-   put atan2(tDX, tDZ) into gCameraYaw
-   put -atan2(tDY, sqrt(tDX ^ 2 + tDZ ^ 2)) into gCameraPitch
+   Camera.SetPosition tCX, tCY, tCZ
+   Camera.SetLook atan2(tDX, tDZ), -atan2(tDY, sqrt(tDX ^ 2 + tDZ ^ 2))
 end DD.Camera
 
 -------------------------------------------------------------------- the HUD and the words
