@@ -21,7 +21,6 @@
 ##  attack by air from behind)
 ######################################################################################
 
-global gObjectTransforms, gSceneObjects
 global bPaused, bPlaying
 global gNoMouse, gViewBottom
 
@@ -52,7 +51,7 @@ constant kRoundV = 4.2       -- a sniper's round: slow enough to shoot down or d
 
 on Game.OnStart
    focus on nothing
-   Engine.ResetCamera
+   Camera.Reset
    Scene.ClearAll
    Particles.Clear
    HUD.Clear
@@ -85,13 +84,13 @@ on Squad.StartLevel pLevel
    Mesh.Define "Squad.Down", Squad.ManMesh("down")
    Mesh.Define "Squad.Gunner", Squad.ManMesh("gun")
    Mesh.Define "Squad.Enemy", Squad.ManMesh("walk")
-   Mesh.Define "Squad.Shot", MeshBox(8, 2, 2)
+   Mesh.Define "Squad.Shot", Mesh.Box(8, 2, 2)
    Mesh.Define "Squad.Flag", Squad.FlagMesh()
    Mesh.Define "Squad.Flyer", Squad.FlyerMesh()
-   Mesh.Define "Squad.Bomb", MeshBox(6, 8, 6)
+   Mesh.Define "Squad.Bomb", Mesh.Box(6, 8, 6)
    Mesh.Define "Squad.Reticle", Squad.ReticleMesh()
    Mesh.Define "Squad.Sniper", Squad.ManMesh("aim")
-   Mesh.Define "Squad.Round", MeshBox(5, 5, 5)
+   Mesh.Define "Squad.Round", Mesh.Box(5, 5, 5)
    put empty into sTower
    put empty into sSlice
    repeat with i = 0 to kSlices
@@ -403,12 +402,12 @@ on Game.OnUpdate
    repeat with i = 1 to 4
       if sMan[i]["state"] is "on" then
          if i is 4 then
-            SetObjectPosition sMan[i]["key"], kBuggyX + 26, kBase - sY - 56 - 3 * sAng * 16, kZ - 2
+            Entity.SetPosition sMan[i]["key"], kBuggyX + 26, kBase - sY - 56 - 3 * sAng * 16, kZ - 2
          else
-            SetObjectPosition sMan[i]["key"], kBuggyX - 30 + (i - 1) * 16, kBase - sY - 48 - (i - 1) * sAng * 16, kZ - 2
+            Entity.SetPosition sMan[i]["key"], kBuggyX - 30 + (i - 1) * 16, kBase - sY - 48 - (i - 1) * sAng * 16, kZ - 2
          end if
       else if sMan[i]["state"] is "down" then
-         SetObjectPosition sMan[i]["key"], Squad.SX(sMan[i]["x"]), kBase - Squad.H(sMan[i]["x"]) - 4, kZ - 4
+         Entity.SetPosition sMan[i]["key"], Squad.SX(sMan[i]["x"]), kBase - Squad.H(sMan[i]["x"]) - 4, kZ - 4
          -- standing still beside him: he climbs back on
          if tMove is 0 and not sAir and abs(sMan[i]["x"] - sX) < 50 then
             Entity.Kill sMan[i]["key"]
@@ -484,17 +483,17 @@ on Squad.Drive pMove, pJump
 end Squad.Drive
 
 on Squad.ShowBuggy
-   SetObjectPosition sBuggy, kBuggyX, kBase - sY - 18, kZ
-   SetObjectRotation sBuggy, 0, 0, -sAng
+   Entity.SetPosition sBuggy, kBuggyX, kBase - sY - 18, kZ
+   Entity.SetRotation sBuggy, 0, 0, -sAng
    if sAir then
-      SetObjectPosition sWheel[1], kBuggyX - 28, kBase - (sY - 28 * sin(sAng)) - 12, kZ - 10
-      SetObjectPosition sWheel[2], kBuggyX + 30, kBase - (sY + 30 * sin(sAng)) - 12, kZ - 10
+      Entity.SetPosition sWheel[1], kBuggyX - 28, kBase - (sY - 28 * sin(sAng)) - 12, kZ - 10
+      Entity.SetPosition sWheel[2], kBuggyX + 30, kBase - (sY + 30 * sin(sAng)) - 12, kZ - 10
    else
-      SetObjectPosition sWheel[1], kBuggyX - 28, kBase - Squad.H(sX - 28) - 12, kZ - 10
-      SetObjectPosition sWheel[2], kBuggyX + 30, kBase - Squad.H(sX + 30) - 12, kZ - 10
+      Entity.SetPosition sWheel[1], kBuggyX - 28, kBase - Squad.H(sX - 28) - 12, kZ - 10
+      Entity.SetPosition sWheel[2], kBuggyX + 30, kBase - Squad.H(sX + 30) - 12, kZ - 10
    end if
-   SetObjectRotation sWheel[1], 0, 0, sX / 12
-   SetObjectRotation sWheel[2], 0, 0, sX / 12
+   Entity.SetRotation sWheel[1], 0, 0, sX / 12
+   Entity.SetRotation sWheel[2], 0, 0, sX / 12
 end Squad.ShowBuggy
 
 on Squad.Ground
@@ -508,7 +507,7 @@ on Squad.Ground
          put Entity.Spawn(tName, 0, kBase, kZ, "120,200,90") into sSlice[i]["key"]
          put tName into sSlice[i]["type"]
       end if
-      SetObjectPosition sSlice[i]["key"], Squad.SX(tIdx * kSeg), kBase - Squad.H(tIdx * kSeg), kZ
+      Entity.SetPosition sSlice[i]["key"], Squad.SX(tIdx * kSeg), kBase - Squad.H(tIdx * kSeg), kZ
    end repeat
 end Squad.Ground
 
@@ -542,13 +541,13 @@ on Squad.Enemies
       end repeat
       if tTarget > sEnemy[tK]["x"] then
          add sESpeed to sEnemy[tK]["x"]
-         SetObjectRotation sEnemy[tK]["key"], 0, 3.14159, 0
+         Entity.SetRotation sEnemy[tK]["key"], 0, 3.14159, 0
       else
          subtract sESpeed from sEnemy[tK]["x"]
-         SetObjectRotation sEnemy[tK]["key"], 0, 0, 0
+         Entity.SetRotation sEnemy[tK]["key"], 0, 0, 0
       end if
       put sEnemy[tK]["x"] into tEX
-      SetObjectPosition sEnemy[tK]["key"], Squad.SX(tEX), kBase - Squad.H(tEX) - 2 * abs(sin(sTicks / 3 + tK)), kZ
+      Entity.SetPosition sEnemy[tK]["key"], Squad.SX(tEX), kBase - Squad.H(tEX) - 2 * abs(sin(sTicks / 3 + tK)), kZ
       -- it reaches a fallen soldier
       repeat with i = 1 to 3
          if sMan[i]["state"] is "down" and abs(sMan[i]["x"] - tEX) < 12 then
@@ -652,12 +651,12 @@ on Squad.Aim
    put Squad.MousePoint() into tM
    if tM is empty then
       put empty into sAimX
-      SetObjectPosition sRet, 0, -2000, kZ - 6
+      Entity.SetPosition sRet, 0, -2000, kZ - 6
    else
       put sX + item 1 of tM - kBuggyX into sAimX
       put kBase - item 2 of tM into sAimH
-      SetObjectPosition sRet, item 1 of tM * (kZ - 6) / kZ, item 2 of tM * (kZ - 6) / kZ, kZ - 6
-      SetObjectRotation sRet, 0, 0, sTicks / 25
+      Entity.SetPosition sRet, item 1 of tM * (kZ - 6) / kZ, item 2 of tM * (kZ - 6) / kZ, kZ - 6
+      Entity.SetRotation sRet, 0, 0, sTicks / 25
    end if
    if sFireT > 0 then subtract 1 from sFireT
    if sAimX is not empty and sFireT <= 0 and Squad.MouseDown() then
@@ -668,14 +667,16 @@ end Squad.Aim
 
 -- the mouse as a point at the buggy's depth ("x,y" as entities are placed), or empty
 function Squad.MousePoint
-   local tP, tErr
+   local tP, tErr, tM
    if sTestAim is not empty then return sTestAim
    if gNoMouse is true then return empty
    try
       put Engine.Info("projection") into tP
       set the itemDelimiter to comma
       if item 3 of tP is not a number or item 1 of tP <= 0 then return empty
-      return ((the mouseH - item 2 of tP) * kZ / item 1 of tP) & comma & ((the mouseV - item 3 of tP) * kZ / item 1 of tP)
+      put Engine.Mouse() into tM
+      if tM is empty then return empty
+      return ((item 1 of tM - item 2 of tP) * kZ / item 1 of tP) & comma & ((item 2 of tM - item 3 of tP) * kZ / item 1 of tP)
    catch tErr
       return empty
    end try
@@ -709,7 +710,7 @@ on Squad.Fire
    put tDH / tD * kShotV into sShot[sShotN]["vh"]
    put 40 into sShot[sShotN]["life"]
    put Entity.Spawn("Squad.Shot", Squad.SX(tX), kBase - tH, kZ, "255,255,255") into sShot[sShotN]["key"]
-   SetObjectRotation sShot[sShotN]["key"], 0, 0, -atan2(tDH, tDX)
+   Entity.SetRotation sShot[sShotN]["key"], 0, 0, -atan2(tDH, tDX)
 end Squad.Fire
 
 -- the soldiers' shots home on their walker (it may already be gone); the gun's fly straight
@@ -770,7 +771,7 @@ on Squad.Shots
             end if
          end repeat
          if not tHit then
-            SetObjectPosition sShot[tS]["key"], Squad.SX(sShot[tS]["x"]), kBase - sShot[tS]["h"], kZ
+            Entity.SetPosition sShot[tS]["key"], Squad.SX(sShot[tS]["x"]), kBase - sShot[tS]["h"], kZ
          end if
       else
          put sShot[tS]["target"] into tT
@@ -790,8 +791,8 @@ on Squad.Shots
             else
                add tDX / tD * 20 to sShot[tS]["x"]
                add tDH / tD * 20 to sShot[tS]["h"]
-               SetObjectPosition sShot[tS]["key"], Squad.SX(sShot[tS]["x"]), kBase - sShot[tS]["h"], kZ
-               SetObjectRotation sShot[tS]["key"], 0, 0, -atan2(tDH, tDX)
+               Entity.SetPosition sShot[tS]["key"], Squad.SX(sShot[tS]["x"]), kBase - sShot[tS]["h"], kZ
+               Entity.SetRotation sShot[tS]["key"], 0, 0, -atan2(tDH, tDX)
             end if
          end if
       end if
@@ -828,7 +829,7 @@ on Squad.Flyers
    repeat for each key tK in sFly
       add sFly[tK]["vx"] to sFly[tK]["x"]
       put sFly[tK]["base"] + 6 * sin(sTicks / 10 + tK) into sFly[tK]["h"]
-      SetObjectPosition sFly[tK]["key"], Squad.SX(sFly[tK]["x"]), kBase - sFly[tK]["h"], kZ + 1
+      Entity.SetPosition sFly[tK]["key"], Squad.SX(sFly[tK]["x"]), kBase - sFly[tK]["h"], kZ + 1
       if sFly[tK]["cool"] > 0 then subtract 1 from sFly[tK]["cool"]
       if sFly[tK]["bombs"] > 0 and sFly[tK]["cool"] <= 0 then
          -- where a bomb let go now lands, against where the buggy will be
@@ -856,7 +857,7 @@ on Squad.AddFlyer pX, pVX
    put 2 + sLevel div 2 into sFly[sFlyN]["bombs"]
    put 0 into sFly[sFlyN]["cool"]
    put Entity.Spawn("Squad.Flyer", Squad.SX(pX), kBase - sFly[sFlyN]["h"], kZ + 1, "255,60,120") into sFly[sFlyN]["key"]
-   if pVX > 0 then SetObjectRotation sFly[sFlyN]["key"], 0, 3.14159, 0
+   if pVX > 0 then Entity.SetRotation sFly[sFlyN]["key"], 0, 3.14159, 0
 end Squad.AddFlyer
 
 on Squad.AddBomb pX, pH, pVX
@@ -875,8 +876,8 @@ on Squad.Bombs
       if sBomb[tK]["round"] is not true then subtract kGrav from sBomb[tK]["vh"]
       add sBomb[tK]["vx"] to sBomb[tK]["x"]
       add sBomb[tK]["vh"] to sBomb[tK]["h"]
-      SetObjectPosition sBomb[tK]["key"], Squad.SX(sBomb[tK]["x"]), kBase - sBomb[tK]["h"], kZ
-      SetObjectRotation sBomb[tK]["key"], 0, 0, sTicks / 4
+      Entity.SetPosition sBomb[tK]["key"], Squad.SX(sBomb[tK]["x"]), kBase - sBomb[tK]["h"], kZ
+      Entity.SetRotation sBomb[tK]["key"], 0, 0, sTicks / 4
       if sBomb[tK]["round"] is true then
          -- a sniper's round: it hits the buggy, the ground, or flies on out
          subtract 1 from sBomb[tK]["life"]
@@ -1003,7 +1004,7 @@ on Squad.Towers
          delete variable sTower[tK]
          next repeat
       end if
-      SetObjectPosition sTower[tK]["key"], Squad.SX(sTower[tK]["x"]), kBase - sTower[tK]["ground"], kZ + 2
+      Entity.SetPosition sTower[tK]["key"], Squad.SX(sTower[tK]["x"]), kBase - sTower[tK]["ground"], kZ + 2
    end repeat
 end Squad.Towers
 
@@ -1017,7 +1018,7 @@ on Squad.Snipers
          delete variable sSnipe[tK]
          next repeat
       end if
-      SetObjectPosition sSnipe[tK]["key"], Squad.SX(tDX), kBase - sSnipe[tK]["h"], kZ + 1
+      Entity.SetPosition sSnipe[tK]["key"], Squad.SX(tDX), kBase - sSnipe[tK]["h"], kZ + 1
       if tDX - sX < 60 or tDX - sX > kSnipeRange then next repeat
       if not sWarned then
          put true into sWarned
@@ -1074,7 +1075,7 @@ end Squad.Rounds
 on Squad.Flags
    local tFX
    put sLastFlagX + kFlagGap into tFX
-   SetObjectPosition sFlag, Squad.SX(tFX), kBase - Squad.H(tFX), kZ + 2
+   Entity.SetPosition sFlag, Squad.SX(tFX), kBase - Squad.H(tFX), kZ + 2
    if sHold <= 0 and abs(sX - tFX) < 60 then
       put kHoldSteps into sHold
       add 200 to sScore
