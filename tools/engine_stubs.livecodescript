@@ -185,6 +185,8 @@ function Entity.Spawn pMesh, pX, pY, pZ, pColor
    put pMesh & "_" & sSerial into tId
    SetObjectPosition tId, pX, pY, pZ
    put pMesh into gObjectTransforms[tId]["mesh"]
+   if pColor is empty then put "white" into pColor
+   put pColor into gObjectTransforms[tId]["color"]
    if gSceneObjects is empty then
       put pMesh && tId into gSceneObjects
    else
@@ -373,6 +375,13 @@ on Entity.SetMesh pId, pMesh
    return empty
 end Entity.SetMesh
 
+on Entity.SetColor pId, pColor
+   if pColor is empty then return "Entity.SetColor: no colour"
+   if not Scene.Has(pId) then return "Entity.SetColor: no object" && pId
+   put pColor into gObjectTransforms[pId]["color"]
+   return empty
+end Entity.SetColor
+
 on Entity.Set pId, pProp, pValue
    if not Scene.Has(pId) then return "Entity.Set: no object" && pId
    if pProp is not among the items of "hp,ttl,radius" then return "Entity.Set: not a property:" && pProp & " (hp, ttl, radius)"
@@ -387,7 +396,7 @@ end Entity.Set
 
 function Entity.Get pId, pProp
    if not Scene.Has(pId) then return empty
-   if pProp is not among the items of "hp,ttl,radius,mesh,group" then return empty
+   if pProp is not among the items of "hp,ttl,radius,mesh,group,color" then return empty
    return gObjectTransforms[pId][pProp]
 end Entity.Get
 
