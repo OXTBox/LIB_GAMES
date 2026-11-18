@@ -14,8 +14,6 @@
 ## NEEDS     Vibecode3D_Games/Sequencer (the player + shared clips) and Thrmnlra/Data.
 ######################################################################################
 
-global gObjectTransforms, gSceneObjects
-global gCameraYaw, gCameraPitch
 global gViewLeft, gViewTop, gViewRight, gViewBottom
 global bPaused, bPlaying
 
@@ -68,7 +66,7 @@ local sClose         -- [until|panel|face|n]: an angry close-up is on screen
 
 on Game.OnStart
    focus on nothing          -- typing belongs to the game, never to a menu button or a field
-   Engine.ResetCamera
+   Camera.Reset
    put Engine.Info("stepMS") into sStepMS
    if sStepMS is not a number then put 33 into sStepMS
    Scene.ClearAll
@@ -203,8 +201,8 @@ on Thrm.Stage
    local tSeq, tData, tShared, tDataDir, n
    put empty into sError
    put false into sReady
-   put Thrm.FindFile("LIB_GAMES/Vibecode3D_Games/Sequencer/sequencer.livecodescript") into tSeq
-   put Thrm.FindFile("LIB_GAMES/Vibecode3D_Games/Thrmnlra/Data/Sequences/Intro.seq") into tData
+   put Game.FindFile("LIB_GAMES/Vibecode3D_Games/Sequencer/sequencer.livecodescript") into tSeq
+   put Game.FindFile("LIB_GAMES/Vibecode3D_Games/Thrmnlra/Data/Sequences/Intro.seq") into tData
    if tSeq is empty or tData is empty then
       put "THRMNLRA: SEQUENCER OR DATA NOT FOUND" into sError
       exit Thrm.Stage
@@ -616,9 +614,8 @@ end Thrm.ShowTargets
 
 -- above the map, looking down at it like a big board
 on Thrm.BoardCamera
-   Engine.SetCam kCamX, kCamY, kCamZ
-   put 0 into gCameraYaw
-   put -atan2(kCamY, kCamZ + kLookZ) into gCameraPitch
+   Camera.SetPosition -kCamX, -kCamY, -kCamZ
+   Camera.SetLook 0, -atan2(kCamY, kCamZ + kLookZ)
 end Thrm.BoardCamera
 
 -------------------------------------------------------------------- the Sarge
@@ -639,8 +636,8 @@ on Thrm.Sarge pSet
    put pSet["z"] into z
    if z is not a number then put -150 into z
    if sSarge["key"] is empty then put Entity.Spawn("Thrm.Sarge.1", x, 0, z, kSargeColor) into sSarge["key"]
-   SetObjectPosition sSarge["key"], x, 0, z
-   SetObjectRotation sSarge["key"], 0, pi, 0       -- facing the camera
+   Entity.SetPosition sSarge["key"], x, 0, z
+   Entity.SetRotation sSarge["key"], 0, pi, 0       -- facing the camera
    put 1 into sSarge["frame"]
 end Thrm.Sarge
 
@@ -649,7 +646,7 @@ on Thrm.LoadSarge
    local tFile, tText, tLine, tJoints, tEdges, tFrame, tV, tM, i, tE, tA, tB
    put true into sSarge["loaded"]
    put 0 into sSarge["frames"]
-   put Thrm.FindFile("LIB_MOCAP/library/" & kSargeClip & "/" & kSargeClip & "_stick.txt") into tFile
+   put Game.FindFile("LIB_MOCAP/library/" & kSargeClip & "/" & kSargeClip & "_stick.txt") into tFile
    if tFile is empty then exit Thrm.LoadSarge
    put URL ("file:" & tFile) into tText
    replace numToChar(13) with empty in tText
@@ -702,15 +699,12 @@ end Thrm.SargeStep
 
 -- swap the mesh an object is drawn with (as Antack.SetMesh)
 on Thrm.SetMesh pKey, pMesh
-   local tOut, tLine
-   if gObjectTransforms[pKey]["mesh"] is pMesh then exit Thrm.SetMesh
-   repeat for each line tLine in gSceneObjects
-      if word 2 of tLine is pKey then put pMesh into word 1 of tLine
-      put tLine & cr after tOut
-   end repeat
-   delete the last char of tOut
-   put tOut into gSceneObjects
-   put pMesh into gObjectTransforms[pKey]["mesh"]
+   local tRadius
+   if Entity.Get(pKey, "mesh") is pMesh then exit Thrm.SetMesh
+   -- Entity.SetMesh takes the new mesh's radius; this game keeps the old one
+   put Entity.Get(pKey, "radius") into tRadius
+   Entity.SetMesh pKey, pMesh
+   if tRadius is a number then Entity.Set pKey, "radius", tRadius
 end Thrm.SetMesh
 
 -- Cue: call=Thrm.CloseUp; dur=2.5 (or called with a number of seconds): cut to the Sarge's
@@ -728,9 +722,8 @@ on Thrm.CloseUp pSet
    if sClose["until"] is empty then
       put Entity.Spawn("Thrm.FacePanel", kStudioX, 0, kFaceDist, "30,95,105") into sClose["panel"]
       put Entity.Spawn("Thrm.Face1", kStudioX, 0, kFaceDist, kSargeColor) into sClose["face"]
-      Engine.SetCam -kStudioX, 0, 0
-      put 0 into gCameraYaw
-      put 0 into gCameraPitch
+      Camera.SetPosition kStudioX, 0, 0
+      Camera.SetLook 0, 0
       dispatch "Term.Hide" to group "Sequencer" with kOverlays
    end if
    put max(sClose["until"], Thrm.Now() + tDur) into sClose["until"]
@@ -746,7 +739,7 @@ on Thrm.CloseUpStep
       if sWorld["grid"] is not empty then
          Thrm.BoardCamera
       else
-         Engine.ResetCamera
+         Camera.Reset
       end if
       exit Thrm.CloseUpStep
    end if
@@ -754,8 +747,8 @@ on Thrm.CloseUpStep
    if sTicks mod 4 is 0 then
       add 1 to sClose["n"]
       Thrm.SetMesh sClose["face"], "Thrm.Face" & (sClose["n"] mod 2 + 1)
-      SetObjectRotation sClose["face"], 0, (random(9) - 5) / 100, (random(5) - 3) / 100
-      SetObjectRotation sClose["panel"], 0, 0, 0
+      Entity.SetRotation sClose["face"], 0, (random(9) - 5) / 100, (random(5) - 3) / 100
+      Entity.SetRotation sClose["panel"], 0, 0, 0
    end if
 end Thrm.CloseUpStep
 
@@ -765,9 +758,9 @@ function Thrm.MakeFaces
    global gMeshCache
    local tLib, tA, tB, tBlank
    if gMeshCache["Thrm.Face1"]["count"] is not empty then return true
-   put Thrm.FindFile("LIB_MAP/livecode/lib_map.livecodescript") into tLib
-   put Thrm.FindFile("LIB_GAMES/Vibecode3D_Games/Thrmnlra/Data/Faces/sarge_shout1.txt") into tA
-   put Thrm.FindFile("LIB_GAMES/Vibecode3D_Games/Thrmnlra/Data/Faces/sarge_shout2.txt") into tB
+   put Game.FindFile("LIB_MAP/livecode/lib_map.livecodescript") into tLib
+   put Game.FindFile("LIB_GAMES/Vibecode3D_Games/Thrmnlra/Data/Faces/sarge_shout1.txt") into tA
+   put Game.FindFile("LIB_GAMES/Vibecode3D_Games/Thrmnlra/Data/Faces/sarge_shout2.txt") into tB
    if tLib is empty or tA is empty or tB is empty then return false
    start using stack tLib
    put URL ("file:" & tA) into tA
@@ -833,7 +826,7 @@ on Thrm.MoveMissiles
          next repeat
       end if
       put -sMissiles[tKey]["arc"] * 4 * u * (1 - u) into y
-      SetObjectPosition tKey, x, y, z
+      Entity.SetPosition tKey, x, y, z
       put x into sMissiles[tKey]["x"]
       put y into sMissiles[tKey]["y"]
       put z into sMissiles[tKey]["z"]
@@ -983,53 +976,14 @@ end Thrm.Garble
 -------------------------------------------------------------------- meshes and files
 
 on Thrm.MakeMeshes
-   Mesh.Define "Thrm.Grid", MeshGrid(24, 12, 40)
-   Mesh.Define "Thrm.Base", MeshPyramid(4, 16, 24)
-   Mesh.Define "Thrm.Life", MeshBox(30, 4, 30)
-   Mesh.Define "Thrm.Missile", MeshPyramid(3, 6, 14)
-   Mesh.Define "Thrm.Site", MeshPrism(6, 12, 4)
+   Mesh.Define "Thrm.Grid", Mesh.Grid(24, 12, 40)
+   Mesh.Define "Thrm.Base", Mesh.Pyramid(4, 16, 24)
+   Mesh.Define "Thrm.Life", Mesh.Box(30, 4, 30)
+   Mesh.Define "Thrm.Missile", Mesh.Pyramid(3, 6, 14)
+   Mesh.Define "Thrm.Site", Mesh.Prism(6, 12, 4)
 end Thrm.MakeMeshes
 
 function Thrm.Now
    return sTicks * sStepMS / 1000
 end Thrm.Now
 
--- where a file is (install/LAYOUT.md 5.1): this script's own folder first
--- (LIB_GAMES/Vibecode3D_Games/X/... is <script folder>/X/...), then Vibecode3D Common beside
--- it, then the folders above this stack, and last the owner's projects through WSL (his PC
--- only; the global bNoWSL, a test hook, turns that last one off)
-function Thrm.FindFile pRelPath
-   local tPath, tTry, tShort, tDir, tErr
-   global bNoWSL
-   put pRelPath into tShort
-   if tShort begins with "LIB_GAMES/Vibecode3D_Games/" then delete char 1 to 27 of tShort
-   set the itemDel to "/"
-   -- the script's file, as the launcher or the game player set it on the stack
-   put empty into tDir
-   try
-      put the uScriptFile of (the long owner of me) into tDir
-   catch tErr
-      put empty into tDir
-   end try
-   replace "\" with "/" in tDir
-   if tDir contains "/" then
-      delete item -1 of tDir
-      put tDir & "/" & tShort into tTry
-      if there is a file tTry then return tTry
-      put item 1 to -2 of tDir & "/Vibecode3D Common/" into tTry
-      if there is a file (tTry & pRelPath) then return tTry & pRelPath
-      if there is a file (tTry & tShort) then return tTry & tShort
-   end if
-   put the effective filename of this stack into tPath
-   replace "\" with "/" in tPath
-   repeat 8 times
-      delete item -1 of tPath
-      if tPath is empty then exit repeat
-      put tPath & "/" & pRelPath into tTry
-      if there is a file tTry then return tTry
-   end repeat
-   if bNoWSL is true then return empty
-   put "//wsl$/Ubuntu/home/igame3d/projects/" & pRelPath into tTry
-   if there is a file tTry then return tTry
-   return empty
-end Thrm.FindFile
