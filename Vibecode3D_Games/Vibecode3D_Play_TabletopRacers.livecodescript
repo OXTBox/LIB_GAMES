@@ -12,7 +12,6 @@
 ##           runs out (if it does: a life, and try the table again). 5 tables.
 ######################################################################################
 
-global gObjectTransforms, gSceneObjects
 global bPaused, bPlaying
 
 local sCar, sX, sW, sAng, sSpeed, sTableLen, sSlice, sThing, sThingN, sRival, sTime, sSpin
@@ -28,7 +27,7 @@ constant kTop = 9
 
 on Game.OnStart
    focus on nothing
-   Engine.ResetCamera
+   Camera.Reset
    Scene.ClearAll
    Particles.Clear
    HUD.Clear
@@ -44,7 +43,7 @@ end Game.OnStart
 on Table.Build
    local i
    Mesh.Define "Table.Car", Table.CarMesh()
-   Mesh.Define "Table.Crumb", MeshPyramid(5, 9, 10)
+   Mesh.Define "Table.Crumb", Mesh.Pyramid(5, 9, 10)
    Mesh.Define "Table.Pencil", Table.PencilMesh()
    Mesh.Define "Table.Spill", Table.BlobMesh()
    Mesh.Define "Table.Slice", Table.SliceMesh()
@@ -284,8 +283,8 @@ on Game.OnUpdate
    add sSpeed * sin(sAng) to sX
    add sSpeed * cos(sAng) to sW
    if sSpin <= 0 then put sAng * 0.98 into sAng           -- toy cars straighten up
-   SetObjectPosition sCar, sX, kCarY, kZ
-   SetObjectRotation sCar, 0, 0, sAng
+   Entity.SetPosition sCar, sX, kCarY, kZ
+   Entity.SetRotation sCar, 0, 0, sAng
    -- off the side of the table
    if abs(sX) > kHalfW then
       FX.Sparks sX, kCarY, kZ, 18, "255,80,80"
@@ -303,21 +302,21 @@ on Game.OnUpdate
    put sW mod kSliceGap into tFrac
    repeat with i = 0 to kSlices
       put sW - 160 + i * kSliceGap - tFrac into tWW
-      SetObjectPosition sSlice[i], 0, Table.ScreenY(tWW) - kSliceGap, kZ
+      Entity.SetPosition sSlice[i], 0, Table.ScreenY(tWW) - kSliceGap, kZ
    end repeat
    -- clutter
    repeat for each key tT in sThing
       put Table.ScreenY(sThing[tT]["w"]) into tY
       if tY > 420 or tY < -460 then
-         SetObjectPosition sThing[tT]["key"], 0, -900, kZ
+         Entity.SetPosition sThing[tT]["key"], 0, -900, kZ
          next repeat
       end if
       if sThing[tT]["kind"] is "pencil" then
          add sThing[tT]["vx"] to sThing[tT]["x"]
          if abs(sThing[tT]["x"]) > kHalfW - 70 then put -sThing[tT]["vx"] into sThing[tT]["vx"]
-         SetObjectRotation sThing[tT]["key"], sTicks / 4 * Table.Sgn(sThing[tT]["vx"]), 0, 0
+         Entity.SetRotation sThing[tT]["key"], sTicks / 4 * Table.Sgn(sThing[tT]["vx"]), 0, 0
       end if
-      SetObjectPosition sThing[tT]["key"], sThing[tT]["x"], tY, kZ + 2
+      Entity.SetPosition sThing[tT]["key"], sThing[tT]["x"], tY, kZ + 2
       put false into tHit
       switch sThing[tT]["kind"]
          case "crumb"
@@ -371,10 +370,10 @@ on Game.OnUpdate
          put false into sRival[tK]["in"]
          add 100 to sScore
          Table.Say "A RIVAL DROPS OUT! +100"
-         SetObjectPosition sRival[tK]["key"], 0, -900, kZ
+         Entity.SetPosition sRival[tK]["key"], 0, -900, kZ
          next repeat
       end if
-      SetObjectPosition sRival[tK]["key"], sRival[tK]["x"], Table.ScreenY(sRival[tK]["w"]), kZ
+      Entity.SetPosition sRival[tK]["key"], sRival[tK]["x"], Table.ScreenY(sRival[tK]["w"]), kZ
    end repeat
    subtract 1 from sTime
    if sTime <= 0 then
