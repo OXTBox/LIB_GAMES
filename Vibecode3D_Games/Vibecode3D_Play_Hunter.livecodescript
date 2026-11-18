@@ -55,7 +55,7 @@ local sMsgTicks = 0, sGameOverTicks = 0, sHudAmmo, sHudShield, sHudGems
 on Game.OnStart
    focus on nothing          -- arrow keys belong to the game, never to a menu or a field
    Hunter.FindInput
-   Engine.ResetCamera
+   Camera.Reset
    put Engine.Info("stepMS") into sStepMS
    Scene.ClearAll
    Particles.Clear
@@ -130,8 +130,7 @@ on Hunter.Respawn
    put Hunter.HeightAt(sPX,sPZ) into sFootY
    put 0 into sVY
    put true into sOnGround
-   put 0 into gCameraYaw
-   put 0 into gCameraPitch
+   Camera.SetLook 0, 0
    put 100 into sShield
    put 0 into sShieldDelay
    put 60 into sInvuln
@@ -143,21 +142,21 @@ end Hunter.Respawn
 ## ---------------------------------------------------------------- MESHES
 
 on Hunter.MakeMeshes
-   Mesh.Define "Rock", MeshPyramid(5,30,50)
-   Mesh.Define "Rock4", MeshPyramid(4,36,40)
+   Mesh.Define "Rock", Mesh.Pyramid(5,30,50)
+   Mesh.Define "Rock4", Mesh.Pyramid(4,36,40)
    Mesh.Define "HBullet", Hunter.BulletMesh()
    -- Gems (about 25 units across so they read at a distance).
    -- Diamond: short crown on top, tall pavilion below.
-   put Mesh.Transform(MeshPyramid(8,13,7),0,0,0,0,-3.5,0,1) into tM
-   Mesh.Define "Gem.Diamond", Mesh.Merge(tM, Mesh.Transform(MeshPyramid(8,13,17),pi,0,0,0,8.5,0,1))
-   Mesh.Define "Gem.Sapphire", MeshSphere(12,2,6)
-   put Mesh.Transform(MeshPyramid(6,9,8),0,0,0,0,-13,0,1) into tM
-   put Mesh.Merge(tM, MeshPrism(6,9,18)) into tM
-   Mesh.Define "Gem.Ruby", Mesh.Merge(tM, Mesh.Transform(MeshPyramid(6,9,8),pi,0,0,0,13,0,1))
-   Mesh.Define "Gem.Emerald", MeshPrism(8,13,9)
-   put Mesh.Transform(MeshPyramid(4,10,14),0,0,0,0,-7,0,1) into tM
-   Mesh.Define "Gem.Amethyst", Mesh.Merge(tM, Mesh.Transform(MeshPyramid(4,10,14),pi,0,0,0,7,0,1))
-   Mesh.Define "Gem.Topaz", MeshSphere(11,3,5)
+   put Mesh.Transform(Mesh.Pyramid(8,13,7),0,0,0,0,-3.5,0,1) into tM
+   Mesh.Define "Gem.Diamond", Mesh.Merge(tM, Mesh.Transform(Mesh.Pyramid(8,13,17),pi,0,0,0,8.5,0,1))
+   Mesh.Define "Gem.Sapphire", Mesh.Sphere(12,2,6)
+   put Mesh.Transform(Mesh.Pyramid(6,9,8),0,0,0,0,-13,0,1) into tM
+   put Mesh.Merge(tM, Mesh.Prism(6,9,18)) into tM
+   Mesh.Define "Gem.Ruby", Mesh.Merge(tM, Mesh.Transform(Mesh.Pyramid(6,9,8),pi,0,0,0,13,0,1))
+   Mesh.Define "Gem.Emerald", Mesh.Prism(8,13,9)
+   put Mesh.Transform(Mesh.Pyramid(4,10,14),0,0,0,0,-7,0,1) into tM
+   Mesh.Define "Gem.Amethyst", Mesh.Merge(tM, Mesh.Transform(Mesh.Pyramid(4,10,14),pi,0,0,0,7,0,1))
+   Mesh.Define "Gem.Topaz", Mesh.Sphere(11,3,5)
    Hunter.MakeEnemyMeshes
 end Hunter.MakeMeshes
 
@@ -208,18 +207,18 @@ on Hunter.MakeEnemyMeshes
       put (12 + random(14)) * 1.4 into r
       switch random(4)
          case 1
-            put Mesh.Transform(MeshPrism(2 + random(6), r, r * 0.6),pi/2,0,0,0,0,0,1) into tM
+            put Mesh.Transform(Mesh.Prism(2 + random(6), r, r * 0.6),pi/2,0,0,0,0,0,1) into tM
             break
          case 2
-            put MeshPyramid(2 + random(6), r, r * 1.4) into tM
+            put Mesh.Pyramid(2 + random(6), r, r * 1.4) into tM
             break
          case 3
-            put MeshSphere(r, 2 + random(2), 3 + random(5)) into tM
+            put Mesh.Sphere(r, 2 + random(2), 3 + random(5)) into tM
             break
          default
             put 2 + random(5) into tSides
-            put Mesh.Transform(MeshPyramid(tSides, r, r),0,0,0,0,-r/2,0,1) into tM
-            put Mesh.Merge(tM, Mesh.Transform(MeshPyramid(tSides, r, r),pi,0,0,0,r/2,0,1)) into tM
+            put Mesh.Transform(Mesh.Pyramid(tSides, r, r),0,0,0,0,-r/2,0,1) into tM
+            put Mesh.Merge(tM, Mesh.Transform(Mesh.Pyramid(tSides, r, r),pi,0,0,0,r/2,0,1)) into tM
       end switch
       Mesh.Define "HEnemy" & n, tM
    end repeat
@@ -240,7 +239,7 @@ on Hunter.MakeTerrain
    put random(628) / 100 into sPh1
    put random(628) / 100 into sPh2
    put random(628) / 100 into sPh3
-   put MeshGrid(sGridN,sGridN,sGridS) into tM
+   put Mesh.Grid(sGridN,sGridN,sGridS) into tM
    put empty into sH
    repeat with i = 1 to tM["count"]
       put tM["vx"][i] into x
@@ -290,7 +289,7 @@ on Hunter.SpawnRocks
          put 20 into tHalfH
       end if
       put Entity.Spawn(tMesh, x, Hunter.HeightAt(x,z) - tHalfH + 4, z, "orange") into tId
-      SetObjectRotation tId,0,random(628)/100,0
+      Entity.SetRotation tId,0,random(628)/100,0
       put 2 into gObjectTransforms[tId]["hp"]
       put Hunter.RandomGem() into sRockGem[tId]
       put x & comma & z into sRockPos[tId]
@@ -307,7 +306,7 @@ on Hunter.PopGem pRock
    put item 2 of tPos into z
    put Hunter.GemInfo(tName) into tInfo
    put Entity.Spawn("Gem." & tName, x, Hunter.HeightAt(x,z) - 30, z, item 2 of tInfo) into tId
-   SetObjectRotationSpeed tId,0,0.08,0
+   Entity.SetRotationSpeed tId,0,0.08,0
    put item 3 of tInfo into gObjectTransforms[tId]["value"]
    put tName into gObjectTransforms[tId]["gemName"]
    -- Pop: up, and out in a random direction.
@@ -338,7 +337,7 @@ on Hunter.UpdateGems
       put z into gObjectTransforms[tId]["z"]
       if y >= tGround and gObjectTransforms[tId]["gvy"] > 0 then
          put tGround into gObjectTransforms[tId]["y"]
-         Scene.SetBob tId,3,0.12,0.08
+         Entity.SetBob tId,3,0.12,0.08
          put tId & cr after sGroundGems
       else
          put y into gObjectTransforms[tId]["y"]
@@ -403,7 +402,7 @@ on Hunter.Look
          put 0 into dy
       end if
       add dx * kMouseSens to gCameraYaw
-      put max(-1.35, min(1.35, gCameraPitch - dy * kMouseSens)) into gCameraPitch
+      Camera.SetLook empty, max(-1.35, min(1.35, gCameraPitch - dy * kMouseSens))
    end if
    Hunter.CenterMouse
    put true into sMouseReady
@@ -510,7 +509,7 @@ on Hunter.Move
 
    -- The camera is the player's eyes; the "Player" collision sphere follows.
    put sFootY - kEyeHeight into tEyeY
-   Engine.SetCam -sPX, -tEyeY, -sPZ
+   Camera.SetPosition sPX, tEyeY, sPZ
    put sPX into gObjectTransforms["Player"]["x"]
    put tEyeY + 25 into gObjectTransforms["Player"]["y"]
    put sPZ into gObjectTransforms["Player"]["z"]
@@ -653,7 +652,7 @@ on Hunter.SpawnEnemy
    put Hunter.HeightAt(x,z) - (350 + random(250)) into y
    put item n of Hunter.Palette() into tColor
    put Entity.Spawn("HEnemy" & n, x, y, z, tColor) into tId
-   SetObjectRotationSpeed tId,(random(21)-11)/200,(random(21)-11)/200,(random(21)-11)/200
+   Entity.SetRotationSpeed tId,(random(21)-11)/200,(random(21)-11)/200,(random(21)-11)/200
    put 2 into gObjectTransforms[tId]["hp"]
    put 3 + random(3) + sLevel * 0.5 into gObjectTransforms[tId]["spd"]
    put 4 + random(6) into gObjectTransforms[tId]["dests"]
@@ -765,8 +764,8 @@ on Hunter.FireBullet pX,pY,pZ
    if tLen < 1 then exit Hunter.FireBullet
    put 9 + sLevel into tSpd
    put Entity.Spawn("HBullet",pX,pY,pZ,"#FF5050") into tId
-   SetObjectVelocity tId,dx / tLen * tSpd,dy / tLen * tSpd,dz / tLen * tSpd
-   SetObjectRotationSpeed tId,0.2,0.3,0
+   Entity.SetVelocity tId,dx / tLen * tSpd,dy / tLen * tSpd,dz / tLen * tSpd
+   Entity.SetRotationSpeed tId,0.2,0.3,0
    put 160 into gObjectTransforms[tId]["ttl"]
    Collision.SetGroup tId,"bullet",9
    Sound.Play "Bullet"
