@@ -1,1 +1,0 @@
-# Animation List (Inspector, LIB_ig3d A-84): name TAB LIB_MOCAP clip TAB in TAB out TAB loop

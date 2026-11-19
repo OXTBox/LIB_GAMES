@@ -4,3 +4,7 @@ igame3D_2008_Texts/_manifest/spark/_run.log
 *.partial
 __pycache__/
 iGame3d_To_Recreate/
+
+# made and removed by headless tests (t17 and the editor tests)
+Vibecode3D_Games/Animations/ZZ_*
+_tmp_*.livecode
