@@ -15,10 +15,6 @@
 ##           F follow me   H or Space hold   R rush (everyone hunts the nearest living)
 ##           Z zombie time (slow motion)   I help   L hide the HUD   Escape pause
 ##           J (cheat) the living drop dead
-##           0 1 2 3 hiding (a test, 11 19 2026; needs an engine with gCullMode):
-##             0 off, the wire walls as always   1 solid walls, back faces hidden
-##             2 and whole things behind a wall   3 and hidden lines (walls cut what is behind)
-##             the top line then shows frames a second, lines drawn and the line work's time
 ## RULES     the living wake when they see or hear the dead. Unarmed ones run, some
 ##           fight with pipes and batons, some shoot, soldiers throw grenades, snipers
 ##           reach far. Anyone the dead kill gets up as one of them. A zombie shot down
@@ -32,14 +28,12 @@ global CenterX, CenterY
 global gViewLeft, gViewTop, gViewRight, gViewBottom
 global bPaused, bPlaying
 global gNoMouse        -- true while an AI tests: never grab or move the owner's mouse
-global gCullMode       -- the engine's hiding switch (0 off .. 3 hidden lines); keys 0 1 2 3
 
 constant kM = 30               -- engine units a metre
 constant kCellM = 0.5          -- metres a grid cell (as in the data file)
 constant kWallH = 2.0          -- wall height, metres
 constant kEye = 1.15           -- camera height, metres
 constant kChunk = 16           -- cells a wall chunk (8 m)
-constant kSolidChunk = 8       -- cells a solid wall chunk (4 m): short faces hide more (a face with a corner behind you hides nothing)
 constant kSeeChunks = 26       -- metres: wall chunks further than this are not drawn
 constant kPlayerSpeed = 4.2    -- metres a second
 constant kMouseSens = 0.0035
@@ -75,8 +69,6 @@ local sData, sLevelNames, sLevel = 1, sName, sNext, sHard, sWinText, sLoseText, 
 local sGenWalls, sGenBars, sGenCast, sGenArms, sGenDoor, sGenUsed, sGenReach, sGenStart, sGenRooms
 local sCols, sRows, sPass, sDoorAt, sDoor, sDoorCount
 local sChunkList, sChunkAt, sChunkKey
-local sSolidList, sSolidAt, sSolidBoxes, sWallsSolid     -- the walls as closed boxes, shown while hiding is on
-local sCullHUD, sCullAt, sCullFrames, sCullMS, sCullN, sCullLine
 local sE, sIds, sNextId, sZ, sH             -- everyone; ids of the walking dead and the living
 local sPX, sPZ, sMouseReady, sTestKeys, sKeyWas
 local sState, sNow, sSpeed, sMode, sHideHUD, sHelp, sTip, sTipAt
@@ -98,8 +90,6 @@ on Game.OnStart
    put empty into sHUDWas
    put empty into sKeyWas
    put false into sMouseReady
-   put false into sCullHUD
-   put empty into sCullLine
    if sLegacy is true and sData is empty then uDead.LoadData
    if sError is not empty then
       HUD.Set "uDead.Err", sError, gViewLeft + 20, gViewTop + 120, 14
@@ -142,7 +132,6 @@ on Game.OnUpdate
       end if
    end if
    if sTicks mod 12 = 1 then uDead.ShowChunks
-   if sCullHUD is true then uDead.CullNumbers
    uDead.ShowHUD
 end Game.OnUpdate
 
@@ -235,7 +224,6 @@ on uDead.StartLevel pIndex
       uDead.Generate pIndex
    end if
    uDead.BuildWalls sGenWalls
-   uDead.BuildSolids
    uDead.BuildBarriers sGenBars
    uDead.BuildCast sGenCast, sGenArms
    uDead.PlaceCrates
@@ -810,171 +798,21 @@ on uDead.BuildWalls pWalls
    end repeat
 end uDead.BuildWalls
 
--- the walls again as closed boxes, for the engine's hiding (gCullMode 1 2 3): only a shape
--- with faces can hide its own far side or what stands behind it. Only the wall cells next to
--- floor are used (nobody sees the others). Boxes never cross a solid chunk (4 m), and each
--- chunk is one mesh of several boxes.
-on uDead.BuildSolids
-   local tR, tC, tShell, tDR, tDC, tN, tCX, tCZ, tR0, tR1, tC0, tC1, tA, tRun, tOpen, tNew, tRects, tK, tName
-   local tMesh, tOX, tOZ, tRect, tX0, tX1, tZ0, tZ1, tTop, tV
-   put empty into sSolidList
-   put empty into sSolidAt
-   put 0 into sSolidBoxes
-   repeat with tR = 0 to sRows - 1
-      repeat with tC = 0 to sCols - 1
-         if sPass[tR * sCols + tC] is true then next repeat
-         repeat for each item tDR in "-1,0,1"
-            if tR + tDR < 0 or tR + tDR >= sRows then next repeat
-            repeat for each item tDC in "-1,0,1"
-               if tC + tDC < 0 or tC + tDC >= sCols then next repeat
-               if sPass[(tR + tDR) * sCols + tC + tDC] is true then put true into tShell[tR * sCols + tC]
-            end repeat
-         end repeat
-      end repeat
-   end repeat
-   put -kWallH * kM into tTop
-   repeat with tCZ = 0 to (sRows - 1) div kSolidChunk
-      repeat with tCX = 0 to (sCols - 1) div kSolidChunk
-         -- runs of wall cells along each row; a run with the same ends as the one above joins it
-         put empty into tRects
-         put 0 into tK
-         put empty into tOpen
-         put tCZ * kSolidChunk into tR0
-         put min(sRows - 1, tR0 + kSolidChunk - 1) into tR1
-         put tCX * kSolidChunk into tC0
-         put min(sCols - 1, tC0 + kSolidChunk - 1) into tC1
-         repeat with tR = tR0 to tR1
-            put empty into tNew
-            put tC0 into tC
-            repeat while tC <= tC1
-               if tShell[tR * sCols + tC] is not true then
-                  add 1 to tC
-                  next repeat
-               end if
-               put tC into tA
-               repeat while tC <= tC1 and tShell[tR * sCols + tC] is true
-                  add 1 to tC
-               end repeat
-               put tA & comma & (tC - 1) into tRun
-               if tOpen[tRun] is not empty then
-                  put tR into item 4 of tRects[tOpen[tRun]]
-                  put tOpen[tRun] into tNew[tRun]
-               else
-                  add 1 to tK
-                  put tA & comma & tR & comma & (tC - 1) & comma & tR into tRects[tK]
-                  put tK into tNew[tRun]
-               end if
-            end repeat
-            put tNew into tOpen
-         end repeat
-         if tK = 0 then next repeat
-         put "uDead.S" & tCX & "x" & tCZ into tName
-         put (tC0 + kSolidChunk / 2) * kCellM into tOX
-         put (tR0 + kSolidChunk / 2) * kCellM into tOZ
-         put Mesh.New() into tMesh
-         put 0 into tV
-         repeat with tN = 1 to tK
-            put tRects[tN] into tRect
-            put (item 1 of tRect * kCellM - tOX) * kM into tX0
-            put ((item 3 of tRect + 1) * kCellM - tOX) * kM into tX1
-            put (item 2 of tRect * kCellM - tOZ) * kM into tZ0
-            put ((item 4 of tRect + 1) * kCellM - tOZ) * kM into tZ1
-            Mesh.AddVertex tMesh, tX0, tTop, tZ0
-            Mesh.AddVertex tMesh, tX1, tTop, tZ0
-            Mesh.AddVertex tMesh, tX1, 0, tZ0
-            Mesh.AddVertex tMesh, tX0, 0, tZ0
-            Mesh.AddVertex tMesh, tX0, tTop, tZ1
-            Mesh.AddVertex tMesh, tX1, tTop, tZ1
-            Mesh.AddVertex tMesh, tX1, 0, tZ1
-            Mesh.AddVertex tMesh, tX0, 0, tZ1
-            Mesh.AddFace tMesh, (tV + 1) && (tV + 2) && (tV + 3) && (tV + 4)
-            Mesh.AddFace tMesh, (tV + 5) && (tV + 8) && (tV + 7) && (tV + 6)
-            Mesh.AddFace tMesh, (tV + 1) && (tV + 5) && (tV + 6) && (tV + 2)
-            Mesh.AddFace tMesh, (tV + 4) && (tV + 3) && (tV + 7) && (tV + 8)
-            Mesh.AddFace tMesh, (tV + 1) && (tV + 4) && (tV + 8) && (tV + 5)
-            Mesh.AddFace tMesh, (tV + 2) && (tV + 6) && (tV + 7) && (tV + 3)
-            add 8 to tV
-         end repeat
-         add tK to sSolidBoxes
-         Mesh.Define tName, tMesh
-         put tName & cr after sSolidList
-         put tOX & comma & tOZ into sSolidAt[tName]
-      end repeat
-   end repeat
-   delete the last char of sSolidList
-end uDead.BuildSolids
-
--- show the wall chunks near you, drop the far ones. Hiding off: the wire outline, as always.
--- Hiding on (gCullMode 1 2 3): the solid boxes instead.
+-- show the wall chunks near you, drop the far ones
 on uDead.ShowChunks
-   local tName, tDX, tDZ, tNear, tSolid, tList, tAt
-   put (gCullMode is a number and gCullMode >= 1 and sSolidList is not empty) into tSolid
-   if tSolid is not (sWallsSolid is true) then
-      repeat for each key tName in sChunkKey
-         if sChunkKey[tName] is not empty then Entity.Kill sChunkKey[tName]
-      end repeat
-      put empty into sChunkKey
-      put tSolid into sWallsSolid
-   end if
-   if tSolid then
-      put sSolidList into tList
-      put sSolidAt into tAt
-   else
-      put sChunkList into tList
-      put sChunkAt into tAt
-   end if
-   repeat for each line tName in tList
-      put item 1 of tAt[tName] - sPX into tDX
-      put item 2 of tAt[tName] - sPZ into tDZ
+   local tName, tDX, tDZ, tNear
+   repeat for each line tName in sChunkList
+      put item 1 of sChunkAt[tName] - sPX into tDX
+      put item 2 of sChunkAt[tName] - sPZ into tDZ
       put (tDX * tDX + tDZ * tDZ < kSeeChunks * kSeeChunks) into tNear
       if tNear and sChunkKey[tName] is empty then
-         put Entity.Spawn(tName, item 1 of tAt[tName] * kM, 0, item 2 of tAt[tName] * kM, "#3F6FB0") into sChunkKey[tName]
+         put Entity.Spawn(tName, item 1 of sChunkAt[tName] * kM, 0, item 2 of sChunkAt[tName] * kM, "#3F6FB0") into sChunkKey[tName]
       else if not tNear and sChunkKey[tName] is not empty then
          Entity.Kill sChunkKey[tName]
          put empty into sChunkKey[tName]
       end if
    end repeat
 end uDead.ShowChunks
-
--- keys 0 1 2 3: the engine's hiding mode. The walls change between wire and solid with it.
-on uDead.SetCull pMode
-   put pMode into gCullMode
-   put true into sCullHUD
-   put empty into sCullAt
-   put "-" into sCullLine
-   uDead.ShowChunks
-   uDead.Say item pMode + 1 of "HIDING OFF,BACK FACES HIDDEN,WHOLE THINGS HIDDEN,HIDDEN LINES", 1.5
-end uDead.SetCull
-
--- the numbers for the top line, about once a second: frames a second (steps of the game, which
--- the player draws one for one), lines drawn, the time the engine's line work took
-on uDead.CullNumbers
-   local tMS, tNow
-   put Engine.Info("sceneMS") into tMS
-   if tMS is a number then
-      add tMS to sCullMS
-      add 1 to sCullN
-   end if
-   add 1 to sCullFrames
-   put the milliseconds into tNow
-   if sCullAt is empty then
-      put tNow into sCullAt
-      put 0 into sCullFrames
-      put 0 into sCullMS
-      put 0 into sCullN
-   else if tNow - sCullAt >= 1000 then
-      put "FPS" && round(sCullFrames * 1000 / (tNow - sCullAt)) && "  LINES" && Engine.Info("edges") into sCullLine
-      if sCullN > 0 then put "  LINE WORK" && round(sCullMS / sCullN, 1) && "MS" after sCullLine
-      put tNow into sCullAt
-      put 0 into sCullFrames
-      put 0 into sCullMS
-      put 0 into sCullN
-   end if
-end uDead.CullNumbers
-
-function uDead.CullState
-   return "mode" && gCullMode && "solid" && (sWallsSolid is true) && "chunks" && the number of lines of sSolidList && "boxes" && sSolidBoxes && "wire" && the number of lines of sChunkList
-end uDead.CullState
 
 -- doors and windows: each closes a gap of cells until the dead break it
 on uDead.BuildBarriers pBars
@@ -2090,11 +1928,6 @@ on uDead.Keys
       put not (sHelp is true) into sHelp
       put empty into sHUDWas
    end if
-   -- 0 1 2 3 (top row or keypad): hiding
-   if uDead.Pressed(48, tKeys) or uDead.Pressed(65456, tKeys) then uDead.SetCull 0
-   if uDead.Pressed(49, tKeys) or uDead.Pressed(65457, tKeys) then uDead.SetCull 1
-   if uDead.Pressed(50, tKeys) or uDead.Pressed(65458, tKeys) then uDead.SetCull 2
-   if uDead.Pressed(51, tKeys) or uDead.Pressed(65459, tKeys) then uDead.SetCull 3
    if uDead.Pressed(32, tKeys) then
       if sState is "won" then
          if sLegacy is true and sLevel >= the number of lines of sLevelNames then
@@ -2452,13 +2285,12 @@ end uDead.Say
 on uDead.ShowHUD
    local tWords, tMid, tTips
    if sMsg is not empty and sTicks >= sMsgUntil then put empty into sMsg
-   put sName & "|" & sState & "|" & sMode & "|" & sCountZ & "|" & sCountH & "|" & sSpeed & "|" & sMsg & "|" & sHelp & "|" & sHideHUD & "|" & sCullHUD & gCullMode & sCullLine into tWords
+   put sName & "|" & sState & "|" & sMode & "|" & sCountZ & "|" & sCountH & "|" & sSpeed & "|" & sMsg & "|" & sHelp & "|" & sHideHUD into tWords
    if tWords is sHUDWas then exit uDead.ShowHUD
    put tWords into sHUDWas
    HUD.Clear
    if sHideHUD is true and sState is "play" then exit uDead.ShowHUD
    HUD.Set "uDead.Cross", "+", CenterX - 5, CenterY - 8, 14
-   if sCullHUD is true then HUD.Set "uDead.Cull", "HIDING" && gCullMode && "  " && sCullLine && "   KEYS 0 1 2 3", gViewLeft + 20, gViewTop + 98, 11
    HUD.Set "uDead.Title", "UDEAD  " & toUpper(sName) & "  LEVEL " & sLevel, gViewLeft + 20, gViewTop + 120, 12
    HUD.Set "uDead.Count", "DEAD " & sCountZ & "   LIVING " & sCountH, gViewLeft + 20, gViewTop + 142, 16
    if sSpeed < 1 then
