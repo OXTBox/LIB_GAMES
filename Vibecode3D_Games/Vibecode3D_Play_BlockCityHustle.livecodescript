@@ -16,7 +16,6 @@
 ##           then you leave it. Finish the level's jobs: next level (5).
 ######################################################################################
 
-global gObjectTransforms, gSceneObjects
 global bPaused, bPlaying
 
 local sMe, sX, sY, sDirX, sDirY, sBlock, sBlockN, sParked, sPatrol, sBooth, sRinging
@@ -35,7 +34,7 @@ constant kR = 10             -- your half size for walls
 
 on Game.OnStart
    focus on nothing
-   Engine.ResetCamera
+   Camera.Reset
    Scene.ClearAll
    Particles.Clear
    HUD.Clear
@@ -81,10 +80,10 @@ on Hust.StartLevel pLevel
    Mesh.Define "Hust.Car", Hust.CarMesh(36, 20)
    Mesh.Define "Hust.Patrol", Hust.CarMesh(40, 22)
    Mesh.Define "Hust.Booth", Hust.BoothMesh()
-   Mesh.Define "Hust.Pkg", MeshBox(14, 14, 14)
+   Mesh.Define "Hust.Pkg", Mesh.Box(14, 14, 14)
    Mesh.Define "Hust.Ring", Hust.RingMesh(22)
    Mesh.Define "Hust.Shop", Hust.RingMesh(28)
-   Mesh.Define "Hust.Edge", MeshBox(880, 490, 2)
+   Mesh.Define "Hust.Edge", Mesh.Box(880, 490, 2)
    put empty into sBlock
    put 0 into sBlockN
    put "255,80,80|255,200,0|0,220,120|80,160,255|255,120,220" into tColors
@@ -248,7 +247,7 @@ on Hust.MoveShop
    get Hust.Spot(sX, sY)
    put item 1 of it into sShop["x"]
    put item 2 of it into sShop["y"]
-   SetObjectPosition sShop["key"], sShop["x"], sShop["y"], kZ + 1
+   Entity.SetPosition sShop["key"], sShop["x"], sShop["y"], kZ + 1
 end Hust.MoveShop
 
 function Hust.Keys
@@ -336,14 +335,14 @@ on Game.OnUpdate
    put sY + sDirY * tV into tNY
    if not Hust.Solid(sX, tNY, kR) then put tNY into sY
    if sInCar then
-      SetObjectPosition sCarKey, sX, sY, kZ
-      SetObjectRotation sCarKey, 0, 0, atan2(sDirY, sDirX)
+      Entity.SetPosition sCarKey, sX, sY, kZ
+      Entity.SetRotation sCarKey, 0, 0, atan2(sDirY, sDirX)
       subtract 1 from sCarT
       if sCarT <= 0 then
          Hust.LeaveCar
       end if
    else
-      SetObjectPosition sMe, sX, sY, kZ
+      Entity.SetPosition sMe, sX, sY, kZ
    end if
    -- E: out of the car
    if sInCar and (Hust.Down(101, tKeys) or Hust.Down(69, tKeys)) then Hust.LeaveCar true
@@ -362,7 +361,7 @@ on Game.OnUpdate
             put 450 into sCarT
             put sParked[tK]["key"] into sCarKey
             delete variable sParked[tK]
-            SetObjectPosition sMe, 0, -900, kZ
+            Entity.SetPosition sMe, 0, -900, kZ
             Hust.AddHeat 1
             Hust.Say "YOU TOOK A CAR. HEAT UP"
             put true into tNear
@@ -373,26 +372,26 @@ on Game.OnUpdate
    -- the ringing booth bobs
    repeat for each key tK in sBooth
       if tK is sRinging and sJob is empty then
-         SetObjectRotation sBooth[tK]["key"], 0, 0, 0.3 * sin(sTicks / 2)
+         Entity.SetRotation sBooth[tK]["key"], 0, 0, 0.3 * sin(sTicks / 2)
       else
-         SetObjectRotation sBooth[tK]["key"], 0, 0, 0
+         Entity.SetRotation sBooth[tK]["key"], 0, 0, 0
       end if
    end repeat
    -- the job
    if sJob is "fetch" then
-      SetObjectRotation sPkg["key"], sTicks / 10, sTicks / 8, 0
+      Entity.SetRotation sPkg["key"], sTicks / 10, sTicks / 8, 0
       if abs(sPkg["x"] - sX) < 22 and abs(sPkg["y"] - sY) < 22 then
          put "drop" into sJob
-         SetObjectPosition sPkg["key"], 0, -900, kZ
+         Entity.SetPosition sPkg["key"], 0, -900, kZ
          get Hust.Spot(sX, sY)
          put item 1 of it into sDest["x"]
          put item 2 of it into sDest["y"]
-         SetObjectPosition sDest["key"], sDest["x"], sDest["y"], kZ + 1
+         Entity.SetPosition sDest["key"], sDest["x"], sDest["y"], kZ + 1
          Hust.PlaceBolt sDest["y"]
          Hust.Say "GOT IT. TO THE YELLOW MARK"
       end if
    else if sJob is "drop" then
-      SetObjectRotation sDest["key"], 0, 0, sTicks / 12
+      Entity.SetRotation sDest["key"], 0, 0, sTicks / 12
       if abs(sDest["x"] - sX) < 26 and abs(sDest["y"] - sY) < 26 then Hust.JobDone
    end if
    -- the job's clock
@@ -402,10 +401,10 @@ on Game.OnUpdate
    end if
    -- the speed bolt
    if sBolt["on"] then
-      SetObjectRotation sBolt["key"], 0, 0, sin(sTicks / 6) * 0.5
+      Entity.SetRotation sBolt["key"], 0, 0, sin(sTicks / 6) * 0.5
       if abs(sBolt["x"] - sX) < 24 and abs(sBolt["y"] - sY) < 24 then
          put false into sBolt["on"]
-         SetObjectPosition sBolt["key"], 0, -900, kZ
+         Entity.SetPosition sBolt["key"], 0, -900, kZ
          put 300 into sFastT
          FX.Sparks sX, sY, kZ, 16, "160,255,60"
          Hust.Say "SPEED! 10 SECONDS"
@@ -419,7 +418,7 @@ on Game.OnUpdate
       Hust.Say "FRESH PAINT. HEAT CLEARED"
       Hust.MoveShop
    end if
-   SetObjectRotation sShop["key"], 0, 0, -sTicks / 15
+   Entity.SetRotation sShop["key"], 0, 0, -sTicks / 15
    if sHurt > 0 then subtract 1 from sHurt
    Hust.Chase
    if sMsgT > 0 then
@@ -441,7 +440,7 @@ on Hust.LeaveCar pChose
    put sX into sParked[tN]["x"]
    put sY into sParked[tN]["y"]
    put sCarKey into sParked[tN]["key"]
-   SetObjectPosition sMe, sX, sY, kZ
+   Entity.SetPosition sMe, sX, sY, kZ
    if pChose is true then
       Hust.Say "YOU STEP OUT OF THE CAR"
    else
@@ -454,7 +453,7 @@ on Hust.StartJob
    get Hust.Spot(sX, sY)
    put item 1 of it into sPkg["x"]
    put item 2 of it into sPkg["y"]
-   SetObjectPosition sPkg["key"], sPkg["x"], sPkg["y"], kZ - 6
+   Entity.SetPosition sPkg["key"], sPkg["x"], sPkg["y"], kZ - 6
    put max(20, 42 - 4 * sLevel) * 30 into sJobT
    Hust.PlaceBolt sPkg["y"]
    Hust.Say "JOB: FETCH THE ORANGE PACKAGE"
@@ -463,12 +462,12 @@ end Hust.StartJob
 on Hust.JobDone
    local tOld
    put empty into sJob
-   SetObjectPosition sDest["key"], 0, -900, kZ
+   Entity.SetPosition sDest["key"], 0, -900, kZ
    add 1 to sJobsDone
    add 300 * sLevel to sScore
    add (sJobT div 30) * 10 to sScore        -- time left on the clock: 10 a second
    put false into sBolt["on"]
-   SetObjectPosition sBolt["key"], 0, -900, kZ
+   Entity.SetPosition sBolt["key"], 0, -900, kZ
    FX.Sparks sX, sY, kZ, 16, "255,255,0"
    Hust.AddHeat 1
    if sJobsDone >= sNeed then
@@ -501,10 +500,10 @@ end Hust.NextBooth
 -- the clock ran out: the client hung up
 on Hust.TooSlow
    put empty into sJob
-   SetObjectPosition sPkg["key"], 0, -900, kZ
-   SetObjectPosition sDest["key"], 0, -900, kZ
+   Entity.SetPosition sPkg["key"], 0, -900, kZ
+   Entity.SetPosition sDest["key"], 0, -900, kZ
    put false into sBolt["on"]
-   SetObjectPosition sBolt["key"], 0, -900, kZ
+   Entity.SetPosition sBolt["key"], 0, -900, kZ
    Hust.AddHeat 1
    Hust.NextBooth
    Hust.Say "TOO SLOW. THEY HUNG UP. ANOTHER BOOTH RINGS"
@@ -521,7 +520,7 @@ on Hust.PlaceBolt pTargetY
    put item 1 of tP into sBolt["x"]
    put item 2 of tP into sBolt["y"]
    put true into sBolt["on"]
-   SetObjectPosition sBolt["key"], sBolt["x"], sBolt["y"], kZ - 4
+   Entity.SetPosition sBolt["key"], sBolt["x"], sBolt["y"], kZ - 4
 end Hust.PlaceBolt
 
 -- a lightning bolt, flat
@@ -600,8 +599,8 @@ on Hust.Chase
             exit repeat
          end if
       end repeat
-      SetObjectPosition sPatrol[tK]["key"], sPatrol[tK]["x"], sPatrol[tK]["y"], kZ
-      SetObjectRotation sPatrol[tK]["key"], 0, 0, atan2(sPatrol[tK]["dy"], sPatrol[tK]["dx"])
+      Entity.SetPosition sPatrol[tK]["key"], sPatrol[tK]["x"], sPatrol[tK]["y"], kZ
+      Entity.SetRotation sPatrol[tK]["key"], 0, 0, atan2(sPatrol[tK]["dy"], sPatrol[tK]["dx"])
       if abs(sPatrol[tK]["x"] - sX) < 22 and abs(sPatrol[tK]["y"] - sY) < 22 and sHurt <= 0 then
          Hust.Caught
          exit repeat
