@@ -1,0 +1,90 @@
+# PHOTON BALL BANTER (Opus 20 Nov 2026). Edit freely: the game reads this file each start.
+# One exchange a line: event TAB who TAB turns.  who = PROMPT, GLAZE or * (either hero).
+# Turns are separated by | and start with P (PROMPT speaks) or G (GLAZE speaks).
+# The HUD letters are A-Z 0-9 and : - + . ! / ? , '   Anything else is skipped.
+# PROMPT gets the job done no matter what: short, blunt, keeps score.
+# GLAZE barters, charms and influences: deals, flattery, never quite serious.
+# Photon Ball is Vector Toss's arena gone bad: the floor breaks more every match.
+# Events: start match2 match3 match4 crack crumble smash hang grip fall over mend
+#   catch_good catch_big catch_flat drop wild easy easy_caught rally swap idle
+#   catch_*, drop, wild, easy, easy_caught, swap, hang, grip, smash, mend: who = the hero it happened to.
+
+start	*	P Same ball. Different floor. Don't trust it. | G I never trust floors. They're always underfoot.
+start	*	G This used to be our happy place. | P It's still a place. | G That's the spirit, I suppose.
+start	*	P Where it lands, it breaks. So catch it. | G Simple. Terrifying, but simple.
+
+match2	*	P Every bounce breaks now. | G Then nothing bounces. Deal? | P Deal.
+match2	*	G The floor's got worse manners. | P Stand on a broken square and it goes. Keep moving.
+match3	*	P One bounce cracks everything round it. | G So the ball has friends now. | P Bad ones.
+match3	*	G Cracks spreading like gossip. | P Gossip doesn't drop you into the dark.
+match4	*	P Holes. Every bounce. | G I'd like to speak to whoever designs these floors. | P Catch first. Complain later.
+match4	*	G Last floor, worst floor? | P Every floor from here is this floor. | G Lovely.
+
+crack	*	G There goes another one. | P Stay off it.
+crack	*	P Floor's breaking. | G The floor is having a very bad day. | P So are we, if we stand still.
+crack	*	G I liked that square. | P Like the ledges. They don't break.
+
+crumble	*	G It's going! | P Off it, now.
+crumble	*	P Told you broken means gone. | G You tell me a lot of things.
+
+smash	PROMPT	G Prompt, you jumped ON it? | P Seemed solid from up there.
+smash	GLAZE	P You landed on a broken one! | G I landed with style. The floor didn't.
+smash	*	G Right through. Nothing to grab. | P Next time look before you land.
+
+hang	PROMPT	P Edge. Got it. | G Climb, Prompt, climb!
+hang	PROMPT	G Hanging around? | P Not for long.
+hang	GLAZE	G I'm fine! Very fine! Mostly dangling! | P Pull yourself up.
+hang	GLAZE	P Glaze, up! | G Working on it. Arms were not part of the deal.
+
+grip	PROMPT	P Can't hold... | G Prompt!
+grip	GLAZE	G My fingers quit. | P Glaze!
+grip	*	G Too tired to hold on. | P Rest more. Fall less.
+
+mend	PROMPT	P Hit the P. Floor's back. | G You fixed something! Frame it.
+mend	GLAZE	G My emblem patched a square. Taste pays. | P Luck pays.
+mend	*	P Back wall fixed a hole. | G The wall likes us. Finally someone does.
+
+fall	PROMPT	G Prompt? ...Prompt! | P Back. It cost me. | G It cost me a heart attack.
+fall	PROMPT	P Gone and back. | G Don't make a habit of it.
+fall	GLAZE	G That was a long way down. | P And a long way back. | G I took the scenic route.
+fall	GLAZE	P Watch your feet! | G I was watching yours.
+
+over	PROMPT	P That's three. I'm done falling. | G Then let's get up and do it again.
+over	PROMPT	G Prompt went into the dark. | P And came out at the start screen. Again?
+over	GLAZE	G Three times down. The floor wins this one. | P Not the next one.
+over	GLAZE	P Glaze? | G Still here. Barely. Press the button.
+
+catch_good	PROMPT	P Got it. Floor didn't. | G That's the whole game, isn't it?
+catch_good	PROMPT	G Clean hands! | P Clean floor.
+catch_good	GLAZE	G Caught it before the floor could. | P Again.
+catch_good	GLAZE	P Good. | G Good? That was graceful. Say graceful.
+
+catch_big	*	G All those bounces and not one on the floor! | P That's how you keep a floor.
+catch_big	*	P Off the star and in. | G Stars love me. | P The star loved my throw.
+
+catch_flat	*	P Flat. No points. | G But no hole either.
+catch_flat	*	G Nothing for that? | P Nothing broke. That's something.
+
+drop	PROMPT	P Missed. And the floor paid. | G The floor always pays.
+drop	PROMPT	G Down it went. | P Mind the crack it left.
+drop	GLAZE	G Oops. | P Oops cost us a square.
+drop	GLAZE	P Glaze! | G I was busy being lovely.
+drop	*	G There goes the floor again. | P Catch it next time.
+
+wild	*	P Wrong side. | G It wanted to come home.
+wild	*	G That broke OUR floor. | P Then throw it over the middle.
+
+easy	*	P Easy one. | G A gift? From you? | P Don't drop it.
+easy	*	G Nice and gentle. | P Gentle doesn't break floors.
+
+easy_caught	*	P No points. No holes. | G Fair trade.
+
+rally	*	G We haven't dropped one! | P Don't say it out loud.
+rally	*	P Long rally. Floor's still here. | G Let's keep it that way.
+
+swap	*	P My turn. | G Fine. Mind the holes I left.
+swap	*	G My turn! | P Don't stand on anything orange.
+
+idle	*	G Do you hear the floor creaking? | P Floors don't creak. They break.
+idle	*	P Ball. Throw. Now. | G Patience. The floor isn't going anywhere. Well. Parts of it are.
+idle	*	G The ledges are nice. Green. Solid. | P Stand on one when it gets bad.

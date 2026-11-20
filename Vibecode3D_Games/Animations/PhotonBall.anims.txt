@@ -1,0 +1,14 @@
+# Photon Ball animation list (Opus 20 Nov 2026): name TAB LIB_MOCAP clip TAB in TAB out TAB loop
+# Re-cut these in the Ig3dEditor: Window > Inspector > Animation (game: PhotonBall).
+# throw, lob, catch and jump as in Vector Toss. Harold Lloyd's take from "Safety Last!" (1923) cut
+# into three moves as Dead Days cuts it (Animations/DeadDays.anims.txt says why these frames):
+#   climb    1-44   reaching up and taking hold of the broken edge (played once as you grab it)
+#   hang   132-182  the dangle, looped until you climb out or the grip gives
+#   recover 45-108  hauling himself up and out (slower when the hero is tired)
+throw	iGame3D_throwtoss1	528	566	false
+lob	iGame3D_underHandThrow	126	160	false
+catch	iGame3D_reachhigh	540	592	false
+jump	Animazoo_Jumping_-_Hopping	112	138	false
+climb	Harold_Lloyd_Safety_Last_1923	1	44	false
+hang	Harold_Lloyd_Safety_Last_1923	132	182	true
+recover	Harold_Lloyd_Safety_Last_1923	45	108	false
