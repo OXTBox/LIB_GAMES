@@ -1,20 +1,43 @@
-# SEQUENCE  Map  (Thrmnlra)  the tactical map: choose your targets, then type to stop the war.
-# Order from the owner's notes: targets first; first strike is yours (the enemy is caught
-# off guard, the machine makes you feel it); recall by asset name before midway and they
-# never know (-> Peace.seq), after midway names detonate in the air; then the long keys
-# and change under your fingers. While you type, the world runs by keystroke (each key
-# buys 0.3 s); typos escalate: alert, then launch. Columns: when | track | clip | settings | what (see Intro.seq)
+# SEQUENCE  Map  (Thrmnlra)  the redesign from the owner's notes of 13 Nov
+# (~/projects/LIB_LLMOUT/Read/LIB_GAMES/Game_Feedback_Thrmlnra.txt; Thrmnlra/DESIGN.md).
+# Our side is on the LEFT, theirs on the RIGHT. The Sarge stands at the far edge of the map.
+# 1. Simon says: ARM, LOCK, then TYPE: LAUNCH. No direct order was given. Type it and
+#    "WHO TOLD YOU TO LAUNCH?!"; hold off and the machine launches anyway (it heard the
+#    Sarge call it). Either way: "NOW LOOK WHAT YOU DID!" and your missiles rise to their
+#    pads just above your silos, each with a short name (OWL, ELK, FOX...).
+# 2. The recall round: STOP RECALL ALL MISSILES!, then the names, then RECALL THE BOMBERS!
+#    (every key moves the bombers toward the first detonation). Each typo alerts one more
+#    enemy silo: they do not fire, but it is all your fault now, and it is counted.
+# 3. STAND DOWN THE COMMAND: each typo wakes one of OUR silos on the left.
+# All the while, "ENTER LAUNCH CODES: _ _ _ _ _ _ _ _" sits on the Big Board, barely
+# visible: every mistyped key fills in one letter and the line grows brighter. When it is
+# full (or a bomber gets through) the card jumps to Strike.seq. Typed it all before that:
+# the Map ends and Peace.seq plays.
+# Columns: when | track | clip | settings | what   (see Intro.seq for the words)
 when      | track | clip      | settings                                                         | what
-0         | world | Cue       | call=Thrm.World; mood=calm                                       | the vector world, subdued, blue against red, green life between
-with      | term  | Console   | x=0.05; y=0.17; w=0.9; rows=4; size=12; clear=yes                | a command console too small for the job, at the TOP: eyes stay up on the map
+0         | world | Cue       | call=Thrm.World; mood=off                                        | a clean map (the Trainer's LAUNCH jump leaves its world behind)
+with      | world | Cue       | call=Thrm.World; mood=calm                                       | the globe, subdued, blue bases left, red right, green life between
+with      | term  | Console   | x=0.05; y=0.17; w=0.9; rows=4; size=12; clear=yes                | the console at the TOP: eyes stay up on the map
+with      | world | Cue       | call=Thrm.Sarge; show=yes; x=0; z=300                            | WIDE: the Sarge at the far edge, fists on hips, facing you
+with      | board | Cue       | call=Thrm.Codes                                                  | ENTER LAUNCH CODES: _ _ _ _ _ _ _ _  on the Big Board, upper middle, barely visible
+with      | world | Cue       | call=Thrm.Phase; name=recall                                     | from now on a typo alerts an enemy silo and fills a code letter
 +0.5      | board | Title     | items=ATTENTION; size=34; y=0.5; color=#FF4040; blink=yes; dur=1.5 | ATTENTION, flashing over the map
 +0        | term  | Type      | text=STANDBY FOR FINAL ORDERS. SYSTEM ONLINE.; cps=40             |
 +0        | world | Cue       | call=Thrm.Clock; mode=keys                                       | from here the world moves only as you type: every key counts
-+0.2      | term  | Targets   | pick=3; var=targets; hold=yes                                    | the bait list in two columns, and the same names on the map: type three
-+0.4      | world | Cue       | call=Thrm.Launch; from=armed                                     | FIRST STRIKE: your lit batteries fire at the names you typed; the enemy does not see it coming
-+0.2      | term  | Type      | text=FIRST STRIKE AWAY. THE ENEMY WAS ASLEEP.; cps=30; color=#C8C8C8 | the machine, cold: a guilt trip
-+0        | term  | Outbound  | peace=Peace; var=strike; hold=yes                                | MISSILES OUTBOUND: M123 M345 MZ98: type a name to recall it (before midway, they never know) or detonate it (after: Missile Command)
-+0.4      | world | Cue       | call=Thrm.World; mood=red                                        | (only if it came to war) red alert
-with      | term  | RecallKey | text=FAIL-SAFE. TYPE THE KEY TO STOP THE COUNTERSTRIKE; key=XQ7-HALT-PAX-9071; mutate=0.5; var=failsafe; hold=yes | a long key that changes halfway
-+0.2      | world | Cue       | call=Thrm.Clock; mode=time                                       | hands off: whatever is still flying lands
-+0.5      | term  | Ask       | text=PROTOTYPE ENDS HERE. THE TYPING WAR IS NEXT.; options=AGAIN; anykey=yes; hold=yes | any key: play the opening again
++0.2      | term  | Drill     | words=ARM,LOCK,LAUNCH; say=TYPE:; trap=yes; trapfire=no; trapwait=6; trapvar=trap; prelaunched={launched}; trappass=GOOD. NO ORDER - NO LAUNCH.; trapfail=WHO TOLD YOU TO LAUNCH?!; alertyell=YOU SEE THAT? THEIR SILO JUST HEARD YOU!,ALERT! THEY HEARD YOU FUMBLE!; good=GOOD.,ADEQUATE.; hold=yes | SIMON SAYS: the Sarge calls LAUNCH without an order. (Typed LAUNCH in the Trainer already: straight to WHO TOLD YOU TO LAUNCH)
++0.3      | term  | Type      | text=LARNCH ORDER ACKNOWLEGDED.; cps=30; color=#C8C8C8            | the machine heard LAUNCH, from you or from the Sarge: it does not know the difference
++0        | world | Cue       | call=Thrm.Raise                                                  | your missiles rise to their pads just above your silos, on the LEFT, names beside them
+with      | cam   | Cue       | call=Thrm.CloseUp; dur=2                                         | CLOSE-UP: his angry grid face
+with      | term  | Type      | text=NOW LOOK WHAT YOU DID!; cps=40; color=#FFB000                |
++0.2      | term  | Order     | text=STOP RECALL ALL MISSILES!; say=TYPE:; yell=AND THAT WOKE ANOTHER ONE OF THEIR SILOS!,LOOK AT THE MAP. THEY HEARD THAT.; hold=yes | the first order, typed letter for letter
++0.2      | board | Cue       | call=Thrm.Strobe; text=TYPE THE NAME OF THE ASSET TO RECALL      | strobes three times: yellow, orange, RED
+with      | term  | Assets    | mode=recall; hold=yes                                            | type OWL, ELK...: each missile sinks back into its silo
++0        | board | Cue       | call=Thrm.Strobe; text=                                          | the strobe goes
++0.2      | world | Cue       | call=Thrm.Bombers                                                | the bombers took off with them: two little triangles crawl right
+with      | cam   | Cue       | call=Thrm.CloseUp; dur=2                                         | CLOSE-UP
+with      | term  | Type      | text=THE BOMBERS WENT WITH THEM, PRIVATE!; cps=40; color=#FFB000  |
++0.1      | term  | Order     | text=RECALL THE BOMBERS!; call=Thrm.BombersHome; yell=FASTER! THEY ARE NEARLY THERE!,ANOTHER SILO AWAKE. KEEP TYPING!; hold=yes | every key moves the bombers toward the first detonation
++0.3      | term  | Type      | text=YOU STOPPED THE MISSILES. YOU HAVE NOT STOPPED A WAR.; cps=40; color=#FFB000 | the Sarge demands the last one: no war started yet
++0        | world | Cue       | call=Thrm.Phase; name=standdown                                  | now a typo wakes one of OUR silos on the left (and fills a code letter)
+with      | term  | Order     | text=STAND DOWN THE COMMAND; yell=THAT ONE WOKE ONE OF OURS!,OUR OWN SILO IS ARMED NOW. WELL DONE.; hold=yes | the last order
++0.3      | term  | Type      | text=COMMAND STANDING DOWN. DISMISSED.; cps=30; color=#FFB000      | the Map ends: Peace.seq (the card)

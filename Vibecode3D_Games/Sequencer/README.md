@@ -62,7 +62,10 @@ with defcon +0.9 | world | Cue | call=Thrm.World; mood=alert     | the grid wake
 - A clip kind may also answer `Clip.Watch key`: it sees every key first, before the clip
   that takes it.
 - A key that no clip takes shows STAND BY. `Seq.KeyLog()` lists the last 40 keys and which
-  clip took each one.
+  clip took each one. `Seq.Now()` says `name|Kind,Kind`: the sequence and the clips running
+  (for tests).
+- The card can jump too: `dispatch "Seq.Jump" to group "Sequencer" with "Strike"` (Thrmnlra
+  does it when the launch codes fill up in the middle of a clip).
 - `{@list:n}` puts in label n of a LIB_GENERICA list (the game's words: `{@game_events_text:1}`),
   once the game has loaded a set with `Gen.Load` (LIB_GENERICA: retheme by editing labels).
 - Lines starting with `#` are comments, and the `when | track ...` header line is skipped.
@@ -77,7 +80,7 @@ with defcon +0.9 | world | Cue | call=Thrm.World; mood=alert     | the grid wake
 | `Type` | `text`, `cps`, `typos` (slips that get backspaced), `linger`, `color`, `cursor=no` |
 | `Ask` | `text`, `options=YES,NO`, `anykey=yes`, `var`, `blast=yes` (arcade lasers, letters fly apart), `words=WHAT,HUH` + `goto=<Sequence>`: a **branch** (typed in full, trailing `?` optional) |
 | `Input` | `text`, `var`, `max`: free typing, ended by Return (a name) |
-| `Hotword` | `words=LAUNCH`, `goto`, `say`, `clear=yes`: hears every key in the background (a shortcut or cheat word) and jumps. Use with `background=yes` and `until=<id>` |
+| `Hotword` | `words=LAUNCH`, `goto`, `say`, `clear=yes`, `var` (set to the word heard, so the next sequence knows): hears every key in the background (a shortcut or cheat word) and jumps. Use with `background=yes` and `until=<id>` |
 | `Title` | `items` (one after another), `every`, `size`, `y`, `color`, `blink=yes`, `keep=yes`, `dur` |
 | `Fade` | `dur`, `to`, `from`, `clear=yes` |
 | `Cue` | `call=<card handler>` plus any settings (the handler gets them all as an array), `dur` |
@@ -103,7 +106,8 @@ card → engine. So a clip can call `Term.*`, `Seq.SetVar`, the game card's hand
 
 The engine HUD draws upper case only, in one colour. `Term` uses the same vector glyphs
 plus `> < [ ] ? , ; ' " = _ % # * ( ) \`, in any colour, with fades and blasts:
-`Term.Set id,text,x,y,size,color`, `Term.Text`, `Term.Color`, `Term.Remove`, `Term.Clear`,
+`Term.Set id,text,x,y,size,color[,style]` (style words `bold`: each stroke twice, a pixel
+apart; `wide`: letters spread by half a character; `Term.Width(text,size,style)`), `Term.Text`, `Term.Color`, `Term.Remove`, `Term.Clear`,
 `Term.Print(text,color)` (console line, scrolls), `Term.Blast id`, `Term.SetFade`.
 
 ## On a game card

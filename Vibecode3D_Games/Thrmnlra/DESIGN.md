@@ -84,14 +84,54 @@ turns vibrant when threatened, pulses at the last-minute red alert, then boom: p
   names are only on the map; MISSILES OUTBOUND is a fixed line at the top of the map;
   titles flash mid-screen; the camera is closer so the world fills the screen.
 
+## The redesign from the owner's notes of 13 Nov (built 19 Nov, branch thrmnlra-redesign)
+
+His notes: `~/projects/LIB_LLMOUT/Read/LIB_GAMES/Game_Feedback_Thrmlnra.txt` ("Thrmnlra is
+attacking the wrong sides?... Let's do it like this"). Each point, and what it became:
+
+| His words | Now |
+|---|---|
+| attacking the wrong sides; targets on the right attack first while we type | OUR side is the LEFT, theirs the RIGHT, always. The old "choose 3 targets" list and first strike are gone: no one fires while you type the first round |
+| player types "Launch"; Sarge: "Who told you to launch" | the Map opens with the Sarge's drill ARM, LOCK, then TYPE: LAUNCH (Simon says, no direct order). Type it: "WHO TOLD YOU TO LAUNCH?!". Typed LAUNCH in the Trainer already: straight to that line. Held off: the machine heard the Sarge call it and launches anyway ("LARNCH ORDER ACKNOWLEGDED") |
+| "now look what you did!"; missiles into launch position just above their bases on the LEFT | `Thrm.Raise`: a missile rises over each of our 4 silos and waits there, its name beside it |
+| Sarge: "Type: STOP RECALL ALL MISSILES!" | clip `Order`: typed letter for letter, spaces and ! too |
+| "TYPE THE NAME OF THE ASSET TO RECALL" strobes three times Yellow, Orange, RED | `Thrm.Strobe` under the console, then it stays red; clip `Assets mode=recall` |
+| TYPE: "RECALL THE BOMBERS!", each keypress advances toward first detonation | two bombers take off (`Thrm.Bombers`, small triangles) and move only by your keys: 34 keystrokes and they reach a city. Typed in time, they turn home |
+| mistypes in the first round alert their silos, but they don't fire; all the player's fault | every typo of the round alerts one more enemy silo (ALERT blinks over it) and is counted |
+| struck without being alert: that one-round disadvantage | a silo struck while asleep is gone; an alerted silo fires even if struck (it saw it coming) |
+| TYPE: "STAND DOWN THE COMMAND" (if all the other goals were met without war); wakes OUR silos with each mistype | the last order of the Map; each typo wakes one of our silos (ARMED). Reached only while no war started. Typed: Peace.seq |
+| "ENTER LAUNCH CODES: _ _ _ _ _ _ _ _" on the Big Board, upper middle, barely visible, brighter with every mistyped key, which fills it in whatever the key was | `Thrm.Codes` / `Thrm.CodeKey`: 8 letters, dark red at 14% growing to full red; every typo of the Map phases types its own key into it |
+| Sarge turns around, sees the password: "What the hell have you done?" and the missiles go flying | full code: Strike.seq: he turns to the board (`Thrm.SargeTurn`), close-up, and every missile on a pad plus every woken silo flies left to right at their cities (none left: two from the command post) |
+| STOP THE INCOMING MISSILES; TYPE THE NAME OF THE ENEMY ASSET TO DESTROY; [TAB] to cycle focus: bolder, brighter, AND advances the doom clock | `Assets mode=destroy`; Tab gives a name the focus (bold, wide, bright) and moves the clock two keys' worth |
+| AFTER our attack strikes, THEN the enemies launch: more typos in round one, more of them; else a minimum of 3 nowhere near the struck targets | `Thrm.Counter` after our missiles land: one missile per first-round typo (3 to 10), from alerted silos, else the silos farthest from the craters, else submarines at the right edge |
+| enemy missiles RIGHT TO LEFT; the keyboard only advances them | yes: clock by keys (0.25 s a key), 15+ s flights = about 60 keys |
+| ITS WAR! YOU ARE TO LAUNCH YOUR MISSILE. TYPE LAUNCH, THAT IS A DIRECT ORDER; the keyboard misspells the input 2 times, never the same character; advancing enemy missiles at least two rounds | `Order sabotage=2`: two of your right keys show a wrong letter (two different positions, two different wrong letters); type it again and it takes. Each spoiled key is a round of 2 more enemy missiles (`Thrm.EnemyRound`). Then your one missile goes, you destroy the rounds, STRANGE GAME |
+| advance the missiles slower | key step 0.3 -> 0.25 world s; their flights 15 s+; our strike 9 s |
+| names: normal three or four letter words, jargon later | our missiles: OWL ELK FOX YAK EMU ANT BEE COW; theirs: SUN MUD FIG JAM ICE OAK RUG TEA PIE ZIP KEG HAT BOX CUP; cities 4 letters (LIMA OSLO BERN RIGA / ROME BAKU LYON NICE YORK). No word starts another |
+| more room on the map; bases tiny, square, triangle, circle | camera higher (420/260), bases tiny: triangle = silo, square = command post, circle = city (meaning, value and risk read from them later) |
+| the mesh of arcing lines... make it look global | the flat grid is now the top of a globe (`Thrm.GlobeMesh`): meridians bend toward the poles, the edges fall away; everything sits on that surface (`Thrm.Sag`) |
+| explosions big, everything there goes BLACK after | a landing: 80 + 40 sparks; every base within 70 units is gone (no mesh), its name goes dark grey, a dim crater ring marks the place |
+| city text hard to read: letter spacing half a character, bold | the Term layer got a style: `bold` (strokes doubled) and `wide` (half a character more a letter); city names and our missile names use both |
+| targeting cities is what they did in the movie | our strike and their answer aim at cities first |
+
+Choices I made where the notes left it open (change any):
+- Holding off on LAUNCH still ends with the missiles raised (the machine heard the Sarge say it):
+  the redesign starts from "player types Launch", and the codes trap needs the recall round.
+- Peace is still possible: type everything with fewer than 8 typos (and the bombers home) and
+  STAND DOWN ends it quietly. "Not enough to stop a war" is how it usually goes.
+- The Trainer's drill lost its LAUNCH trap (it moved to the Map for everybody); its typos still
+  show the old lesson on the map (first alerts a silo, second launches from it).
+- The old clips Targets, Outbound and RecallKey are gone (in the history if wanted).
+- Tab costs two keys' worth of clock.
+
 ## Built (prototype, 2026-11-12)
 
 - `Data/Sequences/Intro.seq`: steps 1-4 (login, countdown, big board, launch, title).
-- `Data/Sequences/Map.seq`: the map, targets (list + map labels), your batteries fire at
-  them, the enemy answers, the easy key HALT, then a long key that changes halfway.
+- `Data/Sequences/Map.seq`: (12 Nov) targets, first strike, recall key; (19 Nov) replaced by the redesign above.
+- `Data/Sequences/Strike.seq` (19 Nov): the war, after the codes fill up or a bomber gets through.
 - `Data/Sequences/Trainer.seq`: boot camp (branch from the Intro).
 - `Data/Sequences/Peace.seq`: the ending when every missile was recalled in time.
-- Game clip kinds: `Countdown`, `Targets`, `RecallKey`, `Drill`, `Outbound`. The shared ones are in `../Sequencer/Clips`.
+- Game clip kinds: `Countdown`, `Drill`, and since 19 Nov `Order`, `Assets`, `Flights` (`Targets`, `RecallKey`, `Outbound` retired). The shared ones are in `../Sequencer/Clips`.
 
 ## Next
 
