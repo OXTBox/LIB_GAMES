@@ -19,7 +19,8 @@ local sDist, sOff, sSpeed, sGear, sHeading, sSpin, sCheckDist, sTime, sPhase, sP
 local sCurve, sSecN, sLapLen, sLap, sPlace, sQualT
 local sLevel, sLives, sScore, sKeysWas, sTestKeys, sHUDWas, sTicks
 
-constant kGroundY = 90       -- +Y is down: the road is below the eye
+constant kGroundY = 133      -- +Y is down: the road is below the eye (was 90; owner 16 Nov:
+                             -- the car 40 pixels lower on the screen: 43 units at the car)
 constant kCarZ = 320
 constant kGap = 200          -- road slices
 constant kSlices = 18
@@ -29,6 +30,14 @@ constant kStartLine = 2000   -- where the finish gate stands on the track
 constant kLaps = 2
 constant kLowTop = 20
 constant kHighTop = 40
+-- the drawn boxes (owner 16 Nov: "cars crash before actually touching"): a crash or a bump
+-- happens when these boxes touch, not before
+constant kCarHalfW = 50      -- Grid.CarMesh: 100 wide, 150 long
+constant kCarHalfL = 75
+constant kRivalHalfW = 40    -- Grid.Rival: Mesh.Box(80, 40, 120)
+constant kRivalHalfL = 60
+constant kSignHalfW = 20     -- Grid.Sign: Mesh.Box(40, 60, 6)
+constant kSignHalfL = 3
 
 on Game.OnStart
    focus on nothing
@@ -339,14 +348,17 @@ on Grid.Drive pKeys
    end if
 end Grid.Drive
 
+-- a sign hits you when its box and the car's box touch (or when you drove right through it
+-- this step: pWas is where the car was)
 on Grid.CheckSigns pWas
-   local tK, tD, tA, tB
-   put pWas mod sLapLen into tA
-   put tA + (sDist - pWas) into tB
+   local tK, tRel, tA, tStep
+   put sDist mod sLapLen into tA
+   put sDist - pWas into tStep
    repeat for each key tK in sSign
-      put sSign[tK]["d"] into tD
-      if tD < tA then add sLapLen to tD
-      if tD >= tA and tD < tB and abs(sOff - sSign[tK]["off"]) < 60 then
+      put sSign[tK]["d"] - tA into tRel
+      if tRel < -sLapLen / 2 then add sLapLen to tRel
+      if tRel > sLapLen / 2 then subtract sLapLen from tRel
+      if tRel > -(kCarHalfL + kSignHalfL + tStep) and tRel < kCarHalfL + kSignHalfL and abs(sOff - sSign[tK]["off"]) < kCarHalfW + kSignHalfW then
          Grid.Crash "sign"
          exit Grid.CheckSigns
       end if
@@ -400,11 +412,11 @@ on Grid.Rivals pMoving
          add sRival[i]["v"] to sRival[i]["d"]
       end if
       put sRival[i]["d"] - sDist into tRel
-      -- bump: you run into the back of a rival
-      if pMoving and tRel > 0 and tRel < 120 and abs(sRival[i]["off"] - sOff) < 85 then
+      -- bump: you run into the back of a rival (the two boxes touch)
+      if pMoving and tRel > 0 and tRel < kCarHalfL + kRivalHalfL and abs(sRival[i]["off"] - sOff) < kCarHalfW + kRivalHalfW then
          put sRival[i]["v"] * 0.6 into sSpeed
-         put sRival[i]["d"] - 125 into sDist
-         FX.Sparks 0, kGroundY - 30, kCarZ + 80, 6, "255,140,0"
+         put sRival[i]["d"] - (kCarHalfL + kRivalHalfL + 1) into sDist
+         FX.Sparks (sRival[i]["off"] - sOff) / 2, kGroundY - 25, kCarZ + kCarHalfL, 6, "255,140,0"
          put sRival[i]["d"] - sDist into tRel
       end if
       if tRel > 0 then add 1 to tAhead
@@ -425,8 +437,16 @@ on Grid.DrawRoad
       put kCarZ - kGap + i * kGap - tFrac into tZ
       add Grid.CurveAt(sDist + tZ - kCarZ) to tDX
       add tDX to tX
-      put tX - sOff into sSlice[i]
-      Entity.SetPosition sRail[i], tX - sOff, kGroundY, tZ
+      put tX into sSlice[i]
+   end repeat
+   -- the road's middle under the car is where sOff says it is: the curve is measured from
+   -- the car (it used to start one slice behind, so on curves the drawn road was up to 30
+   -- units off from the one the crashes were worked out on)
+   put (kGap + tFrac) / kGap into tA
+   put sSlice[trunc(tA)] + (sSlice[trunc(tA) + 1] - sSlice[trunc(tA)]) * (tA - trunc(tA)) into tA
+   repeat with i = 0 to kSlices
+      put sSlice[i] - tA - sOff into sSlice[i]
+      Entity.SetPosition sRail[i], sSlice[i], kGroundY, kCarZ - kGap + i * kGap - tFrac
    end repeat
    -- the car (it spins when it hits a sign)
    if sSpin > 0 then
@@ -465,7 +485,9 @@ on Grid.DrawRoad
    -- rivals in view
    repeat with i = 1 to 7
       put sRival[i]["d"] - sDist into tRel
-      if tRel > -150 and tRel < kSlices * kGap - 100 then
+      -- (owner 16 Nov: "traffic from nowhere": a rival coming from behind used to pop up
+      -- 150 behind you, big on the screen; now it is drawn from just in front of the eye)
+      if tRel > 90 - kCarZ and tRel < kSlices * kGap - 100 then
          Entity.SetPosition sRival[i]["key"], Grid.RoadX(tRel) + sRival[i]["off"], kGroundY - 20, kCarZ + tRel
       else
          Entity.SetPosition sRival[i]["key"], 0, kGroundY - 20, -3000
@@ -490,10 +512,10 @@ on Grid.ShowHUD
    HUD.Set "Grid.Score", "SCORE" && sScore && "  LIVES" && sLives && "  LEVEL" && sLevel, 20, 40, 14
    switch sPhase
       case "qual"
-         put "QUALIFYING LAP   GEAR" && toUpper(sGear) && "  GATE TIME" && sTime div 30 into tLine
+         put "QUALIFYING LAP, ALONE: THE 7 RIVALS WAIT AT THE START   GEAR" && toUpper(sGear) && "  GATE TIME" && sTime div 30 into tLine
          break
       case "grid"
-         put "ON THE GRID IN PLACE" && sPlace & "/8.   SPACE TO RACE" into tLine
+         put "QUALIFIED" && sPlace & "/8: ON THE GRID WITH THE 7 RIVALS.   SPACE TO RACE" into tLine
          break
       case "race"
          put "PLACE" && sPlace & "/8   LAP" && min(kLaps, sLap + 1) & "/" & kLaps && "  GEAR" && toUpper(sGear) && "  GATE TIME" && sTime div 30 into tLine
@@ -517,6 +539,33 @@ end Grid.ShowHUD
 function Grid.State
    return sLevel & "|" & sLives & "|" & sScore & "|" & sPhase & "|place " & sPlace & "|lap " & sLap & "|d " & round(sDist) & "|v " & round(sSpeed) & "|" & sGear & "|off " & round(sOff) & "|time " & sTime
 end Grid.State
+
+-- test hooks (owner's notes of 16 Nov): place yourself and one rival, and where things are drawn
+on Grid.TestPlace pDist, pOff, pSpeed
+   put pDist into sDist
+   put pOff into sOff
+   if pSpeed is not empty then put pSpeed into sSpeed
+end Grid.TestPlace
+
+on Grid.TestRival pN, pDist, pOff, pTop
+   put pDist into sRival[pN]["d"]
+   put pOff into sRival[pN]["off"]
+   put pTop into sRival[pN]["top"]
+   put pTop into sRival[pN]["v"]
+end Grid.TestRival
+
+on Grid.TestPhase pPhase, pPlace
+   if pPlace is not empty then put pPlace into sPlace
+   Grid.Begin pPhase
+end Grid.TestPhase
+
+function Grid.TestEntities
+   return sRival[1]["key"] & "," & sCar & "," & sRail[1]
+end Grid.TestEntities
+
+function Grid.RoadAtCar
+   return Grid.RoadX(0)
+end Grid.RoadAtCar
 
 on Game.OnStop
    HUD.Clear
