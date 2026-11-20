@@ -14,9 +14,14 @@ script "Thrmnlra_Clip_Drill"
 ##   launchyell lines yelled after a typo that launched a missile
 ##   good       lines for a word typed right (default GOOD.)
 ##   var        how many typos, kept as a sequence variable
+##   trapfire=no   typing the trap word only gets yelled at (trapfail): the sequence shows
+##              what happens next (Thrmnlra's Map: the missiles rise to the pads)
+##   prelaunched   not empty (e.g. {launched}): the player typed the trap word before the
+##              drill (the Trainer's Hotword): straight to trapfail, no drill
+##   trapvar    a sequence variable set to "typed" or "held" (how the trap went)
 
 local sTrap, sTrapWait, sTrapPass, sTrapFail, sTrapAt, sWords, sN, sPos, sSay, sAlertYell, sLaunchYell, sGood, sVar
-local sTypedId, sErrors, sDoneAt, sNow, sFlash, sWord
+local sTypedId, sErrors, sDoneAt, sNow, sFlash, sWord, sTrapFire, sTrapVar
 
 constant kSarge = "#FFB000", kBad = "#FF4040"
 
@@ -45,6 +50,16 @@ on Clip.Start pSet, pWhat
    put empty into sDoneAt
    put 0 into sNow
    put 0 into sFlash
+   put pSet["trapfire"] is not "no" into sTrapFire
+   put pSet["trapvar"] into sTrapVar
+   if pSet["prelaunched"] is not empty and sTrap then
+      -- the trap word was typed already, before the drill: no drill, straight to the yelling
+      put the number of items of sWords into sN
+      add 1 to sErrors
+      if sTrapVar is not empty then Seq.SetVar sTrapVar, "typed"
+      get Term.Print(any item of sTrapFail, kBad)
+      dispatch "Thrm.CloseUp" to this card with 2.5
+   end if
    Drill.Next
 end Clip.Start
 
@@ -76,6 +91,7 @@ on Clip.Step pT
       if sTrapAt is not empty and pT >= sTrapAt then
          -- held off: Simon did not say
          put empty into sTrapAt
+         if sTrapVar is not empty then Seq.SetVar sTrapVar, "held"
          get Term.Print(any item of sTrapPass, kSarge)
          Drill.Next
       end if
@@ -96,8 +112,11 @@ on Clip.Key pKey
             put empty into sTrapAt
             Term.Text sTypedId, "> " & sWord
             add 1 to sErrors
-            dispatch "Thrm.Fire" to this card with "blue", 0     -- it really launches
-            dispatch "Thrm.Typo" to this card with 1             -- and they notice
+            if sTrapVar is not empty then Seq.SetVar sTrapVar, "typed"
+            if sTrapFire then
+               dispatch "Thrm.Fire" to this card with "blue", 0     -- it really launches
+               dispatch "Thrm.Typo" to this card with 1             -- and they notice
+            end if
             get Term.Print(any item of sTrapFail, kBad)
             dispatch "Thrm.CloseUp" to this card with 2.5
             Drill.Next
@@ -118,10 +137,12 @@ on Clip.Key pKey
    add 1 to sErrors
    Term.Color sTypedId, kBad
    put sNow + 0.25 into sFlash
-   dispatch "Thrm.Typo" to this card with sErrors
+   dispatch "Thrm.Typo" to this card with sErrors, pKey
    put the result into tWhat
    if tWhat is "launch" then
       get Term.Print(any item of sLaunchYell, kBad)
+   else if tWhat is "codes" then
+      -- the launch codes just filled up: the card takes over (the Strike sequence)
    else
       get Term.Print(any item of sAlertYell, kBad)
    end if

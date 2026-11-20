@@ -1,0 +1,44 @@
+# SEQUENCE  Strike  (Thrmnlra)  the launch codes filled up (every typo of the Map typed one
+# letter), or a bomber got through. The card jumps here (Thrm.StartWar). The owner's notes
+# of 13 Nov: the Sarge turns around, sees the code on the board, "WHAT THE HELL HAVE YOU
+# DONE?", and the missiles go flying, left to right. AFTER they strike, the enemy launches,
+# RIGHT TO LEFT: one missile for every typo of the first round, at least three, from far
+# from the craters. Only your keys move them now; type their names to destroy them; [TAB]
+# makes a name easy to read and costs you time. Then IT'S WAR: TYPE LAUNCH, THAT IS A
+# DIRECT ORDER, and the keyboard misspells it twice on purpose: two more rounds incoming.
+# Columns: when | track | clip | settings | what   (see Intro.seq for the words)
+when      | track | clip      | settings                                                         | what
+0         | world | Cue       | call=Thrm.Phase; name=strike                                     | typos no longer fill anything: the keys only move their missiles
+with      | world | Cue       | call=Thrm.SargeTurn                                              | the Sarge turns round to the Big Board
+with      | world | Cue       | call=Thrm.Strobe; text=                                          |
++0.6      | cam   | Cue       | call=Thrm.CloseUp; dur=2.5                                       | CLOSE-UP: he has read it
+with      | term  | Type      | text=WHAT THE HELL HAVE YOU DONE?; cps=30; color=#FF4040          |
++0.2      | world | Cue       | call=Thrm.Clock; mode=time                                       | hands off: they fly on their own
+with      | world | Cue       | call=Thrm.Strike                                                 | the pads, the woken silos (or the reserve): left to right, at their cities
+with      | world | Cue       | call=Thrm.World; mood=red                                        | red alert
+with      | term  | Type      | text=LARNCHING MIZSILES...; cps=20; color=#C8C8C8                 |
++0        | world | Flights   | team=blue; max=25                                                | let them fly: big blasts, and everything there goes black
++0.5      | world | Cue       | call=Thrm.Phase; name=incoming                                   |
+with      | world | Cue       | call=Thrm.Counter                                                | THEN the enemy launches, RIGHT TO LEFT
+with      | world | Cue       | call=Thrm.Clock; mode=keys                                       | only your keys move their missiles
+with      | cam   | Cue       | call=Thrm.CloseUp; dur=2                                         | CLOSE-UP
+with      | term  | Type      | text=STOP THE INCOMING MISSILES!; cps=40; color=#FFB000           | the Sarge shouts
++0.1      | board | Cue       | call=Thrm.Strobe; text=INCOMING ATTACK. TYPE THE NAME OF THE ENEMY ASSET TO DESTROY | strobes yellow, orange, RED
+with      | term  | Type      | text=[TAB] TO CYCLE FOCUS.; cps=40; color=#C8C8C8                 | Tab: bolder, brighter, easier to read, and the doom clock moves
++0        | term  | Assets    | mode=destroy; hold=yes                                           | type SUN, MUD...: each bursts in the air
++0        | board | Cue       | call=Thrm.Strobe; text=                                          |
++0.3      | cam   | Cue       | call=Thrm.CloseUp; dur=2.5                                       | CLOSE-UP
+with      | term  | Type      | text=IT'S WAR!; cps=30; color=#FF4040                             |
++0.1      | term  | Type      | text=YOU ARE TO LAUNCH YOUR MISSILE.; cps=40; color=#FFB000       |
++0        | world | Cue       | call=Thrm.Phase; name=order                                      |
+with      | term  | Order     | text=LAUNCH; say=TYPE LAUNCH, THAT IS A DIRECT ORDER:; sabotage=2; sabcall=Thrm.EnemyRound; call=Thrm.LaunchOne; hold=yes | the keyboard misspells it twice (never the same letter): two more rounds incoming
++0.2      | board | Cue       | call=Thrm.Strobe; text=INCOMING. TYPE THE NAME OF THE ENEMY ASSET TO DESTROY |
+with      | term  | Assets    | mode=destroy; hold=yes                                           | the rounds the keyboard caused
++0        | board | Cue       | call=Thrm.Strobe; text=                                          |
+with      | world | Cue       | call=Thrm.Clock; mode=time                                       | hands off: what is still flying lands
++0        | world | Flights   | team=all; max=20                                                 |
++1.0      | world | Cue       | call=Thrm.World; mood=off                                        | the map goes dark
+with      | term  | Fade      | dur=0.4; clear=yes                                               |
++0.5      | term  | Console   | x=0.35; y=0.45; w=0.6; rows=3; size=16; clear=yes                 |
++0        | term  | Type      | text=STRANGE GAME.; cps=6; cursor=yes; linger=2.5                 | the computer types it
++0        | term  | Fade      | dur=1.2; clear=yes                                               | fade to black, and GREETINGS again

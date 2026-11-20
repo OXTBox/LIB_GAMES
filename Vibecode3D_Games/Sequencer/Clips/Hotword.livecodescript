@@ -7,8 +7,10 @@ script "Seq_Clip_Hotword"
 ##   goto    the sequence to jump to
 ##   say     a line printed first (optional)   color   its colour
 ##   clear=yes  clears the terminal layer before the jump (titles too)
+##   var     a sequence variable set to the word that was heard (e.g. var=launched), so
+##           the next sequence knows (Thrmnlra's Map: the LAUNCH was already typed)
 
-local sWords, sGoto, sSay, sColor, sClear, sBuf, sJumpAt, sNow
+local sWords, sGoto, sSay, sColor, sClear, sBuf, sJumpAt, sNow, sVar
 
 on Clip.Start pSet, pWhat
    put toUpper(pSet["words"]) into sWords
@@ -16,6 +18,7 @@ on Clip.Start pSet, pWhat
    put pSet["say"] into sSay
    put pSet["color"] into sColor
    put pSet["clear"] is "yes" into sClear
+   put pSet["var"] into sVar
    put empty into sBuf
    put empty into sJumpAt
    put 0 into sNow
@@ -33,6 +36,7 @@ on Clip.Watch pKey
                get Term.Print(tLine, sColor)
             end repeat
          end if
+         if sVar is not empty then Seq.SetVar sVar, tWord
          put sNow + 1.2 into sJumpAt
          return "taken"     -- heard: no STAND BY for this key
       end if
