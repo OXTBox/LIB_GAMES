@@ -20,6 +20,7 @@
 ######################################################################################
 
 global bPaused, bPlaying
+local sBolt, sBoltN, sLook, sLookX, sLookMoved, sLookKeysWas, sTestMouse   -- notes of 16 Nov: robot's bolts, mouse look
 
 local sMap, sP, sZ, sZN, sRobot, sWalls, sDoor, sGoal, sPick, sKeysWas, sTestKeys
 local sLives, sScore, sOver, sWon, sMsg, sMsgT, sHUDWas, sTicks, sQuiet, sNextZ, sTools
@@ -100,6 +101,7 @@ on DD.StartMap pMap
    put pMap into sMap
    Scene.ClearAll
    Particles.Clear
+   put empty into sBolt
    put empty into sWalls
    put empty into sDoor
    put empty into sGoal
@@ -450,6 +452,7 @@ on Game.OnUpdate
    DD.Dead
    if sOver then exit Game.OnUpdate
    DD.Robot
+   DD.Steer tKeys
    -- more of them come
    subtract 1 from sNextZ
    if sNextZ <= 0 and not sQuiet then
@@ -617,6 +620,7 @@ end DD.Dead
 -- the robot: the nearest of the dead within 30 m, walk to 8 m of it, shoot; else stay near you
 on DD.Robot
    local k, tBest, tBestD, tD, tTX, tTZ, tDX, tDZ
+   DD.Bolts
    put empty into tBest
    put 30 into tBestD
    repeat for each key k in sZ
@@ -645,8 +649,7 @@ on DD.Robot
    -- it helps, it doesn't win the game for you: a shot every 2 s, three to put one down
    if tBest is not empty and tBestD <= 12 and sRobot["cool"] <= 0 then
       put 60 into sRobot["cool"]
-      FX.Sparks sRobot["x"] * kM, -1.5 * kM, sRobot["z"] * kM, 4, "#80E0FF"
-      DD.HurtZombie tBest, 1, false
+      DD.RobotFire tBest
    end if
    if sP["floor"] is 2 and sMap is 2 then
       Entity.SetPosition sRobot["key"], sRobot["x"] * kM, -sP["y"] * kM, sRobot["z"] * kM
@@ -941,7 +944,7 @@ on DD.ShowHUD
    else if sMsg is not empty then
       put sMsg into tLine
    else
-      put "W/S: WALK   A/D: TURN   SPACE: SHOOT   1 2 3: WEAPON" into tLine
+      put "W/S: WALK  SHIFT: RUN  MOUSE OR A/D: TURN  SPACE: SHOOT  1 2 3: WEAPON  ESC: MOUSE OFF" into tLine
    end if
    HUD.Set "DD.Msg", tLine, 20, 56, 12
 end DD.ShowHUD
@@ -1095,3 +1098,140 @@ function DD.GroundMesh pMap
    end repeat
    return tM
 end DD.GroundMesh
+
+-------------------------------------------------------------------- owner's notes of 16 Nov 2026
+
+-- MOUSE LOOK: the mouse turns you (on from the start). Escape turns it off (a second Escape
+-- pauses as before); a click or M turns it back on. Nothing moves the pointer: near the
+-- window's left or right edge you keep turning, so the pointer never has to leave it.
+-- RUN: Shift with W runs, a little (6 m/s instead of 4.5).
+-- The robot's shot: a blue bolt flies from its hand to the dead it shoots, and the hit
+-- sparks green on them. (It used to spark on the robot itself, which looked like the robot
+-- was being hit. The dead only hurt you up close: red sparks on you.)
+
+constant kRunExtra = 1.6     -- metres a second added by Shift
+constant kLookTurn = 0.006   -- radians a pixel of mouse
+constant kEdgeTurn = 1.8     -- radians a second with the pointer at the window's edge
+
+on DD.Steer pKeys
+   local tM, tX, tW, tFwd
+   if sLook is empty then put true into sLook
+   -- M turns mouse look on and off (Escape only off, it is the engine's pause key)
+   if 109 is among the items of pKeys and not (109 is among the items of sLookKeysWas) then DD.SetLook not sLook
+   put pKeys into sLookKeysWas
+   if sP["move"] is not empty then exit DD.Steer      -- (climbing the temple step)
+   -- run: Shift with W, a little more of the same walk
+   if (65505 is among the items of pKeys or 65506 is among the items of pKeys) and (119 is among the items of pKeys or 65362 is among the items of pKeys) then
+      DD.MovePlayer sin(sP["h"]) * kRunExtra * kDT, cos(sP["h"]) * kRunExtra * kDT
+   end if
+   -- mouse look
+   if sTestMouse is not empty then
+      put sTestMouse into tM
+   else
+      put Engine.Mouse() into tM
+   end if
+   if not sLook or tM is empty then
+      put empty into sLookX
+      exit DD.Steer
+   end if
+   put item 1 of tM into tX
+   if sLookX is not empty and tX is not sLookX then
+      add (tX - sLookX) * kLookTurn to sP["h"]
+      put true into sLookMoved
+   end if
+   put tX into sLookX
+   -- the edges keep turning only once the mouse has moved, and only inside the window
+   -- (a pointer left outside it, or a test with no mouse, never spins you)
+   if sLookMoved is not true then exit DD.Steer
+   put the width of this stack into tW
+   if sTestMouse is not empty then put 800 into tW
+   if tW > 100 and tX >= 0 and tX <= tW and item 2 of tM >= 0 and item 2 of tM <= max(tW, the height of this stack) then
+      if tX < tW * 0.06 then subtract kEdgeTurn * kDT from sP["h"]
+      if tX > tW * 0.94 then add kEdgeTurn * kDT to sP["h"]
+   end if
+end DD.Steer
+
+on DD.SetLook pOn
+   put pOn into sLook
+   put empty into sLookX
+   put false into sLookMoved
+   if pOn then
+      DD.Say "MOUSE LOOK ON (ESC TURNS IT OFF)"
+   else
+      DD.Say "MOUSE LOOK OFF (CLICK OR M TURNS IT ON)"
+   end if
+end DD.SetLook
+
+-- Escape while mouse look is on: only mouse look goes off; otherwise the engine's Escape
+on rawKeyDown pKey
+   if pKey is 65307 and sLook is not false and bPlaying is not false and not sOver then
+      DD.SetLook false
+      exit rawKeyDown
+   end if
+   pass rawKeyDown
+end rawKeyDown
+
+on Game.OnClick pX, pY, pButton
+   if sLook is false then DD.SetLook true
+end Game.OnClick
+
+-- the robot fires: a bolt from its hand to the one it shoots; the hit lands when it arrives
+on DD.RobotFire pK
+   local tA
+   if not Mesh.Has("DD.Bolt") then Mesh.Define "DD.Bolt", Mesh.Box(1.5, 1.5, 6)
+   add 1 to sBoltN
+   put pK into sBolt[sBoltN]["target"]
+   put sRobot["x"] into sBolt[sBoltN]["x"]
+   put sRobot["z"] into sBolt[sBoltN]["z"]
+   put 0 into sBolt[sBoltN]["n"]
+   put atan2(sZ[pK]["x"] - sRobot["x"], sZ[pK]["z"] - sRobot["z"]) into tA
+   put Entity.Spawn("DD.Bolt", (sRobot["x"] + sin(tA) * 0.6) * kM, -1.4 * kM, (sRobot["z"] + cos(tA) * 0.6) * kM, "#80E0FF") into sBolt[sBoltN]["key"]
+   Entity.SetRotation sBolt[sBoltN]["key"], 0, tA, 0
+end DD.RobotFire
+
+on DD.Bolts
+   local b, tK, tF, tX, tZ
+   repeat for each key b in sBolt
+      put sBolt[b]["target"] into tK
+      add 1 to sBolt[b]["n"]
+      if sZ[tK] is empty then
+         -- the one it shot at is already down
+         Entity.Kill sBolt[b]["key"]
+         delete variable sBolt[b]
+         next repeat
+      end if
+      if sBolt[b]["n"] >= 4 then
+         Entity.Kill sBolt[b]["key"]
+         delete variable sBolt[b]
+         DD.HurtZombie tK, 1, false
+         next repeat
+      end if
+      put sBolt[b]["n"] / 4 into tF
+      put sBolt[b]["x"] + (sZ[tK]["x"] - sBolt[b]["x"]) * tF into tX
+      put sBolt[b]["z"] + (sZ[tK]["z"] - sBolt[b]["z"]) * tF into tZ
+      Entity.SetPosition sBolt[b]["key"], tX * kM, -1.4 * kM, tZ * kM
+   end repeat
+end DD.Bolts
+
+-- test hooks: a stand-in mouse ("x,y,down"; empty = the real one), and how things stand
+on DD.TestMouse pLoc
+   put pLoc into sTestMouse
+end DD.TestMouse
+
+on DD.TestLook pOn
+   put pOn into sLook
+   put empty into sLookX
+end DD.TestLook
+
+function DD.Heading
+   return sP["h"]
+end DD.Heading
+
+function DD.BoltCount
+   local b, tN
+   put 0 into tN
+   repeat for each key b in sBolt
+      add 1 to tN
+   end repeat
+   return tN
+end DD.BoltCount

@@ -6,10 +6,11 @@
 ## Spark's concept and level numbers (LIB_SPARK/arcade/out/478_Interceptor_Run),
 ## script by Claude.
 ## CONTROLS  Arrows (or WASD): drive    Space: gun    X (or Shift): special weapon
-##           Escape: pause
+##           Escape: pause    mouse wheel (or + and -): zoom in on the car, and back out
 ## RULES     red car shot or rammed side-on: 150. White car hit: -200. Being run into
 ##           head-on, a bomb blast, or the road edge: a life. Supply trucks give, in turn,
-##           MISSILES (8, they blast a wide circle) and OIL (5 slicks behind you that
+##           MISSILES (8, heat seeking: they turn after the nearest red car or the
+##           helicopter, blast a wide circle, and bring the helicopter down) and OIL (5 slicks behind you that
 ##           spin out red cars coming up from below). Reach the water: next level (5).
 ######################################################################################
 
@@ -18,6 +19,7 @@ global bPaused, bPlaying
 local sCar, sBoat, sX, sVX, sDist, sStageLen, sSlice, sSliceWet, sThing, sThingN, sNextSpawn
 local sShot, sShotN, sGunWait, sSpecial, sAmmo, sTruckN, sHeli, sHeliX, sBombWait, sWet
 local sLevel, sLives, sScore, sOver, sWon, sHurt, sScroll, sKeysWas, sTestKeys, sHUDWas, sTicks
+local sRotor, sHeliY, sZoom, sZoomF
 
 constant kZ = 380            -- the play plane (screen scale is 300/z: 0.8 px a unit)
 constant kCarY = 170
@@ -25,6 +27,7 @@ constant kHalfW = 230
 constant kSliceGap = 60
 constant kSlices = 13
 constant kWaterLen = 1100
+constant kZoomMax = 4        -- zoom steps (mouse wheel or + -); each brings the eye 15% nearer
 
 on Game.OnStart
    focus on nothing
@@ -39,6 +42,8 @@ on Game.OnStart
    put false into sWon
    put 0 into sTicks
    put 0 into sTruckN
+   put 0 into sZoom
+   put 0 into sZoomF
    Int.Build
    Int.StartLevel 1
 end Game.OnStart
@@ -51,6 +56,7 @@ on Int.Build
    Mesh.Define "Int.Truck", Int.TruckMesh()
    Mesh.Define "Int.Boat", Int.BoatMesh()
    Mesh.Define "Int.Heli", Int.HeliMesh()
+   Mesh.Define "Int.Rotor", Int.RotorMesh()
    Mesh.Define "Int.Shot", Mesh.Box(4, 14, 4)
    Mesh.Define "Int.Missile", Mesh.Pyramid(3, 6, 22)
    Mesh.Define "Int.Bomb", Mesh.Box(12, 12, 12)
@@ -65,6 +71,7 @@ on Int.Build
    put Entity.Spawn("Int.Car", 0, kCarY, kZ, "0,230,255") into sCar
    put Entity.Spawn("Int.Boat", 0, -900, kZ, "0,230,255") into sBoat
    put Entity.Spawn("Int.Heli", 0, -900, kZ - 60, "150,150,160") into sHeli
+   put Entity.Spawn("Int.Rotor", 0, -900, kZ - 74, "200,200,210") into sRotor
 end Int.Build
 
 function Int.CarMesh pW, pH
@@ -109,14 +116,21 @@ function Int.HeliMesh
    put Mesh.New() into tM
    Int.AddBox tM, 0, 0, 0, 34, 50, 20
    Int.AddBox tM, 0, 50, 0, 6, 50, 6
-   Mesh.AddVertex tM, -70, -70, -14
-   Mesh.AddVertex tM, 70, 70, -14
-   Mesh.AddVertex tM, -70, 70, -14
-   Mesh.AddVertex tM, 70, -70, -14
-   Mesh.AddLine tM, tM["count"] - 3, tM["count"] - 2
-   Mesh.AddLine tM, tM["count"] - 1, tM["count"]
    return tM
 end Int.HeliMesh
+
+-- the rotor is its own thing: it spins, the body doesn't (owner, 16 Nov)
+function Int.RotorMesh
+   local tM
+   put Mesh.New() into tM
+   Mesh.AddVertex tM, -70, -70, 0
+   Mesh.AddVertex tM, 70, 70, 0
+   Mesh.AddVertex tM, -70, 70, 0
+   Mesh.AddVertex tM, 70, -70, 0
+   Mesh.AddLine tM, 1, 2
+   Mesh.AddLine tM, 3, 4
+   return tM
+end Int.RotorMesh
 
 on Int.AddBox @pM, pX, pY, pZ, pW, pH, pD
    local tB, i
@@ -238,6 +252,7 @@ on Game.OnUpdate
       put tKeys into sKeysWas
       exit Game.OnUpdate
    end if
+   Int.Zoom tKeys
    put sScroll into tW
    if Int.Down(65362, tKeys) or Int.Down(119, tKeys) then put sScroll * 1.5 into tW
    if Int.Down(65364, tKeys) or Int.Down(115, tKeys) then put sScroll * 0.6 into tW
@@ -361,6 +376,7 @@ on Int.Fire pKind, pX, pDummy
    put pKind into sShot[sShotN]["kind"]
    put pX into sShot[sShotN]["x"]
    put kCarY - 50 into sShot[sShotN]["y"]
+   put 0 into sShot[sShotN]["vx"]
    if pKind is "gun" then
       put Entity.Spawn("Int.Shot", pX, kCarY - 50, kZ, "255,255,120") into sShot[sShotN]["key"]
    else
@@ -374,12 +390,16 @@ on Int.Helicopter
    local tY
    if sHeliX < 0 then
       Entity.SetPosition sHeli, 0, -900, kZ - 60
+      Entity.SetPosition sRotor, 0, -900, kZ - 74
+      put empty into sHeliY
       exit Int.Helicopter
    end if
    add max(-3, min(3, (sX - sHeliX) * 0.03)) to sHeliX
    put -180 + 20 * sin(sTicks / 20) into tY
+   put tY into sHeliY
    Entity.SetPosition sHeli, sHeliX, tY, kZ - 60
-   Entity.SetRotation sHeli, 0, 0, sTicks / 2
+   Entity.SetPosition sRotor, sHeliX, tY, kZ - 74
+   Entity.SetRotation sRotor, 0, 0, sTicks / 2
    subtract 1 from sBombWait
    if sBombWait <= 0 then
       Int.AddThing "bomb", "Int.Bomb", sHeliX, sDist + (kCarY - tY), 0, "255,40,40"
@@ -397,6 +417,8 @@ on Int.Shots
          subtract 18 from sShot[tS]["y"]
       else
          subtract 12 from sShot[tS]["y"]
+         Int.Seek tS
+         if tS is not among the keys of sShot then next repeat     -- it hit the helicopter
       end if
       put false into tHit
       repeat for each key tT in sThing
@@ -423,6 +445,51 @@ on Int.Shots
       end if
    end repeat
 end Int.Shots
+
+-- a missile seeks heat: it turns after the nearest red car ahead of it, or the helicopter
+on Int.Seek pS
+   local tT, tBest, tBestD, tD, tTX, tTY, tX, tY
+   put sShot[pS]["x"] into tX
+   put sShot[pS]["y"] into tY
+   put 99999 into tBestD
+   put empty into tBest
+   repeat for each key tT in sThing
+      if sThing[tT]["kind"] is not "enemy" then next repeat
+      put Int.ScreenY(sThing[tT]["w"]) into tTY
+      if tTY > tY + 20 then next repeat                -- behind it
+      put abs(sThing[tT]["x"] - tX) + (tY - tTY) into tD
+      if tD < tBestD then
+         put tD into tBestD
+         put sThing[tT]["x"] into tTX
+         put "car" into tBest
+      end if
+   end repeat
+   if sHeliX >= 0 and sHeliY is not empty and sHeliY < tY + 20 then
+      put abs(sHeliX - tX) + (tY - sHeliY) into tD
+      if tD < tBestD then
+         put tD into tBestD
+         put sHeliX into tTX
+         put "heli" into tBest
+      end if
+   end if
+   if tBest is not empty then
+      add max(-1.2, min(1.2, (tTX - tX) * 0.05)) to sShot[pS]["vx"]
+   end if
+   put max(-9, min(9, sShot[pS]["vx"] * 0.9)) into sShot[pS]["vx"]
+   add sShot[pS]["vx"] to sShot[pS]["x"]
+   -- the helicopter: a missile brings it down
+   if sHeliX >= 0 and sHeliY is not empty and abs(sShot[pS]["x"] - sHeliX) < 40 and abs(sShot[pS]["y"] - sHeliY) < 40 then
+      FX.Sparks sHeliX, sHeliY, kZ - 60, 30, "255,120,255"
+      add 500 to sScore
+      put -1 into sHeliX
+      put empty into sHeliY
+      Entity.SetPosition sHeli, 0, -900, kZ - 60
+      Entity.SetPosition sRotor, 0, -900, kZ - 74
+      Entity.Kill sShot[pS]["key"]
+      delete variable sShot[pS]
+      put empty into sHUDWas
+   end if
+end Int.Seek
 
 on Int.Destroy pT
    if sThing[pT]["kind"] is "civ" then
@@ -524,6 +591,79 @@ on Int.Things
       Entity.SetPosition sThing[tT]["key"], sThing[tT]["x"], tY, kZ
    end repeat
 end Int.Things
+
+-- the eye comes nearer the car, a step at a time (mouse wheel, or + and -), and follows it
+on Int.Zoom pKeys
+   local tT, tX, tY
+   if (Int.Pressed(61, pKeys) or Int.Pressed(43, pKeys) or Int.Pressed(65451, pKeys)) then Int.ZoomStep 1
+   if (Int.Pressed(45, pKeys) or Int.Pressed(95, pKeys) or Int.Pressed(65453, pKeys)) then Int.ZoomStep -1
+   put sZoomF + (sZoom * 0.15 - sZoomF) * 0.2 into sZoomF
+   if abs(sZoomF - sZoom * 0.15) < 0.002 then put sZoom * 0.15 into sZoomF
+   if sZoomF is 0 then
+      Camera.SetPosition 0, 0, 0
+      exit Int.Zoom
+   end if
+   put sZoomF / (kZoomMax * 0.15) into tT
+   put sX * tT into tX
+   put (kCarY - 60) * tT into tY
+   Camera.SetPosition tX, tY, kZ * sZoomF
+end Int.Zoom
+
+on Int.ZoomStep pBy
+   put max(0, min(kZoomMax, sZoom + pBy)) into sZoom
+end Int.ZoomStep
+
+-- the mouse wheel comes as a key: 65309 up (nearer), 65308 down (back out)
+on rawKeyDown pKey
+   if pKey is 65309 then
+      Int.ZoomStep 1
+      exit rawKeyDown
+   end if
+   if pKey is 65308 then
+      Int.ZoomStep -1
+      exit rawKeyDown
+   end if
+   pass rawKeyDown
+end rawKeyDown
+
+function Int.Zoomed
+   return sZoom & "," & round(sZoomF, 3)
+end Int.Zoomed
+
+function Int.ShotX
+   local tS, tOut
+   repeat for each key tS in sShot
+      put round(sShot[tS]["x"]) & "," after tOut
+   end repeat
+   return char 1 to -2 of tOut
+end Int.ShotX
+
+on Int.TestSpecial pKind, pAmmo
+   put pKind into sSpecial
+   put pAmmo into sAmmo
+end Int.TestSpecial
+
+on Int.TestHeli pX
+   put pX into sHeliX
+   put 999 into sBombWait
+end Int.TestHeli
+
+function Int.HeliX
+   return sHeliX
+end Int.HeliX
+
+function Int.TestRotation pWhich
+   if pWhich is "rotor" then return Entity.GetRotation(sRotor)
+   return Entity.GetRotation(sHeli)
+end Int.TestRotation
+
+on Int.TestThing pKind, pX, pAhead
+   if pKind is "enemy" then
+      Int.AddThing "enemy", "Int.Enemy", pX, sDist + pAhead, sScroll, "255,60,60"
+   else
+      Int.AddThing "civ", "Int.Civ", pX, sDist + pAhead, sScroll, "235,235,235"
+   end if
+end Int.TestThing
 
 function Int.Sign pN
    if pN < 0 then return -1
