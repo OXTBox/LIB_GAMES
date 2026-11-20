@@ -7,10 +7,16 @@
 ## person is made from its name by iGame3D XT's tools (LIB_EDITOR/iGame3D_XT/Tools).
 ## CONTROLS  W/S or Up/Down: walk    A/D or Left/Right: turn    Space: shoot
 ##           1 2 3: pistol, shotgun, rifle (once found)    Escape: pause
+##           at the temple step: walk into it to climb; hanging, W pulls up, S lets go
 ## RULES     the dead walk at you and hurt you up close; three hits from the pistol, one from
 ##           the shotgun up close, two from the rifle put one down. The robot shoots the
 ##           nearest of them. Weapons lie where you can find them: walk over one. 100 health,
-##           3 lives; losing a life starts the place over. 3 places.
+##           3 lives; losing a life starts the place over. 3 places. The altar stands on the
+##           temple's first step (2 m): climb it. The dead can't climb; hanging, they reach you.
+## MOVES     Animations/DeadDays.anims.txt (climb, hang, recover), cut from LIB_MOCAP's
+##           Harold_Lloyd_Safety_Last_1923; without it the figure just rises onto the step.
+## CREDIT    the climb is Harold Lloyd's, from the public-domain 1923 film "Safety Last!"
+##           (Hal Roach Studios), captured by the owner (LIB_BVH/Harold_Lloyd).
 ######################################################################################
 
 global bPaused, bPlaying
@@ -18,10 +24,12 @@ local sBolt, sBoltN, sLook, sLookX, sLookMoved, sLookKeysWas, sTestMouse   -- no
 
 local sMap, sP, sZ, sZN, sRobot, sWalls, sDoor, sGoal, sPick, sKeysWas, sTestKeys
 local sLives, sScore, sOver, sWon, sMsg, sMsgT, sHUDWas, sTicks, sQuiet, sNextZ, sTools
-local sStairs, sKills
+local sStairs, sKills, sLedge, sLedgeTop, sMove
 
 constant kM = 10            -- engine units a metre (as iGame3D XT's tools)
 constant kDT = 0.0333       -- seconds a step (30 a second)
+constant kMoves = "climb,hang,recover"
+constant kHandsUp = 2.1     -- metres from the clip's floor to its hands, hanging
 
 on Game.OnStart
    focus on nothing
@@ -101,6 +109,9 @@ on DD.StartMap pMap
    put empty into sZ
    put 0 into sZN
    put empty into sStairs
+   put empty into sLedge
+   put empty into sLedgeTop
+   put empty into sP["move"]
    put 0 into sP["y"]
    put 1 into sP["floor"]
    put 100 into sP["hp"]
@@ -121,6 +132,7 @@ on DD.StartMap pMap
    end switch
    -- you, and the robot beside you
    DD.MakePerson "DD.You", "civilian", "#FFE070"
+   if sLedge is not empty then DD.LoadMoves
    put Entity.Spawn("DD.You", sP["x"] * kM, 0, sP["z"] * kM, "#FFE070") into sP["key"]
    DD.MakePerson "DD.Robot", "robot", "#80E0FF"
    put sP["x"] + 2 into sRobot["x"]
@@ -254,8 +266,12 @@ on DD.Park
    DD.Prop "grave", 22, -20, 0
    -- the temple: four stepped blocks, an arch on top, the altar before it
    DD.Temple 0, 40
-   put "0,31,2.5,3" into sGoal
-   DD.Wall -12, 34, 12, 46
+   -- the temple's first step (2 m) is the ledge: the altar stands on it, in front of the next
+   -- step. The goal reaches only 0.3 m past the step's front, so it is won from up there
+   put "0,29.5,2.5,1.6" into sGoal
+   put "-12,28,12,52,2" into sLedge
+   put "-9.5,30.5,9.5,49.5" into sLedgeTop
+   DD.Wall -12, 28, 12, 52
 end DD.Park
 
 on DD.Temple pX, pZ
@@ -268,10 +284,10 @@ on DD.Temple pX, pZ
    DD.Box tM, -2, 8, 0, 1, 4, 1
    DD.Box tM, 2, 8, 0, 1, 4, 1
    DD.Box tM, 0, 12, 0, 6, 1, 1.2
-   -- the altar, in front
-   DD.Box tM, 0, 0, -9, 2.4, 1.1, 1.2
-   DD.Line tM, -0.8, 1.1, -9, 0, 2.2, -9
-   DD.Line tM, 0.8, 1.1, -9, 0, 2.2, -9
+   -- the altar, in front, up on the first step
+   DD.Box tM, 0, 2, -10.75, 2.4, 1.1, 1.2
+   DD.Line tM, -0.8, 3.1, -10.75, 0, 4.2, -10.75
+   DD.Line tM, 0.8, 3.1, -10.75, 0, 4.2, -10.75
    Mesh.Define "DD.Temple", tM
    get Entity.Spawn("DD.Temple", pX * kM, 0, pZ * kM, "#E080FF")
 end DD.Temple
@@ -405,26 +421,32 @@ on Game.OnUpdate
       DD.ShowHUD
       exit Game.OnUpdate
    end if
-   -- walk and turn
-   put 0 into tFwd
-   if DD.Down(119, tKeys) or DD.Down(65362, tKeys) then put 4.5 into tFwd
-   if DD.Down(115, tKeys) or DD.Down(65364, tKeys) then put -2.5 into tFwd
-   put 0 into tTurn
-   if DD.Down(97, tKeys) or DD.Down(65361, tKeys) then put -2.6 into tTurn
-   if DD.Down(100, tKeys) or DD.Down(65363, tKeys) then put 2.6 into tTurn
-   add tTurn * kDT to sP["h"]
-   put sin(sP["h"]) * tFwd * kDT into tDX
-   put cos(sP["h"]) * tFwd * kDT into tDZ
-   DD.MovePlayer tDX, tDZ
-   -- weapons
-   repeat with k = 1 to 3
-      if DD.Pressed(48 + k, tKeys) and item k of "pistol,shotgun,rifle" is among the items of sP["weapons"] then
-         put item k of "pistol,shotgun,rifle" into sP["weapon"]
-         DD.Say toUpper(sP["weapon"])
-      end if
-   end repeat
+   if sP["move"] is not empty then
+      -- climbing, hanging or pulling up: the keys only say pull up (W) or let go (S)
+      DD.Ledge tKeys
+   else
+      -- walk and turn
+      put 0 into tFwd
+      if DD.Down(119, tKeys) or DD.Down(65362, tKeys) then put 4.5 into tFwd
+      if DD.Down(115, tKeys) or DD.Down(65364, tKeys) then put -2.5 into tFwd
+      put 0 into tTurn
+      if DD.Down(97, tKeys) or DD.Down(65361, tKeys) then put -2.6 into tTurn
+      if DD.Down(100, tKeys) or DD.Down(65363, tKeys) then put 2.6 into tTurn
+      add tTurn * kDT to sP["h"]
+      put sin(sP["h"]) * tFwd * kDT into tDX
+      put cos(sP["h"]) * tFwd * kDT into tDZ
+      DD.MovePlayer tDX, tDZ
+      if tFwd > 0 then DD.TryClimb
+      -- weapons
+      repeat with k = 1 to 3
+         if DD.Pressed(48 + k, tKeys) and item k of "pistol,shotgun,rifle" is among the items of sP["weapons"] then
+            put item k of "pistol,shotgun,rifle" into sP["weapon"]
+            DD.Say toUpper(sP["weapon"])
+         end if
+      end repeat
+      if DD.Down(32, tKeys) and sP["cool"] <= 0 and sP["move"] is empty then DD.Shoot
+   end if
    if sP["cool"] > 0 then subtract 1 from sP["cool"]
-   if DD.Down(32, tKeys) and sP["cool"] <= 0 then DD.Shoot
    put tKeys into sKeysWas
    DD.Pickups
    DD.Dead
@@ -444,7 +466,12 @@ on Game.OnUpdate
    DD.Places
    if sOver then exit Game.OnUpdate
    Entity.SetPosition sP["key"], sP["x"] * kM, -sP["y"] * kM, sP["z"] * kM
-   Entity.SetRotation sP["key"], 0, sP["h"] + 3.14159, 0
+   if sP["move"] is not empty and sMove[sP["move"]]["frames"] > 0 then
+      -- Harold Lloyd's stick figure faces +z, the figure -z
+      Entity.SetRotation sP["key"], 0, sP["h"], 0
+   else
+      Entity.SetRotation sP["key"], 0, sP["h"] + 3.14159, 0
+   end if
    DD.Camera
    if sMsgT > 0 then
       subtract 1 from sMsgT
@@ -456,6 +483,10 @@ end Game.OnUpdate
 -- walk, sliding along walls; on the station's stairs, climb
 on DD.MovePlayer pDX, pDZ
    local tS
+   if sLedge is not empty and sP["floor"] is 2 then
+      DD.OnLedge pDX, pDZ
+      exit DD.MovePlayer
+   end if
    if DD.Free(sP["x"] + pDX, sP["z"], 0.4) then add pDX to sP["x"]
    if DD.Free(sP["x"], sP["z"] + pDZ, 0.4) then add pDZ to sP["z"]
    if sStairs is not empty then
@@ -620,7 +651,7 @@ on DD.Robot
       put 60 into sRobot["cool"]
       DD.RobotFire tBest
    end if
-   if sP["floor"] is 2 then
+   if sP["floor"] is 2 and sMap is 2 then
       Entity.SetPosition sRobot["key"], sRobot["x"] * kM, -sP["y"] * kM, sRobot["z"] * kM
    else
       Entity.SetPosition sRobot["key"], sRobot["x"] * kM, 0, sRobot["z"] * kM
@@ -647,6 +678,7 @@ end DD.Pickups
 
 -- the door, the office, the altar
 on DD.Places
+   if sP["move"] is not empty then exit DD.Places      -- not while climbing the ledge
    if sDoor is not empty and abs(item 1 of sDoor - sP["x"]) < item 3 of sDoor and abs(item 2 of sDoor - sP["z"]) < 2.5 then
       add 100 to sScore
       DD.StartMap 2
@@ -669,6 +701,206 @@ on DD.Places
       end if
    end if
 end DD.Places
+
+-------------------------------------------------------------------- the ledge: climb, hang, recover
+
+-- Harold Lloyd's moves from Animations/DeadDays.anims.txt as meshes "DD.Lloyd.<move>.<n>";
+-- a move without its clip keeps the figure (it just rises onto the step)
+on DD.LoadMoves
+   local tLib, tList, tA, tName
+   put empty into sMove
+   put Game.FindFile("LIB_MOCAP/livecode/anim_list.livecodescript") into tLib
+   put Game.FindFile("LIB_GAMES/Vibecode3D_Games/Animations/DeadDays.anims.txt") into tList
+   if tLib is empty or tList is empty then exit DD.LoadMoves
+   if tLib is not among the lines of the stacksInUse then start using stack tLib
+   put Anims.Read(tList) into tA
+   repeat for each item tName in kMoves
+      put 0 into sMove[tName]["frames"]
+      put 30 into sMove[tName]["fps"]
+      if tA[tName]["clip"] is not empty then DD.LoadMove tName, tA[tName]["clip"], tA[tName]["in"], tA[tName]["out"]
+   end repeat
+end DD.LoadMoves
+
+on DD.LoadMove pMove, pClip, pFrom, pTo
+   local tFile, tText, tLine, tEdges, tJoints, tFrame, tKept, tV, tM, i, tE
+   put Game.FindFile("LIB_MOCAP/library/" & pClip & "/" & pClip & "_stick.txt") into tFile
+   if tFile is empty then exit DD.LoadMove
+   put textDecode(url ("binfile:" & tFile), "UTF-8") into tText
+   replace numToCodepoint(13) with empty in tText
+   put 0 into tFrame
+   put 0 into tKept
+   set the itemDelimiter to comma
+   repeat for each line tLine in tText
+      if tLine is empty or char 1 of tLine is "#" then next repeat
+      switch item 1 of tLine
+         case "fps"
+            put item 2 of tLine into sMove[pMove]["fps"]
+            break
+         case "joints"
+            put item 2 of tLine into tJoints
+            break
+         case "edges"
+            put item 2 of tLine into tEdges
+            break
+         default
+            if char 1 of tLine is not "-" and char 1 of tLine is not a number then break
+            add 1 to tFrame
+            if tFrame < pFrom or tFrame > pTo then break
+            add 1 to tKept
+            put tLine into tV
+            split tV by comma
+            put Mesh.New() into tM
+            repeat with i = 0 to tJoints - 1
+               Mesh.AddVertex tM, tV[3 * i + 1] * kM, -tV[3 * i + 2] * kM, tV[3 * i + 3] * kM
+            end repeat
+            repeat for each word tE in tEdges
+               set the itemDelimiter to "-"
+               Mesh.AddLine tM, item 1 of tE + 1, item 2 of tE + 1
+               set the itemDelimiter to comma
+            end repeat
+            Mesh.Define "DD.Lloyd." & pMove & "." & tKept, tM
+      end switch
+   end repeat
+   put tKept into sMove[pMove]["frames"]
+   if sMove[pMove]["fps"] is not a number then put 30 into sMove[pMove]["fps"]
+end DD.LoadMove
+
+-- walking into the ledge, facing it, close to one of its sides (not a corner): climb
+on DD.TryClimb
+   local tX1, tZ1, tX2, tZ2, tNX, tNZ, tLX, tLZ
+   if sLedge is empty or sP["floor"] is not 1 then exit DD.TryClimb
+   put item 1 of sLedge into tX1
+   put item 2 of sLedge into tZ1
+   put item 3 of sLedge into tX2
+   put item 4 of sLedge into tZ2
+   put 0 into tNX
+   put 0 into tNZ
+   if sP["x"] > tX1 and sP["x"] < tX2 then
+      if sP["z"] < tZ1 and tZ1 - sP["z"] < 0.75 then
+         put 1 into tNZ
+         put tZ1 into tLZ
+      else if sP["z"] > tZ2 and sP["z"] - tZ2 < 0.75 then
+         put -1 into tNZ
+         put tZ2 into tLZ
+      end if
+      put sP["x"] into tLX
+   else if sP["z"] > tZ1 and sP["z"] < tZ2 then
+      if sP["x"] < tX1 and tX1 - sP["x"] < 0.75 then
+         put 1 into tNX
+         put tX1 into tLX
+      else if sP["x"] > tX2 and sP["x"] - tX2 < 0.75 then
+         put -1 into tNX
+         put tX2 into tLX
+      end if
+      put sP["z"] into tLZ
+   end if
+   if tNX is 0 and tNZ is 0 then exit DD.TryClimb
+   -- facing the ledge (within about 50 degrees)
+   if sin(sP["h"]) * tNX + cos(sP["h"]) * tNZ < 0.64 then exit DD.TryClimb
+   put tLX & "," & tLZ & "," & tNX & "," & tNZ into sP["lip"]
+   put atan2(tNX, tNZ) into sP["h"]
+   DD.StartMove "climb"
+   DD.Say "YOU CLIMB THE TEMPLE STEP"
+end DD.TryClimb
+
+on DD.StartMove pMove
+   put pMove into sP["move"]
+   put 1 into sP["moveF"]
+   put 0 into sP["moveT"]
+end DD.StartMove
+
+-- each step of a move: the frame, where the body is, and what comes next
+on DD.Ledge pKeys
+   local tN, tH, tHang, tU, tBack, tY
+   put item 5 of sLedge into tH
+   put max(0, tH - kHandsUp) into tHang
+   put sMove[sP["move"]]["frames"] into tN
+   add 1 to sP["moveT"]
+   if tN > 0 then
+      add sMove[sP["move"]]["fps"] * kDT to sP["moveF"]
+   else
+      -- no clip: a second for each move
+      put 30 into tN
+      add 1 to sP["moveF"]
+   end if
+   put min(1, (sP["moveF"] - 1) / max(1, tN - 1)) into tU
+   switch sP["move"]
+      case "climb"
+         put tU * tHang into tY
+         put 0.35 into tBack
+         if sP["moveF"] >= tN then
+            DD.StartMove "hang"
+            DD.Say "HANGING ON.  W: PULL UP   S: LET GO"
+         end if
+         break
+      case "hang"
+         put tHang into tY
+         put 0.35 into tBack
+         if sP["moveF"] >= tN + 1 then put 1 into sP["moveF"]
+         if DD.Down(115, pKeys) or DD.Down(65364, pKeys) then
+            -- let go: back on the ground, a step back from the ledge
+            DD.EndMove 1, -0.6
+            DD.Say "YOU LET GO"
+            exit DD.Ledge
+         end if
+         if sP["moveT"] >= 30 and (DD.Down(119, pKeys) or DD.Down(65362, pKeys)) then DD.StartMove "recover"
+         break
+      case "recover"
+         -- hauled up: the knees come up to the edge
+         put tHang + tU * (tH - 1.45 - tHang) into tY
+         put 0.35 - tU * 0.45 into tBack
+         if sP["moveF"] >= tN then
+            DD.EndMove 2, 0.6
+            DD.Say "UP ON THE STEP. THE DEAD CAN'T CLIMB"
+            exit DD.Ledge
+         end if
+         break
+   end switch
+   put tY into sP["y"]
+   put item 1 of sP["lip"] - item 3 of sP["lip"] * tBack into sP["x"]
+   put item 2 of sP["lip"] - item 4 of sP["lip"] * tBack into sP["z"]
+   if sMove[sP["move"]]["frames"] > 0 then
+      DD.SetHeroMesh "DD.Lloyd." & sP["move"] & "." & max(1, min(sMove[sP["move"]]["frames"], trunc(sP["moveF"])))
+   end if
+end DD.Ledge
+
+-- the move ends: on floor pFloor (1 the ground, 2 on top), pIn metres past the lip (- is back)
+on DD.EndMove pFloor, pIn
+   put empty into sP["move"]
+   put pFloor into sP["floor"]
+   if pFloor is 2 then
+      put item 5 of sLedge into sP["y"]
+   else
+      put 0 into sP["y"]
+   end if
+   put item 1 of sP["lip"] + item 3 of sP["lip"] * pIn into sP["x"]
+   put item 2 of sP["lip"] + item 4 of sP["lip"] * pIn into sP["z"]
+   DD.SetHeroMesh "DD.You"
+end DD.EndMove
+
+-- the hero's mesh, keeping the figure's size for the engine (as Vector Toss does)
+on DD.SetHeroMesh pMesh
+   local tRadius
+   if Entity.Get(sP["key"], "mesh") is pMesh then exit DD.SetHeroMesh
+   put Entity.Get(sP["key"], "radius") into tRadius
+   Entity.SetMesh sP["key"], pMesh
+   if tRadius is a number then Entity.Set sP["key"], "radius", tRadius
+end DD.SetHeroMesh
+
+-- up on the ledge: walk about on it; the next step up stops you; past its edge you drop down
+on DD.OnLedge pDX, pDZ
+   if not DD.InRect(sP["x"] + pDX, sP["z"], sLedgeTop, 0.3) then add pDX to sP["x"]
+   if not DD.InRect(sP["x"], sP["z"] + pDZ, sLedgeTop, 0.3) then add pDZ to sP["z"]
+   if not DD.InRect(sP["x"], sP["z"], sLedge, 0.45) then
+      put 0 into sP["y"]
+      put 1 into sP["floor"]
+      DD.Say "DOWN FROM THE STEP"
+   end if
+end DD.OnLedge
+
+function DD.InRect pX, pZ, pRect, pR
+   return pX > item 1 of pRect - pR and pX < item 3 of pRect + pR and pZ > item 2 of pRect - pR and pZ < item 4 of pRect + pR
+end DD.InRect
 
 -------------------------------------------------------------------- the camera: behind and above you
 
@@ -768,6 +1000,16 @@ end DD.TestZombie
 on DD.TestMap pMap
    DD.StartMap pMap
 end DD.TestMap
+
+-- the move under way: move,frame,mesh,y,floor (move empty: walking)
+function DD.Move
+   return sP["move"] & "," & trunc(sP["moveF"]) & "," & Entity.Get(sP["key"], "mesh") & "," & round(sP["y"], 2) & "," & sP["floor"]
+end DD.Move
+
+-- how many frames each move has (empty: no clip found)
+function DD.MoveFrames
+   return sMove["climb"]["frames"] & "," & sMove["hang"]["frames"] & "," & sMove["recover"]["frames"]
+end DD.MoveFrames
 
 function DD.Door
    return sDoor
