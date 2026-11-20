@@ -54,3 +54,9 @@ The stand-ins are the engine contract (`LIB_ig3d/ENGINE_CONTRACT.md`) as code: o
 
 Every script here is compile-checked with `~/projects/LIB_MCP/tools/lcmcp compile` before
 it is committed.
+
+## Licence
+
+GPL-3.0 (see `LICENSE`), because the xTalk work here is built on the GPL-licensed LiveCode Community 9 engine. Copyright (c) 2026 xAction.
+
+The Python files (`.py`) and other material that is not xTalk are also offered under the MIT licence, Copyright (c) 2026 xAction: you may use them under either licence.
