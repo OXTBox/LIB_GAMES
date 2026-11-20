@@ -116,6 +116,20 @@ others):
 - Steep is the cellmap's 60 hu between corners: steeper is still walkable here (the game uses
   the map's `step` only), but the BitEditor's checker will warn.
 
+## Hooks for ComfyUI's dangerous mode (LIB_COMFY, 20 Nov)
+
+Three constants and one function a build rewrites; as they stand here they are the hand-made game.
+
+| Line | Meaning |
+|---|---|
+| `constant kMatchRules = "1,2,3,4"` | the floor rule of match 1, 2, 3...; the last item repeats (so `"2,4"` = rule 2, then rule 4 for ever) |
+| `constant kMatchOffMS = ""` | per match: ms a broken square falls after you step off it (empty item or list: `kCrumbleOffMS`, 2500) |
+| `constant kMatchOnMS = ""` | per match: ms it falls after you step on it, rule 2 and on (empty: `kCrumbleOnMS`, 1500) |
+| `function PB.WallsText` | returns a whole cellmap text: read BEFORE `walls.cellmap`. Here it returns empty; a built game carries its own walls in it, so it is one file that plays wherever it is copied |
+
+`PB.RulesInfo()` (rules|off list|on list|catches a match|this match's off,on ms) and `PB.WallsFrom()`
+(embedded / file / empty) are for tests (t63 section N).
+
 ## Files
 
 | File | What |

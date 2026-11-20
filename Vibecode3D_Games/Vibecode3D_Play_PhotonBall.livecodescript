@@ -86,6 +86,11 @@ constant kClimbMinRate = 0.4    -- climbing out plays at this speed at stamina 0
 constant kAIHangMS = 900        -- the companion climbs out after hanging this long
 constant kSmashV = 2            -- landing faster than this on a broken square smashes through it
 constant kWallFile = "LIB_GAMES/Vibecode3D_Games/PhotonBall/walls.cellmap"
+-- the match rules as lists (LIB_COMFY's dangerous mode rewrites these three lines; these values
+-- are the hand-made game): match n plays item n, the last item repeats for every match after it
+constant kMatchRules = "1,2,3,4"  -- the floor rule (1-4, see MATCHES above) of match 1, 2, 3...
+constant kMatchOffMS = ""         -- per match: ms a broken square falls after you step off (empty: kCrumbleOffMS)
+constant kMatchOnMS = ""          -- per match: ms it falls after you step on, rule 2 on (empty: kCrumbleOnMS)
 
 local sStepMS = 33, sTicks = 0, sError
 local sClip          -- [key][frames|fps|travel]; meshes "PB.<key>.<n>"; keys idleP idleG run throw lob catch
@@ -1465,8 +1470,44 @@ end PB.Sign
 
 -- the floor rule of this match, 1..4 (match 5 on keeps rule 4)
 function PB.Rule
-   return max(1, min(4, sMatch))
+   local tR
+   put PB.MatchItem(kMatchRules) into tR
+   if tR is not an integer then return max(1, min(4, PB.MatchNo()))
+   return max(1, min(4, tR))
 end PB.Rule
+
+-- this match's number (1 before the first match is set)
+function PB.MatchNo
+   if sMatch is an integer and sMatch >= 1 then return sMatch
+   return 1
+end PB.MatchNo
+
+-- item n of a per-match list for match n (the last item for every match after); empty list: empty
+function PB.MatchItem pList
+   local tN
+   set the itemDelimiter to comma
+   put the number of items of pList into tN
+   if tN < 1 then return empty
+   return word 1 of item min(PB.MatchNo(), tN) of pList
+end PB.MatchItem
+
+-- ms a broken square takes to fall this match: pKind "off" (stepped off) or "on" (stepped on, rule 2 on)
+function PB.CrumbleMS pKind
+   local tV
+   if pKind is "on" then
+      put PB.MatchItem(kMatchOnMS) into tV
+      if tV is a number and tV > 0 then return tV
+      return kCrumbleOnMS
+   end if
+   put PB.MatchItem(kMatchOffMS) into tV
+   if tV is a number and tV > 0 then return tV
+   return kCrumbleOffMS
+end PB.CrumbleMS
+
+-- tests: the rule lists and this match's crumble times
+function PB.RulesInfo
+   return kMatchRules & "|" & kMatchOffMS & "|" & kMatchOnMS & "|" & kMatchCatches & "|" & PB.CrumbleMS("off") & "," & PB.CrumbleMS("on")
+end PB.RulesInfo
 
 function PB.RuleName
    switch PB.Rule()
@@ -1528,17 +1569,36 @@ end PB.TestLaunch
 -- floor; an arena cell higher than 1 is a block (a ledge, the pillar), a cell in [slope] a ramp.
 -- A missing or wrong file: a plain arena (Vector Toss's), and the problem said on screen.
 on PB.LoadWalls
-   local tFile, tText
+   local tFile, tText, tFrom
    put empty into sMap
-   put Game.FindFile(kWallFile) into tFile
-   if tFile is not empty then put textDecode(url ("binfile:" & tFile), "UTF-8") into tText
+   put PB.WallsText() into tText
+   if tText is not empty then
+      put "embedded" into tFrom
+   else
+      put Game.FindFile(kWallFile) into tFile
+      if tFile is not empty then put textDecode(url ("binfile:" & tFile), "UTF-8") into tText
+      if tText is not empty then put "file" into tFrom
+   end if
    if tText is empty then
       put "NO WALLS FILE: A PLAIN ARENA" into sMap["problem"]
    else
       PB.ReadWalls tText
    end if
+   put tFrom into sMap["from"]
    PB.MakeFeatures
 end PB.LoadWalls
+
+-- the walls as a whole cellmap text, read before the file: empty here (the game reads kWallFile).
+-- LIB_COMFY's dangerous mode replaces this handler with the walls it made, so a built game
+-- carries its own walls wherever it is copied (one file, nothing to find)
+function PB.WallsText
+   return empty
+end PB.WallsText
+
+-- tests: where the walls came from (embedded, file, or empty: none)
+function PB.WallsFrom
+   return sMap["from"]
+end PB.WallsFrom
 
 -- tests: walls from this text (empty: none), and a new game on them
 on PB.TestWalls pText
@@ -2097,10 +2157,10 @@ on PB.FloorTick
       if sHero[tName]["state"] is empty and sHero[tName]["g"] <= 0 and sHero[tName]["h"] <= 0.5 then put PB.TileOf(sHero[tName]["x"], sHero[tName]["z"]) into tNow
       put sHero[tName]["onTile"] into tWas
       if tWas is not empty and tWas is not tNow and sTile[tWas] is "broken" and sCrumble[tWas] is empty then
-         put sTicks + round(kCrumbleOffMS / sStepMS) into sCrumble[tWas]
+         put sTicks + round(PB.CrumbleMS("off") / sStepMS) into sCrumble[tWas]
       end if
       if tNow is not empty and sTile[tNow] is "broken" and sCrumble[tNow] is empty and PB.Rule() >= 2 then
-         put sTicks + round(kCrumbleOnMS / sStepMS) into sCrumble[tNow]
+         put sTicks + round(PB.CrumbleMS("on") / sStepMS) into sCrumble[tNow]
          PB.Message "IT CRUMBLES UNDER " & tName
       end if
       put tNow into sHero[tName]["onTile"]
