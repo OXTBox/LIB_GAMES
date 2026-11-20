@@ -21,6 +21,11 @@
 ##           with one, +1 every 10 points); with none, the fall costs 3 points and you come
 ##           back at your spot. A ball that falls in is a drop. Each new level mends the floor.
 ## THE END   a hero's third fatal fall (no hang to catch it) ends the game. ENTER or R: again.
+## STAMINA   (17 Nov rules, VectorToss/STAMINA_NOTE.md) each hero's stamina, 0..100, belongs to the
+##           hero and carries over to every PROMPT & GLAZE game (PromptGlaze/stamina.livecodescript,
+##           saved in the Data folder). +1 every 3 catches in a row; -1 a turn run in; -2 a jump;
+##           -1.0..-2.0 a throw by its strength; -5 climbing out of a hole; -1 running and missing.
+##           A meter under the falls shows it for 3 s after it changes, and stays while it is low.
 ## BANTER    the heroes talk: VectorToss/banter.txt (event, who, then "P line | G line").
 ## MOVES     Animations/VectorToss.anims.txt (throw, lob, catch, jump, hang), cut from LIB_MOCAP
 ##           clips with the editor's Window > Inspector > Animation page.
@@ -71,6 +76,8 @@ constant kGlazeIdle = "Animazoo_talking_gesturing"
 constant kRun = "Animazoo_Running_-_Jog"
 constant kMaxIdleFrames = 300
 constant kActs = "throw,lob,catch,jump,hang"
+constant kStaminaShowMS = 3000  -- the stamina meter stays this long after a change
+constant kStaminaLow = 25       -- and stays up while stamina is below this
 
 local sStepMS = 33, sTicks = 0, sError
 local sClip          -- [key][frames|fps|travel]; meshes "VT.<key>.<n>"; keys idleP idleG run throw lob catch
@@ -88,6 +95,7 @@ local sPlan          -- the companion's plan: [name][at|x|z]
 local sGhost, sMark
 local sMsg, sMsgUntil
 local sBanter, sLastEx, sTalk, sTalkNext, sTalkClearAt, sLastTalk, sSaid
+local sStaminaOK     -- true when the shared stamina library is in use (else stamina lives in sHero only)
 
 -------------------------------------------------------------------- engine hooks
 
@@ -111,6 +119,7 @@ on Game.OnStart
       exit Game.OnStart
    end if
    VT.LoadBanter
+   VT.LoadStamina
    VT.NewMatch
 end Game.OnStart
 
@@ -372,6 +381,13 @@ on VT.Spawn pName, pColor, pSide, pIdle
    put 0 into sHero[pName]["score"]
    put 0 into sHero[pName]["catches"]
    put pColor into sHero[pName]["color"]
+   -- stamina (the hero's own, from the shared store): see VT.StaminaAdd
+   put VT.StaminaGet(pName) into sHero[pName]["stamina"]
+   put 0 into sHero[pName]["streak"]
+   put false into sHero[pName]["bIsItPlayersTurn"]
+   put false into sHero[pName]["bDidTheyRun"]
+   put empty into sHero[pName]["staminaWhy"]
+   put 0 into sHero[pName]["staminaUntil"]
 end VT.Spawn
 
 function VT.Other pName
@@ -414,6 +430,10 @@ on VT.Move pName, pDX, pDZ
    put sqrt(sHero[pName]["mdx"] ^ 2 + sHero[pName]["mdz"] ^ 2) into sHero[pName]["speed"]
    put tX into sHero[pName]["x"]
    put tZ into sHero[pName]["z"]
+   -- stamina: running in your turn counts once a turn, however far or long
+   if sHero[pName]["bIsItPlayersTurn"] is true and sHero[pName]["speed"] > 0.5 then
+      put true into sHero[pName]["bDidTheyRun"]
+   end if
 end VT.Move
 
 on VT.MoveToward pName, pX, pZ, pSpeed
@@ -487,6 +507,7 @@ on VT.Jump pName
    put kJumpV into sHero[pName]["vh"]
    put 0.01 into sHero[pName]["h"]
    VT.Act pName, "jump"
+   VT.StaminaAdd pName, -2, "JUMP"
 end VT.Jump
 
 -- where the mouse points on the floor, kept on the partner's half; past a side bound is
@@ -561,6 +582,7 @@ on VT.GiveBall pName
    put 0 into sPower
    put sTicks + kAIWait into sHoldUntil
    put empty into sPlan
+   VT.TurnStart pName
 end VT.GiveBall
 
 -- a throw's velocity from power (0..1), arc (radians up) and sideways aim (radians)
@@ -612,6 +634,7 @@ function VT.Fold pZ
 end VT.Fold
 
 on VT.RoofThrow pName, pX, pZ, pPower
+   VT.StaminaThrow pName, pPower
    VT.Launch pName, VT.RoofVelocity(pName, pX, pZ, pPower), false
    VT.Act pName, "throw"
 end VT.RoofThrow
@@ -643,6 +666,9 @@ on VT.Launch pName, pVel, pEasy
    put (pEasy is true) into sBall["easy"]
    put empty into sPlan
    VT.PredictLand
+   -- the thrower's turn is over; the partner's begins (catching it)
+   VT.TurnEnd pName
+   VT.TurnStart VT.Other(pName)
 end VT.Launch
 
 -- where the loose ball first comes down (the landing ring)
@@ -669,6 +695,7 @@ on VT.EasyOne pName
    put (VT.HandX(tOther) - VT.HandX(pName)) / tT into tVX
    put (sHero[tOther]["z"] - sHero[pName]["z"]) / tT into tVZ
    put (kHandH - kHandH + kGrav * tT * (tT + 1) / 2) / tT into tVH
+   VT.StaminaThrow pName, 0
    VT.Launch pName, tVX & comma & tVH & comma & tVZ, true
    VT.Act pName, "lob"
    VT.Say "easy", pName, 100
@@ -844,6 +871,9 @@ on VT.Catch pName
    add 1 to sRally
    put max(sBestRally, sRally) into sBestRally
    if pName is sActive then put 0 into sPlayerDrops
+   -- stamina: every 3 catches in a row without a miss +1
+   add 1 to sHero[pName]["streak"]
+   if sHero[pName]["streak"] mod 3 is 0 then VT.StaminaAdd pName, 1, "3 CATCHES IN A ROW"
    VT.Act pName, "catch"
    VT.Message pName & "  +" & tP & "   " & VT.CatchWhy()
    VT.GiveBall pName
@@ -864,6 +894,11 @@ on VT.Drop pName
    add 1 to sTosses
    put 0 into sRally
    if pName is sActive then add 1 to sPlayerDrops
+   -- stamina: a miss ends the catches in a row; running and missing -1
+   put 0 into sHero[pName]["streak"]
+   if sHero[pName]["bIsItPlayersTurn"] is true and sHero[pName]["bDidTheyRun"] is true then
+      VT.StaminaAdd pName, -1, "RAN AND MISSED"
+   end if
    VT.Message pName & " DROPPED IT"
    VT.Say "drop", pName, 60
 end VT.Drop
@@ -1014,6 +1049,7 @@ on VT.AIThrow pName
       VT.EasyOne pName
       exit VT.AIThrow
    end if
+   VT.StaminaThrow pName, tPower
    VT.Launch pName, tPick, false
    VT.Act pName, "throw"
 end VT.AIThrow
@@ -1494,6 +1530,7 @@ on VT.HeroFall pName
             put 0.01 into sHero[pName]["h"]
             put 3 into sHero[pName]["vh"]
             VT.Act pName, "jump"
+            VT.StaminaAdd pName, -5, "CLIMBED OUT"
          end if
          break
       case "fall"
@@ -1703,6 +1740,111 @@ on VT.TestPlaceBall pX, pH, pZ
    put true into sBall["crossed"]
 end VT.TestPlaceBall
 
+-------------------------------------------------------------------- stamina
+
+-- the owner's rules of 17 Nov (VectorToss/STAMINA_NOTE.md). Stamina is the hero's, kept
+-- by the shared PromptGlaze/stamina.livecodescript (Stamina.Get/Set/Add) so it carries over
+-- to every PROMPT & GLAZE game. Both heroes spend it, the one you play and the companion.
+-- A hero's TURN: from the partner's throw (catching it) until its own throw. Running in a
+-- turn costs -1 once, at its end; only bIsItPlayersTurn and bDidTheyRun count.
+on VT.LoadStamina
+   local tLib
+   put false into sStaminaOK
+   put Game.FindFile("LIB_DATA/livecode/lib_data.livecodescript") into tLib
+   if tLib is not empty and not ("LIB_DATA" is among the lines of the stacksInUse) then start using stack tLib
+   put Game.FindFile("LIB_GAMES/Vibecode3D_Games/PromptGlaze/stamina.livecodescript") into tLib
+   if tLib is empty then exit VT.LoadStamina     -- no store: stamina for this match only
+   if not ("PGStamina" is among the lines of the stacksInUse) then start using stack tLib
+   put ("PGStamina" is among the lines of the stacksInUse) into sStaminaOK
+end VT.LoadStamina
+
+function VT.StaminaGet pName
+   if sStaminaOK is true then return Stamina.Get(pName)
+   if sHero[pName]["stamina"] is a number then return sHero[pName]["stamina"]
+   return 100
+end VT.StaminaGet
+
+-- add pDelta (minus takes) to pName's stamina, 0..100, saved in the shared store; the meter
+-- shows it and why for a while
+on VT.StaminaAdd pName, pDelta, pWhy
+   local tNew, tSign
+   if pDelta is not a number or pDelta is 0 then exit VT.StaminaAdd
+   if sStaminaOK is true then
+      put Stamina.Add(pName, pDelta) into tNew
+   else
+      put max(0, min(100, round(VT.StaminaGet(pName) + pDelta, 1))) into tNew
+   end if
+   put tNew into sHero[pName]["stamina"]
+   if pDelta > 0 then put "+" into tSign
+   if sHero[pName]["staminaAt"] is sTicks and sHero[pName]["staminaWhy"] is not empty then
+      put "   " & tSign & pDelta & " " & pWhy after sHero[pName]["staminaWhy"]
+   else
+      put tSign & pDelta & " " & pWhy into sHero[pName]["staminaWhy"]
+   end if
+   put sTicks into sHero[pName]["staminaAt"]
+   put sTicks + round(kStaminaShowMS / sStepMS) into sHero[pName]["staminaUntil"]
+end VT.StaminaAdd
+
+-- a throw: -1.0 (softest) to -2.0 (full power), in tenths
+on VT.StaminaThrow pName, pPower
+   if pPower is not a number then put 0 into pPower
+   put max(0, min(1, pPower)) into pPower
+   VT.StaminaAdd pName, -(1 + round(pPower * 10) / 10), "THROW"
+end VT.StaminaThrow
+
+on VT.TurnStart pName
+   if sHero[pName]["bIsItPlayersTurn"] is true then exit VT.TurnStart
+   put true into sHero[pName]["bIsItPlayersTurn"]
+   put false into sHero[pName]["bDidTheyRun"]
+end VT.TurnStart
+
+on VT.TurnEnd pName
+   if sHero[pName]["bIsItPlayersTurn"] is true and sHero[pName]["bDidTheyRun"] is true then
+      VT.StaminaAdd pName, -1, "RAN THIS TURN"
+   end if
+   put false into sHero[pName]["bIsItPlayersTurn"]
+   put false into sHero[pName]["bDidTheyRun"]
+end VT.TurnEnd
+
+-- the meter under the falls: only for a while after a change, or while stamina is low
+on VT.ShowStamina pName
+   local tS, tBar, i, tText, tLow
+   put "VT.Stam" & char 1 of pName into tS
+   put sHero[pName]["stamina"] < kStaminaLow into tLow
+   if not tLow and not (sHero[pName]["staminaUntil"] is a number and sTicks < sHero[pName]["staminaUntil"]) then
+      HUD.Remove tS
+      exit VT.ShowStamina
+   end if
+   repeat with i = 1 to 10
+      if i <= trunc((sHero[pName]["stamina"] + 0.001) / 10) then
+         put "#" after tBar
+      else
+         put "-" after tBar
+      end if
+   end repeat
+   put "STAMINA " & tBar & " " & sHero[pName]["stamina"] into tText
+   if tLow then put "  TIRED" after tText
+   if sTicks < sHero[pName]["staminaUntil"] and sHero[pName]["staminaWhy"] is not empty then
+      put "   " & sHero[pName]["staminaWhy"] after tText
+   end if
+   if sHero[pName]["side"] < 0 then
+      HUD.Set tS, tText, gViewLeft + 20, gViewTop + 60, 11
+   else
+      HUD.Set tS, tText, gViewRight - 20 - the number of chars of tText * 11, gViewTop + 60, 11
+   end if
+end VT.ShowStamina
+
+-- tests: a hero's stamina / set it
+function VT.Stamina pName
+   return sHero[pName]["stamina"]
+end VT.Stamina
+
+on VT.TestStamina pName, pValue
+   if sStaminaOK is true then Stamina.Set pName, pValue
+   put VT.StaminaGet(pName) into sHero[pName]["stamina"]
+   if sStaminaOK is not true then put max(0, min(100, pValue)) into sHero[pName]["stamina"]
+end VT.TestStamina
+
 -------------------------------------------------------------------- HUD
 
 on VT.Message pText
@@ -1723,6 +1865,8 @@ on VT.ShowHUD
    else
       HUD.Remove "VT.Msg"
    end if
+   VT.ShowStamina "PROMPT"
+   VT.ShowStamina "GLAZE"
    HUD.Set "VT.Who", "YOU: " & sActive & "   C: SWAP", gViewLeft + 20, gViewBottom - 54, 12
    if sBall["state"] is "held" and sBall["by"] is sActive then
       if sCharging then

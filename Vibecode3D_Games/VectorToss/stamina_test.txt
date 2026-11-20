@@ -1,0 +1,148 @@
+-- Vector Toss stamina rules (STAMINA_NOTE.md), played headless with the engine stand-ins.
+-- Run:  python3 -I ~/projects/OXT-BEYOND/tests/oxt_headless.py --engine both <this file>
+-- The stamina file is a throw-away one in the temp folder: the owner's Data folder is never touched.
+local tStub, tS, tP, tG, tFile, i, tHUD
+put textDecode(url ("binfile:/home/igame3d/projects/LIB_GAMES/tools/engine_stubs.livecodescript"), "UTF-8") into tStub
+delete line 1 of tStub
+put return & textDecode(url ("binfile:/home/igame3d/projects/LIB_ig3d/livecode/contract_aliases.livecodescript"), "UTF-8") after tStub
+create stack "VTstam"
+set the script of stack "VTstam" to tStub
+put ck("stubs compile", the result, empty) & return after tLog
+set the script of card 1 of stack "VTstam" to textDecode(url ("binfile:/home/igame3d/projects/LIB_GAMES/Vibecode3D_Games/Vibecode3D_Play_VectorToss.livecodescript"), "UTF-8")
+put ck("game compiles", the result, empty) & return after tLog
+-- the shared store, on a throw-away file
+start using stack "/home/igame3d/projects/LIB_GAMES/Vibecode3D_Games/PromptGlaze/stamina.livecodescript"
+put ck("stamina library in use", "PGStamina" is among the lines of the stacksInUse, true) & return after tLog
+put "C:/LIB_MCP/vt_stamina_test.txt" into tFile
+if there is a file tFile then delete file tFile
+Stamina.UseFile tFile
+put the long id of card 1 of stack "VTstam" into tS
+set the defaultStack to "VTstam"
+dispatch "VT.TestKeys" to tS with "0"
+dispatch "Game.OnStart" to tS
+put ck("a new hero starts at 100", vtStam("PROMPT", tS), 100) & return after tLog
+put ck("no meter at the start", value("Stub.HUD()", tS) contains "STAMINA", false) & return after tLog
+-- a jump -2
+dispatch "VT.TestKeys" to tS with "32"
+dispatch "Game.OnUpdate" to tS
+dispatch "VT.TestKeys" to tS with "0"
+put ck("a jump -2", vtStam("PROMPT", tS), 98) & return after tLog
+repeat 60
+   dispatch "Game.OnUpdate" to tS
+end repeat
+-- a throw at half strength -1.5 (no running in the turn: no turn cost)
+dispatch "VT.TestPlace" to tS with "PROMPT", -140, 0
+dispatch "VT.TestRoofThrow" to tS with 200, 0, 0.5
+put ck("a half-strength throw -1.5", vtStam("PROMPT", tS), 96.5) & return after tLog
+dispatch "Game.OnUpdate" to tS
+put value("Stub.HUD()", tS) into tHUD
+put "INFO meter: " & line (lineOffset("VT.StamP", tHUD)) of tHUD & return after tLog
+put ck("the meter shows after a change", tHUD contains "VT.StamP: STAMINA #########- 96.5   -1.5 THROW", true) & return after tLog
+put ck("GLAZE's turn began with the throw", value("VT.HeroField(" & quote & "GLAZE" & quote & "," & quote & "bIsItPlayersTurn" & quote & ")", tS), true) & return after tLog
+put ck("PROMPT's turn ended", value("VT.HeroField(" & quote & "PROMPT" & quote & "," & quote & "bIsItPlayersTurn" & quote & ")", tS), false) & return after tLog
+repeat 100
+   dispatch "Game.OnUpdate" to tS
+end repeat
+put ck("and fades after 3 s", value("Stub.HUD()", tS) contains "VT.StamP", false) & return after tLog
+-- running in the turn -1 (once, however far), and a full-strength throw -2
+dispatch "Game.OnStart" to tS
+dispatch "VT.TestStamina" to tS with "PROMPT", 50
+dispatch "VT.TestKeys" to tS with "65363"
+repeat 10
+   dispatch "Game.OnUpdate" to tS
+end repeat
+dispatch "VT.TestKeys" to tS with "0"
+dispatch "Game.OnUpdate" to tS
+put ck("running does not cost until the turn ends", vtStam("PROMPT", tS), 50) & return after tLog
+put ck("bDidTheyRun", value("VT.HeroField(" & quote & "PROMPT" & quote & "," & quote & "bDidTheyRun" & quote & ")", tS), true) & return after tLog
+dispatch "VT.TestRoofThrow" to tS with 200, 0, 1
+put ck("ran this turn -1, full throw -2", vtStam("PROMPT", tS), 47) & return after tLog
+dispatch "Game.OnUpdate" to tS
+put ck("both shown on the meter", value("Stub.HUD()", tS) contains "-2 THROW   -1 RAN THIS TURN", true) & return after tLog
+-- saved, and carried into the next match (and the next game)
+put ck("the store has it", Stamina.Get("PROMPT"), 47) & return after tLog
+put ck("the file has it", textDecode(url ("binfile:" & tFile), "UTF-8") contains ("PROMPT" & tab & "47"), true) & return after tLog
+dispatch "Game.OnStart" to tS
+put ck("a new match keeps it", vtStam("PROMPT", tS), 47) & return after tLog
+Stamina.UseFile tFile
+put ck("read back from the file", Stamina.Get("PROMPT"), 47) & return after tLog
+-- low stamina: the meter stays up
+dispatch "VT.TestStamina" to tS with "PROMPT", 20
+repeat 120
+   dispatch "Game.OnUpdate" to tS
+end repeat
+put "INFO low meter: " & line (lineOffset("VT.StamP", value("Stub.HUD()", tS))) of value("Stub.HUD()", tS) & return after tLog
+put ck("low: the meter stays, TIRED", value("Stub.HUD()", tS) contains "VT.StamP: STAMINA ##-------- 20  TIRED", true) & return after tLog
+-- 0..100
+dispatch "VT.TestStamina" to tS with "PROMPT", 1
+dispatch "VT.TestKeys" to tS with "32"
+dispatch "Game.OnUpdate" to tS
+dispatch "VT.TestKeys" to tS with "0"
+put ck("never below 0", vtStam("PROMPT", tS), 0) & return after tLog
+Stamina.Set "PROMPT", 250
+put ck("never above 100", Stamina.Get("PROMPT"), 100) & return after tLog
+-- 3 catches in a row +1 (GLAZE catches three balls)
+dispatch "Game.OnStart" to tS
+dispatch "VT.TestStamina" to tS with "GLAZE", 50
+dispatch "VT.TestPlace" to tS with "GLAZE", 200, 0
+repeat with i = 1 to 3
+   dispatch "VT.TestPlace" to tS with "GLAZE", 200, 0
+   dispatch "VT.TestPlaceBall" to tS with 200, 30, 0
+   dispatch "Game.OnUpdate" to tS
+end repeat
+put ck("GLAZE caught 3", vtPart(value("VT.State()", tS), 3, 2), 3) & return after tLog
+put ck("3 catches in a row +1", vtStam("GLAZE", tS), 51) & return after tLog
+-- running and missing -1: PROMPT throws, GLAZE runs for it, the ball comes down beside her
+dispatch "Game.OnStart" to tS
+dispatch "VT.TestStamina" to tS with "GLAZE", 50
+dispatch "VT.TestPlace" to tS with "PROMPT", -140, 0
+dispatch "VT.TestPlace" to tS with "GLAZE", 100, 0
+dispatch "VT.TestRoofThrow" to tS with 300, 100, 0
+repeat 20
+   dispatch "Game.OnUpdate" to tS
+end repeat
+put ck("GLAZE ran in her turn", value("VT.HeroField(" & quote & "GLAZE" & quote & "," & quote & "bDidTheyRun" & quote & ")", tS), true) & return after tLog
+put vtStam("GLAZE", tS) into tG
+dispatch "VT.TestPlaceBall" to tS with 300, 10, -140
+repeat 10
+   dispatch "Game.OnUpdate" to tS
+end repeat
+put ck("ran and missed -1", vtStam("GLAZE", tS), tG - 1) & return after tLog
+-- climbing out of a hole -5
+dispatch "Game.OnStart" to tS
+dispatch "VT.TestLevel" to tS with 2
+dispatch "VT.TestStamina" to tS with "GLAZE", 50
+dispatch "VT.TestHitTile" to tS with 220, 20
+dispatch "VT.TestHitTile" to tS with 220, 20
+dispatch "VT.TestPlace" to tS with "GLAZE", 220, 20
+repeat 120
+   dispatch "Game.OnUpdate" to tS
+end repeat
+put ck("GLAZE used her hang", value("VT.HeroField(" & quote & "GLAZE" & quote & "," & quote & "hangs" & quote & ")", tS), 0) & return after tLog
+put ck("climbing out -5", vtStam("GLAZE", tS), 45) & return after tLog
+-- both heroes play themselves for a minute: stamina goes down, the game goes on
+dispatch "Game.OnStart" to tS
+dispatch "VT.TestStamina" to tS with "PROMPT", 100
+dispatch "VT.TestStamina" to tS with "GLAZE", 100
+dispatch "VT.TestAuto" to tS with true
+repeat 1800
+   dispatch "Game.OnUpdate" to tS
+end repeat
+dispatch "VT.TestAuto" to tS with false
+put "INFO a minute of auto play: " & value("VT.State()", tS) & return after tLog
+put "INFO stamina after: PROMPT " & vtStam("PROMPT", tS) & "  GLAZE " & vtStam("GLAZE", tS) & return after tLog
+put ck("auto play spends stamina", vtStam("PROMPT", tS) < 100 and vtStam("GLAZE", tS) < 100, true) & return after tLog
+put ck("the store agrees", Stamina.Get("GLAZE"), vtStam("GLAZE", tS)) & return after tLog
+if there is a file tFile then delete file tFile
+return tLog
+--HANDLERS--
+function vtStam pName, pS
+   return value("VT.Stamina(" & quote & pName & quote & ")", pS)
+end vtStam
+
+function vtPart pState, pPart, pItem
+   set the itemDelimiter to "|"
+   put item pPart of pState into pState
+   set the itemDelimiter to comma
+   return item pItem of pState
+end vtPart
