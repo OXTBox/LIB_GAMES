@@ -220,6 +220,16 @@ function Seq.Clock
    return sClock
 end Seq.Clock
 
+-- "name|Kind,Kind": the sequence playing and the clip kinds running now (tests, debugging)
+function Seq.Now
+   local n, tKinds
+   repeat with n = 1 to sRowCount
+      if sRows[n]["state"] is "on" then put sRows[n]["clip"] & comma after tKinds
+   end repeat
+   delete the last char of tKinds
+   return sName & "|" & tKinds
+end Seq.Now
+
 -- play another sequence after this step (clips call it; safe while a clip is running)
 on Seq.Jump pName
    put pName into sJump
@@ -409,7 +419,7 @@ end Seq.Trim
 
 ######################################################################################
 ## TERM: a vector text layer of its own (the engine HUD is upper case only, one colour).
-## Items: Term.Set id,text,x,y,size,colour   Term.Text id,text   Term.Remove id   Term.Clear
+## Items: Term.Set id,text,x,y,size,colour[,style "bold wide"]   Term.Text id,text   Term.Remove id   Term.Clear
 ## Console (lines that scroll): Term.ConsoleSetup x,y,w,rows,size,colour (x,y,w as 0..1 of
 ## the view)   Term.Print(text[,colour]) returns the line's id   Term.ConsoleClear
 ## Effects: Term.Blast id (laser shots, then the letters fly apart in bits)   Term.SetFade 0..1
@@ -418,22 +428,31 @@ end Seq.Trim
 ##   5 off, 10 on, 20 off), so a few points make a long dotted arc
 ######################################################################################
 
-on Term.Set pId, pText, pX, pY, pSize, pColor
+-- pStyle (optional): words "bold" (every stroke drawn twice, a pixel apart) and "wide"
+-- (letters spread by half a character width): map labels that must read at a glance
+on Term.Set pId, pText, pX, pY, pSize, pColor, pStyle
    put pText into sTerm[pId]["text"]
    put pX into sTerm[pId]["x"]
    put pY into sTerm[pId]["y"]
    put pSize into sTerm[pId]["size"]
    if pColor is empty then put sCon["color"] into pColor
    put pColor into sTerm[pId]["color"]
-   put Term.Points(pText, pX, pY, pSize) into sTerm[pId]["pts"]
+   put pStyle into sTerm[pId]["style"]
+   put Term.Points(pText, pX, pY, pSize, pStyle) into sTerm[pId]["pts"]
    put true into sTermDirty
 end Term.Set
 
 on Term.Text pId, pText
    if sTerm[pId]["size"] is empty then exit Term.Text
    if sTerm[pId]["text"] is pText then exit Term.Text
-   Term.Set pId, pText, sTerm[pId]["x"], sTerm[pId]["y"], sTerm[pId]["size"], sTerm[pId]["color"]
+   Term.Set pId, pText, sTerm[pId]["x"], sTerm[pId]["y"], sTerm[pId]["size"], sTerm[pId]["color"], sTerm[pId]["style"]
 end Term.Text
+
+-- the width in pixels of a text at a size and style (wide: half a character more a letter)
+function Term.Width pText, pSize, pStyle
+   if "wide" is among the words of pStyle then return round(the number of chars of pText * pSize * 1.5)
+   return the number of chars of pText * pSize
+end Term.Width
 
 on Term.Color pId, pColor
    if sTerm[pId]["size"] is empty then exit Term.Color
@@ -584,7 +603,7 @@ on Term.ConsoleLayout
    put 0 into k
    repeat for each line tLine in sCon["lines"]
       if sTerm[tLine]["size"] is not empty and sTerm[tLine]["y"] is not sCon["y"] + k * Term.LineH() then
-         Term.Set tLine, sTerm[tLine]["text"], sCon["x"], sCon["y"] + k * Term.LineH(), sCon["size"], sTerm[tLine]["color"]
+         Term.Set tLine, sTerm[tLine]["text"], sCon["x"], sCon["y"] + k * Term.LineH(), sCon["size"], sTerm[tLine]["color"], sTerm[tLine]["style"]
       end if
       add 1 to k
    end repeat
@@ -782,23 +801,31 @@ end Term.RGB
 
 -- the engine's VectorText glyphs (4 x 6 grid, "xy" points, | between strokes) plus
 -- the terminal characters it lacks: > < [ ] ? , ' " = _ % # * ( ) \ ;
-function Term.Points pText, pX, pY, pSize
-   local k, tCX, tPts, tCh, tGlyph, tStroke, w
+-- pStyle: "bold" draws each stroke twice, one pixel apart; "wide" spreads the letters by
+-- half a character width (the owner, 13 Nov: city names hard to read)
+function Term.Points pText, pX, pY, pSize, pStyle
+   local k, tCX, tPts, tCh, tGlyph, tStroke, w, tAdvance, tBold, tDX
    if sFont is not an array then Term.Font
    put pSize / 6 into k
+   put 6 * k into tAdvance
+   if "wide" is among the words of pStyle then put 9 * k into tAdvance
+   put "bold" is among the words of pStyle into tBold
    put pX into tCX
    repeat for each char tCh in toUpper(pText)
       put sFont[tCh] into tGlyph
       if tGlyph is not empty then
          replace "|" with cr in tGlyph
          repeat for each line tStroke in tGlyph
-            put cr after tPts
-            repeat for each word w in tStroke
-               put round(tCX + (char 1 of w) * k) & comma & round(pY + (char 2 of w) * k) & cr after tPts
+            repeat for each item tDX in "0,1"
+               if tDX is 1 and not tBold then exit repeat
+               put cr after tPts
+               repeat for each word w in tStroke
+                  put round(tCX + tDX + (char 1 of w) * k) & comma & round(pY + (char 2 of w) * k) & cr after tPts
+               end repeat
             end repeat
          end repeat
       end if
-      add 6 * k to tCX
+      add tAdvance to tCX
    end repeat
    return tPts
 end Term.Points

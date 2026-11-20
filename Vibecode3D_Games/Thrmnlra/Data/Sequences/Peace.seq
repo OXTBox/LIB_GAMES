@@ -1,5 +1,6 @@
-# SEQUENCE  Peace  (Thrmnlra)  every missile recalled before the enemy woke up.
-# Reached from Map.seq's Outbound clip (peace=Peace). Then back to GREETINGS.
+# SEQUENCE  Peace  (Thrmnlra)  every missile recalled, the bombers home, the command stood
+# down, all before the launch codes on the Big Board filled up (fewer than 8 typos).
+# Reached when Map.seq ends (the card's Seq.Ended). Then back to GREETINGS.
 when      | track | clip    | settings                                                         | what
 0         | world | Cue     | call=Thrm.Clock; mode=time                                       |
 +0.4      | term  | Type    | text=NOBODY WILL EVER KNOW WHAT YOU ALMOST DID.; cps=24; color=#C8C8C8 | the machine, quietly
