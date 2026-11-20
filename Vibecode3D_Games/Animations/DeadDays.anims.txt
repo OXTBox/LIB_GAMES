@@ -1,0 +1,15 @@
+# Dead Days animation list (Opus 19 Nov 2026): name TAB LIB_MOCAP clip TAB in TAB out TAB loop
+# Harold Lloyd's take from "Safety Last!" (1923), all 222 frames, cut into three moves for the
+# temple step in the park (the ledge). Why these frames (hands / feet / knees heights in the clip):
+#   climb    1-44   hands go from head height (1.7 m) up overhead (2.15 m) by frame 17, feet swing
+#                   back under him and stay low: reaching up and taking hold of the edge.
+#   hang   132-182  arms straight overhead (hands 2.05-2.2 m), legs low and kicking: the dangle.
+#                   Its ends were picked to match: 132 is close to climb's last frame, 182 close to
+#                   recover's first, and 182 loops back to 132 (13 cm mean gap; Vector Toss's
+#                   134-198 has 29 cm).
+#   recover 45-108  knees drawn up to 1.5 m and onto the edge, arms bend (hands 2.14 -> 1.83 m),
+#                   head ducks (1.71 -> 1.44 m): hauling himself up. Follows climb with no jump.
+# Re-cut these in the Ig3dEditor: Window > Inspector > Animation (game: DeadDays).
+climb	Harold_Lloyd_Safety_Last_1923	1	44	false
+hang	Harold_Lloyd_Safety_Last_1923	132	182	true
+recover	Harold_Lloyd_Safety_Last_1923	45	108	false
