@@ -487,7 +487,7 @@ on PB.Controls
       put tKeys into sKeyWas
       exit PB.Controls
    end if
-   if sHero[tName]["state"] is "hang" and PB.Pressed(tKeys, "32,119,87,65362") then
+   if sHero[tName]["state"] is among the items of "grab,hang" and PB.Pressed(tKeys, "32,119,87,65362") then
       PB.ClimbOut tName
    else if PB.Pressed(tKeys, "32") then
       PB.Jump tName
@@ -1446,7 +1446,8 @@ on PB.Bubble pName, pText
       else
          put gViewRight - 20 - tLong * tSize into tX
       end if
-      HUD.Set "PB.Say." & pName & "." & i, line i of tLines, tX, gViewTop + 66 + (i - 1) * (tSize + 7), tSize
+      -- under the stamina meter's line (Vector Toss draws them over each other)
+      HUD.Set "PB.Say." & pName & "." & i, line i of tLines, tX, gViewTop + 80 + (i - 1) * (tSize + 7), tSize
    end repeat
 end PB.Bubble
 
@@ -1482,7 +1483,12 @@ end PB.RuleName
 
 -- match pMatch: the floor mended, the new rule told
 on PB.SetMatch pMatch
+   local tName
    PB.MendFloor
+   -- the floor comes back under anyone hanging: they climb out
+   repeat for each item tName in "PROMPT,GLAZE"
+      if sHero[tName]["state"] is among the items of "grab,hang" then PB.ClimbOut tName
+   end repeat
    put pMatch into sMatch
    put 0 into sMatchCatches
    put 0 into sTosses
@@ -2312,10 +2318,11 @@ on PB.Grab pName
    PB.Say "hang", pName, 80
 end PB.Grab
 
--- climb out (the player's SPACE / W / UP while hanging; the companion's own time)
+-- climb out (the player's SPACE / W / UP while hanging or still taking hold; the companion's
+-- own time)
 on PB.ClimbOut pName
    local tSafe
-   if sHero[pName]["state"] is not "hang" then exit PB.ClimbOut
+   if sHero[pName]["state"] is not "hang" and sHero[pName]["state"] is not "grab" then exit PB.ClimbOut
    if PB.TileLevel(PB.TileOf(sHero[pName]["toX"], sHero[pName]["toZ"])) >= 2 then
       put PB.SafeSpot(pName) into tSafe
       put item 1 of tSafe into sHero[pName]["toX"]
@@ -2539,6 +2546,11 @@ on PB.TestBall pX, pH, pZ, pVX, pVH, pVZ
    put empty into sBall["emblem"]
 end PB.TestBall
 
+-- tests: a hole opens under pName (engine_play.sh "!PB.TestDrop:PROMPT")
+on PB.TestDrop pName
+   PB.SetTile PB.TileOf(sHero[pName]["x"], sHero[pName]["z"]), 3
+end PB.TestDrop
+
 -- tests: the steps of the clock (to time crumbling squares)
 function PB.Ticks
    return sTicks
@@ -2732,7 +2744,7 @@ on PB.ShowHUD
          HUD.Set "PB.Help", "MOUSE: AIM THE GHOST BALL   HOLD THE BUTTON, LET GO: THROW   E: AN EASY ONE", gViewLeft + 20, gViewBottom - 30, 12
       end if
    else
-      HUD.Set "PB.Help", "RUN UNDER THE BALL   W A S D: RUN   SPACE: JUMP   GREEN LEDGES NEVER BREAK", gViewLeft + 20, gViewBottom - 30, 12
+      HUD.Set "PB.Help", "W A S D: RUN   SPACE: JUMP   GREEN LEDGES NEVER BREAK", gViewLeft + 20, gViewBottom - 30, 12
    end if
    -- the level's instructions stay until two tosses have come down
    if sTosses < 2 then
@@ -2815,11 +2827,13 @@ function PB.HeroH pName
 end PB.HeroH
 
 -- active | PROMPT score,catches,x,z | GLAZE ... | ball state,by,x,h,z,banks | rally,best | said
+-- | PROMPT state, GLAZE state, PROMPT h, GLAZE h | match,rule,catches
 function PB.State
    return sActive & "|" & sHero["PROMPT"]["score"] & "," & sHero["PROMPT"]["catches"] & "," & round(sHero["PROMPT"]["x"]) & "," & round(sHero["PROMPT"]["z"]) & \
          "|" & sHero["GLAZE"]["score"] & "," & sHero["GLAZE"]["catches"] & "," & round(sHero["GLAZE"]["x"]) & "," & round(sHero["GLAZE"]["z"]) & \
          "|" & sBall["state"] & "," & sBall["by"] & "," & round(sBall["x"]) & "," & round(sBall["h"]) & "," & round(sBall["z"]) & "," & sBall["banks"] & \
-         "|" & sRally & "," & sBestRally & "|" & sSaid
+         "|" & sRally & "," & sBestRally & "|" & sSaid & \
+         "|" & sHero["PROMPT"]["state"] & "," & sHero["GLAZE"]["state"] & "," & round(sHero["PROMPT"]["h"]) & "," & round(sHero["GLAZE"]["h"]) & "|" & PB.MatchState()
 end PB.State
 
 function PB.ClipFrames pKey
