@@ -1,5 +1,9 @@
 # DotMaze: making it smooth, one measured step at a time
 
+Since 21 Nov the lean version is its own game, **DotMazeLean** (`Vibecode3D_Play_DotMazeLean.livecodescript`,
+map in `DotMazeLean_map.txt`); `Vibecode3D_Play_DotMaze.livecodescript` is the original again (owner:
+"save ... as DotMazeLean"), so both can be compared.
+
 Owner, 21 Nov 2026: "the FPS of the first version is terrible, make it smooth as light, step by step."
 
 How each step is measured: the real engine (the Game Player, Engine 1 = pure xTalk Vibecode3D) in the

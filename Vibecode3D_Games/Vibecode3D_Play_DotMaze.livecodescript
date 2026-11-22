@@ -12,7 +12,6 @@ global bPaused, bPlaying
 
 local sMaze, sDot, sDots, sYou, sC, sR, sDC, sDR, sWantC, sWantR, sT
 local sChaser, sLevel, sLives, sScore, sYouEvery, sChaseEvery, sOver, sTestKeys, sHUDWas
-local sFPS, sFPSN, sFPSAt, sFPSWas
 
 constant kZ = 600
 constant kCell = 40
@@ -59,110 +58,6 @@ function Maze.Open pC, pR
    return (char pC of line pR of sMaze is not "#")
 end Maze.Open
 
--- PERF step 1: every wall is ONE mesh of loose lines (was one 12-edge box entity a cell, 136 of them).
--- Only the outline of each wall block is drawn, a straight run of edges as one line, at the front
--- (z -8) and the back (z +8) of where the boxes were, so the walls keep their depth.
-function Maze.Wall pC, pR
-   if pC < 1 or pC > kCols or pR < 1 or pR > kRows then return false
-   return (char pC of line pR of sMaze is "#")
-end Maze.Wall
-
--- corner i is the right edge of column i (0 = the left edge of column 1); likewise rows
-function Maze.CornerX pN
-   return (pN + 0.5 - (kCols + 1) / 2) * kCell
-end Maze.CornerX
-
-function Maze.CornerY pJ
-   return (pJ + 0.5 - (kRows + 1) / 2) * kCell
-end Maze.CornerY
-
-command Maze.AddSeg @pMesh, pX1, pY1, pX2, pY2, pZ
-   local tA
-   Mesh.AddVertex pMesh, pX1, pY1, pZ
-   put the result into tA
-   Mesh.AddVertex pMesh, pX2, pY2, pZ
-   Mesh.AddLine pMesh, tA, the result
-end Maze.AddSeg
-
-command Maze.BuildWalls
-   local tMesh, tZs, tZ, tI, tJ, tStart, tOn
-   put Mesh.New() into tMesh
-   put "-8,8" into tZs
-   repeat for each item tZ in tZs
-      -- across: line j lies between row j and row j+1
-      repeat with tJ = 0 to kRows
-         put empty into tStart
-         repeat with tI = 1 to kCols + 1
-            put false into tOn
-            if tI <= kCols then put (Maze.Wall(tI, tJ) is not Maze.Wall(tI, tJ + 1)) into tOn
-            if tOn and tStart is empty then put tI - 1 into tStart
-            if not tOn and tStart is not empty then
-               Maze.AddSeg tMesh, Maze.CornerX(tStart), Maze.CornerY(tJ), Maze.CornerX(tI - 1), Maze.CornerY(tJ), tZ
-               put empty into tStart
-            end if
-         end repeat
-      end repeat
-      -- down: line i lies between column i and column i+1
-      repeat with tI = 0 to kCols
-         put empty into tStart
-         repeat with tJ = 1 to kRows + 1
-            put false into tOn
-            if tJ <= kRows then put (Maze.Wall(tI, tJ) is not Maze.Wall(tI + 1, tJ)) into tOn
-            if tOn and tStart is empty then put tJ - 1 into tStart
-            if not tOn and tStart is not empty then
-               Maze.AddSeg tMesh, Maze.CornerX(tI), Maze.CornerY(tStart), Maze.CornerX(tI), Maze.CornerY(tJ - 1), tZ
-               put empty into tStart
-            end if
-         end repeat
-      end repeat
-   end repeat
-   Mesh.Define "Maze.Walls", tMesh
-end Maze.BuildWalls
-
--- PERF step 2: every dot is in ONE mesh (was one 12-edge box entity a dot, 120 of them): a small
--- square of 4 lines a dot, the front of the old 6x6x6 box. Eating a dot builds the mesh again
--- (Mesh.Define replaces it; the one "Maze.Dots" object draws the new one).
-command Maze.BuildDots
-   local tMesh, tKey, tX, tY, tA
-   put Mesh.New() into tMesh
-   repeat for each key tKey in sDot
-      put Maze.X(item 1 of tKey) into tX
-      put Maze.Y(item 2 of tKey) into tY
-      Mesh.AddVertex tMesh, tX - 3, tY - 3, -3
-      put the result into tA
-      Mesh.AddVertex tMesh, tX + 3, tY - 3, -3
-      Mesh.AddVertex tMesh, tX + 3, tY + 3, -3
-      Mesh.AddVertex tMesh, tX - 3, tY + 3, -3
-      Mesh.AddLine tMesh, tA, tA + 1
-      Mesh.AddLine tMesh, tA + 1, tA + 2
-      Mesh.AddLine tMesh, tA + 2, tA + 3
-      Mesh.AddLine tMesh, tA + 3, tA
-   end repeat
-   Mesh.Define "Maze.Dots", tMesh
-end Maze.BuildDots
-
--- frames a second, counted by the game itself. The engine runs the game a fixed 30 steps a
--- second and draws once per tick; when drawing is slow it runs the missed steps back to back
--- (a few ms apart), while the Game Player waits 33 ms after each frame: a step 20 ms or more after
--- the last one starts a new frame.
-command Maze.CountFPS
-   local tNow
-   put the milliseconds into tNow
-   if sFPSAt is empty then put tNow into sFPSAt
-   if tNow - sFPSWas >= 20 then add 1 to sFPSN
-   put tNow into sFPSWas
-   if tNow - sFPSAt >= 1000 then
-      put round(sFPSN * 1000 / (tNow - sFPSAt)) into sFPS
-      put 0 into sFPSN
-      put tNow into sFPSAt
-      HUD.Set "Maze.FPS", "FPS" && sFPS, 20, 150, 14
-   end if
-end Maze.CountFPS
-
-function Maze.FPS
-   return sFPS
-end Maze.FPS
-
 -- Spark's table: chasers | chaser steps a move | your steps a move
 on Maze.StartLevel pLevel
    local tRow, tR, tC, tN, tAt
@@ -171,22 +66,22 @@ on Maze.StartLevel pLevel
    put item 2 of tRow into sChaseEvery
    put item 3 of tRow into sYouEvery
    Scene.ClearAll
-   Maze.BuildWalls
+   Mesh.Define "Maze.Wall", Mesh.Box(kCell - 4, kCell - 4, 16)
+   Mesh.Define "Maze.Dot", Mesh.Box(6, 6, 6)
    Mesh.Define "Maze.You", Mesh.Prism(8, 14, 12)
    Mesh.Define "Maze.Chaser", Mesh.Pyramid(4, 16, 22)
    put empty into sDot
    put 0 into sDots
    repeat with tR = 1 to kRows
       repeat with tC = 1 to kCols
-         if char tC of line tR of sMaze is "." then
-            put true into sDot[tC & comma & tR]
+         if char tC of line tR of sMaze is "#" then
+            get Entity.Spawn("Maze.Wall", Maze.X(tC), Maze.Y(tR), kZ, "#3F6FB0")
+         else if char tC of line tR of sMaze is "." then
+            put Entity.Spawn("Maze.Dot", Maze.X(tC), Maze.Y(tR), kZ, "yellow") into sDot[tC & comma & tR]
             add 1 to sDots
          end if
       end repeat
    end repeat
-   get Entity.Spawn("Maze.Walls", 0, 0, kZ, "#3F6FB0")
-   Maze.BuildDots
-   get Entity.Spawn("Maze.Dots", 0, 0, kZ, "yellow")
    put Entity.Spawn("Maze.You", 0, 0, kZ, "white") into sYou
    put empty into sChaser
    repeat with tN = 1 to item 1 of tRow
@@ -229,7 +124,6 @@ end Maze.TestKeys
 
 on Game.OnUpdate
    local tKeys, tN, tBest, tBestD, tDir, tDC, tDR, tD
-   Maze.CountFPS
    put Maze.Keys() into tKeys
    if sOver then
       if 32 is among the items of tKeys then
@@ -269,8 +163,8 @@ on Game.OnUpdate
       end if
       Entity.SetPosition sYou, Maze.X(sC), Maze.Y(sR), kZ
       if sDot[sC & comma & sR] is not empty then
+         Entity.Kill sDot[sC & comma & sR]
          delete variable sDot[sC & comma & sR]
-         Maze.BuildDots
          subtract 1 from sDots
          add 10 to sScore
          put empty into sHUDWas
@@ -334,7 +228,7 @@ on Maze.ShowHUD
 end Maze.ShowHUD
 
 function Maze.State
-   return "fps " & sFPS & "|" & sLevel & "|" & sLives & "|" & sScore & "|dots " & sDots & "|you " & sC & "," & sR & "|chaser1 " & sChaser[1]["c"] & "," & sChaser[1]["r"] & "|" & sOver
+   return sLevel & "|" & sLives & "|" & sScore & "|dots " & sDots & "|you " & sC & "," & sR & "|chaser1 " & sChaser[1]["c"] & "," & sChaser[1]["r"] & "|" & sOver
 end Maze.State
 
 on Game.OnStop
