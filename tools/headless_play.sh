@@ -17,6 +17,8 @@ if there is a stack "HeadlessPlay" then delete stack "HeadlessPlay"
 create invisible stack "HeadlessPlay"
 put URL "file:$W/engine_stubs.livecodescript" into tStub
 delete line 1 of tStub
+-- Rename Day: the new names (Camera.Reset, Entity.SetPosition, Mesh.Box ...) reach the stand-ins through the alias file
+put cr & URL "file:$W/../../LIB_ig3d/livecode/contract_aliases.livecodescript" after tStub
 set the script of stack "HeadlessPlay" to tStub
 set the script of card 1 of stack "HeadlessPlay" to URL "file:$W/../Vibecode3D_Games/Vibecode3D_Play_$GAME.livecodescript"
 put the result into tCompile
