@@ -221,3 +221,8 @@ end Flop.State
 on Game.OnStop
    HUD.Clear
 end Game.OnStop
+
+-- the arrows move you (read from the keysDown each frame); a focused menu or field must never get
+-- them, nor the card navigation: Left would turn the play card away (ISSUES 0020, 23 Nov 2026)
+on arrowKey pKey
+end arrowKey
