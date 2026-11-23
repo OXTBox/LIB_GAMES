@@ -40,6 +40,16 @@ on Game.OnStart
 end Game.OnStart
 
 -- Spark's table: raider rows | raider speed | raider shot chance (in 1000 a step) | shields
+-- a level change through the loading screen (LIB_LOADING_SCREEN: burn, green text, the player first,
+-- then the level draws in) when the host has it; else at once, as before. p1-13, 23 Nov 2026
+on Raid.GoLevel pLevel
+   if "LIB_LOADING" is among the lines of the stacksInUse then
+      Loading.Go pLevel
+   else
+      Raid.StartLevel pLevel
+   end if
+end Raid.GoLevel
+
 on Raid.StartLevel pLevel
    local tRow, tRows, tShields, tR, tC, tN, tTough, tColor
    put pLevel into sLevel
@@ -105,7 +115,7 @@ on Game.OnUpdate
          put 3 into sLives
          put 0 into sScore
          put false into sOver
-         Raid.StartLevel 1
+         Raid.GoLevel 1
       end if
       exit Game.OnUpdate
    end if
@@ -196,7 +206,7 @@ on Game.OnUpdate
       if sLevel >= 5 then
          put true into sOver
       else
-         Raid.StartLevel sLevel + 1
+         Raid.GoLevel sLevel + 1
       end if
    end if
    Raid.ShowHUD

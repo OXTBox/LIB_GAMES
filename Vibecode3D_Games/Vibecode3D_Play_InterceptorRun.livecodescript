@@ -176,6 +176,16 @@ function Int.RoadX pW
 end Int.RoadX
 
 -- Spark's table: scroll speed | enemies at once
+-- a level change through the loading screen (LIB_LOADING_SCREEN: burn, green text, the player first,
+-- then the level draws in) when the host has it; else at once, as before. p1-13, 23 Nov 2026
+on Int.GoLevel pLevel
+   if "LIB_LOADING" is among the lines of the stacksInUse then
+      Loading.Go pLevel
+   else
+      Int.StartLevel pLevel
+   end if
+end Int.GoLevel
+
 on Int.StartLevel pLevel
    local tRow, tK
    put pLevel into sLevel
@@ -247,7 +257,7 @@ on Game.OnUpdate
          put false into sWon
          put 0 into sTruckN
          put empty into sSpecial
-         Int.StartLevel 1
+         Int.GoLevel 1
       end if
       put tKeys into sKeysWas
       exit Game.OnUpdate
@@ -326,7 +336,7 @@ on Game.OnUpdate
          put true into sWon
          put true into sOver
       else
-         Int.StartLevel sLevel + 1
+         Int.GoLevel sLevel + 1
       end if
    end if
    Int.ShowHUD

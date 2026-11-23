@@ -52,6 +52,16 @@ on Game.OnStart
 end Game.OnStart
 
 -- Spark's table: rival speed | curves | lives
+-- a level change through the loading screen (LIB_LOADING_SCREEN: burn, green text, the player first,
+-- then the level draws in) when the host has it; else at once, as before. p1-13, 23 Nov 2026
+on Grid.GoLevel pLevel
+   if "LIB_LOADING" is among the lines of the stacksInUse then
+      Loading.Go pLevel
+   else
+      Grid.StartLevel pLevel
+   end if
+end Grid.GoLevel
+
 on Grid.StartLevel pLevel
    local tRow, i
    put pLevel into sLevel
@@ -260,15 +270,15 @@ on Game.OnUpdate
          if Grid.Pressed(32, tKeys) then
             put 0 into sScore
             put empty into sLives
-            Grid.StartLevel 1
+            Grid.GoLevel 1
          end if
          break
       case "done"
          if Grid.Pressed(32, tKeys) then
             if sPlace is 1 and sLevel < 5 then
-               Grid.StartLevel sLevel + 1
+               Grid.GoLevel sLevel + 1
             else if sPlace is 1 then
-               Grid.StartLevel 1
+               Grid.GoLevel 1
             else
                Grid.StartLevel sLevel
             end if

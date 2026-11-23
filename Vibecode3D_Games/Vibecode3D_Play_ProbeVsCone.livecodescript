@@ -56,6 +56,16 @@ function Probe.Row pLevel
    return line pLevel of ("1,6,10,2,0.035" & cr & "2,5,11,3,0.04" & cr & "2,4,12,4,0.045" & cr & "3,4,13,5,0.05" & cr & "3,3,14,6,0.056")
 end Probe.Row
 
+-- a level change through the loading screen (LIB_LOADING_SCREEN: burn, green text, the player first,
+-- then the level draws in) when the host has it; else at once, as before. p1-13, 23 Nov 2026
+on Probe.GoLevel pLevel
+   if "LIB_LOADING" is among the lines of the stacksInUse then
+      Loading.Go pLevel
+   else
+      Probe.StartLevel pLevel
+   end if
+end Probe.GoLevel
+
 on Probe.StartLevel
    local tRow, k, i, n, tMesh
    put Probe.Row(sLevel) into tRow
@@ -564,7 +574,7 @@ on Probe.MoveSpear
             put true into sWon
          else
             add 1 to sLevel
-            Probe.StartLevel
+            Probe.GoLevel sLevel
          end if
          exit Probe.MoveSpear
       end if

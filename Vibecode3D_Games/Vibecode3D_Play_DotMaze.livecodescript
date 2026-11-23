@@ -59,6 +59,16 @@ function Maze.Open pC, pR
 end Maze.Open
 
 -- Spark's table: chasers | chaser steps a move | your steps a move
+-- a level change through the loading screen (LIB_LOADING_SCREEN: burn, green text, the player first,
+-- then the level draws in) when the host has it; else at once, as before. p1-13, 23 Nov 2026
+on Maze.GoLevel pLevel
+   if "LIB_LOADING" is among the lines of the stacksInUse then
+      Loading.Go pLevel
+   else
+      Maze.StartLevel pLevel
+   end if
+end Maze.GoLevel
+
 on Maze.StartLevel pLevel
    local tRow, tR, tC, tN, tAt
    put pLevel into sLevel
@@ -130,7 +140,7 @@ on Game.OnUpdate
          put 3 into sLives
          put 0 into sScore
          put false into sOver
-         Maze.StartLevel 1
+         Maze.GoLevel 1
       end if
       exit Game.OnUpdate
    end if
@@ -207,7 +217,7 @@ on Game.OnUpdate
          put true into sOver
          put empty into sHUDWas
       else
-         Maze.StartLevel sLevel + 1
+         Maze.GoLevel sLevel + 1
       end if
    end if
    Maze.ShowHUD

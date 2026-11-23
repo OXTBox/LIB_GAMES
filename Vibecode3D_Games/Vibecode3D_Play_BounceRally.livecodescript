@@ -135,6 +135,16 @@ function Rally.RoadX pW
 end Rally.RoadX
 
 -- Spark's table: scroll speed | targets | lives
+-- a level change through the loading screen (LIB_LOADING_SCREEN: burn, green text, the player first,
+-- then the level draws in) when the host has it; else at once, as before. p1-13, 23 Nov 2026
+on Rally.GoLevel pLevel
+   if "LIB_LOADING" is among the lines of the stacksInUse then
+      Loading.Go pLevel
+   else
+      Rally.StartLevel pLevel
+   end if
+end Rally.GoLevel
+
 on Rally.StartLevel pLevel
    local tRow, tK, i
    put pLevel into sLevel
@@ -203,7 +213,7 @@ on Game.OnUpdate
          put 0 into sScore
          put false into sOver
          put false into sWon
-         Rally.StartLevel 1
+         Rally.GoLevel 1
       end if
       put tKeys into sKeysWas
       exit Game.OnUpdate
@@ -259,7 +269,7 @@ on Game.OnUpdate
          put true into sWon
          put true into sOver
       else
-         Rally.StartLevel sLevel + 1
+         Rally.GoLevel sLevel + 1
       end if
    end if
    Rally.ShowHUD

@@ -33,6 +33,16 @@ on Game.OnStart
 end Game.OnStart
 
 -- the level: ball speed and computer skill grow with it
+-- a level change through the loading screen (LIB_LOADING_SCREEN: burn, green text, the player first,
+-- then the level draws in) when the host has it; else at once, as before. p1-13, 23 Nov 2026
+on Cpong.GoLevel pLevel
+   if "LIB_LOADING" is among the lines of the stacksInUse then
+      Loading.Go pLevel
+   else
+      Cpong.StartLevel pLevel
+   end if
+end Cpong.GoLevel
+
 on Cpong.StartLevel pLevel
    local tM, i, tN
    put pLevel into sLevel
@@ -153,7 +163,7 @@ on Game.OnUpdate
    if sOver then
       if 32 is among the items of tKeys then
          put false into sOver
-         Cpong.StartLevel 1
+         Cpong.GoLevel 1
       end if
       Cpong.ShowHUD
       exit Game.OnUpdate
@@ -303,7 +313,7 @@ on Cpong.Point pSide
          put true into sOver
          put true into sWonAll
       else
-         Cpong.StartLevel sLevel + 1
+         Cpong.GoLevel sLevel + 1
       end if
       exit Cpong.Point
    end if

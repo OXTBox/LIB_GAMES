@@ -36,6 +36,16 @@ on Game.OnStart
 end Game.OnStart
 
 -- Spark's table: big rocks | rock speed | small rocks per split
+-- a level change through the loading screen (LIB_LOADING_SCREEN: burn, green text, the player first,
+-- then the level draws in) when the host has it; else at once, as before. p1-13, 23 Nov 2026
+on Rock.GoLevel pLevel
+   if "LIB_LOADING" is among the lines of the stacksInUse then
+      Loading.Go pLevel
+   else
+      Rock.StartLevel pLevel
+   end if
+end Rock.GoLevel
+
 on Rock.StartLevel pLevel
    local tRow, tN, tA
    put pLevel into sLevel
@@ -106,7 +116,7 @@ on Game.OnUpdate
          put 3 into sLives
          put 0 into sScore
          put false into sOver
-         Rock.StartLevel 1
+         Rock.GoLevel 1
       end if
       put (32 is among the items of tKeys) into sFireWas
       exit Game.OnUpdate
@@ -199,7 +209,7 @@ on Game.OnUpdate
          put true into sOver
          put empty into sHUDWas
       else
-         Rock.StartLevel sLevel + 1
+         Rock.GoLevel sLevel + 1
       end if
    end if
    Rock.ShowHUD

@@ -33,6 +33,16 @@ on Game.OnStart
 end Game.OnStart
 
 -- level table: ball speed | computer bat speed | obstacle blocks | points to win
+-- a level change through the loading screen (LIB_LOADING_SCREEN: burn, green text, the player first,
+-- then the level draws in) when the host has it; else at once, as before. p1-13, 23 Nov 2026
+on Pong.GoLevel pLevel
+   if "LIB_LOADING" is among the lines of the stacksInUse then
+      Loading.Go pLevel
+   else
+      Pong.StartLevel pLevel
+   end if
+end Pong.GoLevel
+
 on Pong.StartLevel pLevel
    local tRow, n, tKey
    put pLevel into sLevel
@@ -104,7 +114,7 @@ on Game.OnUpdate
    if sOver then
       if 32 is among the items of tKeys then
          put false into sOver
-         Pong.StartLevel 1
+         Pong.GoLevel 1
       end if
       exit Game.OnUpdate
    end if
@@ -198,7 +208,7 @@ on Pong.Point
       if sLevel >= 5 then
          put true into sOver
       else
-         Pong.StartLevel sLevel + 1
+         Pong.GoLevel sLevel + 1
       end if
    else if sTheirs >= sWin then
       put true into sOver

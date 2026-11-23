@@ -153,6 +153,16 @@ function Coast.GateMesh
 end Coast.GateMesh
 
 -- Spark's table: speed | traffic | lives
+-- a level change through the loading screen (LIB_LOADING_SCREEN: burn, green text, the player first,
+-- then the level draws in) when the host has it; else at once, as before. p1-13, 23 Nov 2026
+on Coast.GoLevel pLevel
+   if "LIB_LOADING" is among the lines of the stacksInUse then
+      Loading.Go pLevel
+   else
+      Coast.StartLevel pLevel
+   end if
+end Coast.GoLevel
+
 on Coast.StartLevel pLevel
    local tRow, tK
    put pLevel into sLevel
@@ -205,7 +215,7 @@ on Game.OnUpdate
          put false into sHills
          put false into sOver
          put false into sWon
-         Coast.StartLevel 1
+         Coast.GoLevel 1
       end if
       put tKeys into sKeysWas
       exit Game.OnUpdate
@@ -297,7 +307,7 @@ on Game.OnUpdate
          put true into sWon
          put true into sOver
       else
-         Coast.StartLevel sLevel + 1
+         Coast.GoLevel sLevel + 1
       end if
    end if
    Coast.ShowHUD

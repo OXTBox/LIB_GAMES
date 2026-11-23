@@ -35,6 +35,16 @@ on Game.OnStart
 end Game.OnStart
 
 -- Spark's table: gravity | fuel | pad width (columns) | max landing speed
+-- a level change through the loading screen (LIB_LOADING_SCREEN: burn, green text, the player first,
+-- then the level draws in) when the host has it; else at once, as before. p1-13, 23 Nov 2026
+on Land.GoLevel pLevel
+   if "LIB_LOADING" is among the lines of the stacksInUse then
+      Loading.Go pLevel
+   else
+      Land.StartLevel pLevel
+   end if
+end Land.GoLevel
+
 on Land.StartLevel pLevel
    local tRow, tC, tH
    put pLevel into sLevel
@@ -89,14 +99,14 @@ on Game.OnUpdate
             if sLevel >= 5 then
                put 3 into sLives
                put 0 into sScore
-               Land.StartLevel 1
+               Land.GoLevel 1
             else
-               Land.StartLevel sLevel + 1
+               Land.GoLevel sLevel + 1
             end if
          else if sLives <= 0 then
             put 3 into sLives
             put 0 into sScore
-            Land.StartLevel 1
+            Land.GoLevel 1
          else
             Land.StartLevel sLevel
          end if

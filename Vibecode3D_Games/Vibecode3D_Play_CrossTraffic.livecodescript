@@ -37,6 +37,16 @@ function Cross.Y pRow
 end Cross.Y
 
 -- Spark's table: lanes | car speed | cars per lane | time limit (seconds)
+-- a level change through the loading screen (LIB_LOADING_SCREEN: burn, green text, the player first,
+-- then the level draws in) when the host has it; else at once, as before. p1-13, 23 Nov 2026
+on Cross.GoLevel pLevel
+   if "LIB_LOADING" is among the lines of the stacksInUse then
+      Loading.Go pLevel
+   else
+      Cross.StartLevel pLevel
+   end if
+end Cross.GoLevel
+
 on Cross.StartLevel pLevel
    local tRow, tLane, tN, tCars, tSpeed, tDir, tK
    put pLevel into sLevel
@@ -107,7 +117,7 @@ on Game.OnUpdate
          put 3 into sLives
          put 0 into sScore
          put false into sOver
-         Cross.StartLevel 1
+         Cross.GoLevel 1
       end if
       exit Game.OnUpdate
    end if
@@ -142,7 +152,7 @@ on Game.OnUpdate
             put true into sOver
             put empty into sHUDWas
          else
-            Cross.StartLevel sLevel + 1
+            Cross.GoLevel sLevel + 1
          end if
       else
          Cross.Home

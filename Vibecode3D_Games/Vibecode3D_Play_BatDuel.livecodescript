@@ -32,6 +32,16 @@ on Game.OnStart
 end Game.OnStart
 
 -- Spark's table: ball speed | computer bat speed | bat height | points to win
+-- a level change through the loading screen (LIB_LOADING_SCREEN: burn, green text, the player first,
+-- then the level draws in) when the host has it; else at once, as before. p1-13, 23 Nov 2026
+on Duel.GoLevel pLevel
+   if "LIB_LOADING" is among the lines of the stacksInUse then
+      Loading.Go pLevel
+   else
+      Duel.StartLevel pLevel
+   end if
+end Duel.GoLevel
+
 on Duel.StartLevel pLevel
    local tRow
    put pLevel into sLevel
@@ -86,7 +96,7 @@ on Game.OnUpdate
    if sOver then
       if 32 is among the items of tKeys then
          put false into sOver
-         Duel.StartLevel 1
+         Duel.GoLevel 1
       end if
       exit Game.OnUpdate
    end if
@@ -139,7 +149,7 @@ on Duel.Point pDir
       if sLevel >= 5 then
          put true into sOver
       else
-         Duel.StartLevel sLevel + 1
+         Duel.GoLevel sLevel + 1
       end if
    else if sCpu >= sToWin then
       Duel.StartLevel sLevel

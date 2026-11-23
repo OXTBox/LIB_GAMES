@@ -117,6 +117,16 @@ function Fuel.FinishMesh
 end Fuel.FinishMesh
 
 -- Spark's table: speed | traffic | lives
+-- a level change through the loading screen (LIB_LOADING_SCREEN: burn, green text, the player first,
+-- then the level draws in) when the host has it; else at once, as before. p1-13, 23 Nov 2026
+on Fuel.GoLevel pLevel
+   if "LIB_LOADING" is among the lines of the stacksInUse then
+      Loading.Go pLevel
+   else
+      Fuel.StartLevel pLevel
+   end if
+end Fuel.GoLevel
+
 on Fuel.StartLevel pLevel
    local tRow, tK
    put pLevel into sLevel
@@ -172,7 +182,7 @@ on Game.OnUpdate
          put 0 into sScore
          put false into sOver
          put false into sWon
-         Fuel.StartLevel 1
+         Fuel.GoLevel 1
       end if
       put tKeys into sKeysWas
       exit Game.OnUpdate
@@ -269,7 +279,7 @@ on Game.OnUpdate
                      put true into sOver
                      put "CHAMPION OF THE FUEL LINE" into sMsg
                   else
-                     Fuel.StartLevel sLevel + 1
+                     Fuel.GoLevel sLevel + 1
                   end if
                else
                   put "CROSSED THE LINE ON FUMES" into sMsg
