@@ -6,7 +6,7 @@
 ## GLAZE it charms patrols (they follow you, harmless, for a few seconds); thrown by PROMPT
 ## it de-rezzes them.
 ## Teaches: grid movement, chasing, a projectile that bounces.
-## CONTROLS  Arrows: move   Space: throw (when you hold a polyhedron)   Tab: swap agents
+## CONTROLS  Arrows: move   Space: throw (when you hold a polyhedron)   C: swap agents
 ## RULES     a patrol touching either agent costs a life. Collect every dot. 5 levels.
 ######################################################################################
 
@@ -211,8 +211,9 @@ on Game.OnUpdate
       put tKeys into sKeysWas
       exit Game.OnUpdate
    end if
-   -- Tab swaps; Space throws (one press each)
-   if 65289 is among the items of tKeys and not (65289 is among the items of sKeysWas) then
+   -- C (companion) swaps, was Tab (console key now, ISSUES 0015); Space throws (one press each)
+   if (99 is among the items of tKeys and not (99 is among the items of sKeysWas)) or \
+         (67 is among the items of tKeys and not (67 is among the items of sKeysWas)) then
       put 3 - sActive into sActive
       put empty into sHUDWas
    end if
@@ -467,7 +468,7 @@ on Maze.ShowHUD
    else if sOver then
       HUD.Set "Maze.Msg", "CAUGHT.  SPACE TO PLAY AGAIN", 20, 140, 14
    else if sPause > 0 then
-      HUD.Set "Maze.Msg", "ARROWS MOVE   SPACE THROWS   TAB SWAPS PROMPT / GLAZE", 20, 140, 14
+      HUD.Set "Maze.Msg", "ARROWS MOVE   SPACE THROWS   C SWAPS PROMPT / GLAZE", 20, 140, 14
    end if
 end Maze.ShowHUD
 

@@ -8,7 +8,7 @@
 ##                        the button for power, let go: the ball goes up, hits the ROOF and
 ##                        comes down on the ghost. Aim past a side bound to bank it off it.
 ##           W A S D / arrows  run (while you aim)    SPACE  jump (catch higher)
-##           C  swap to the companion    E  an easy one    TAB  landing ring on or off
+##           C  swap to the companion    E  an easy one    (landing ring always on)
 ## SCORING   a catch is worth one point for the roof and one for each side bound the ball
 ##           struck. A ball that touches your floor first is a drop, not a catch.
 ## LEVELS    (phase 2) every 10 catches a level: from level 2 a wall rises in each half, in
@@ -461,7 +461,7 @@ on VT.Controls
       VT.Swap
       put sActive into tName
    end if
-   if VT.Pressed(tKeys, "65289") then put not sShowLand into sShowLand
+   -- the landing ring is always on (owner 22 Nov: too hard without it); Tab freed for the console
    if sTestAuto is true then
       put tKeys into sKeyWas
       exit VT.Controls
@@ -1088,9 +1088,9 @@ end VT.Catchable
 -- while you hold the ball: dots along the throw's path until it first touches the floor,
 -- and a ring where it lands
 -- the ghost ball where your throw will come down (while you hold the ball); the landing
--- ring under it, and under where a loose ball will first come down (TAB: on or off)
+-- ring under it, and under where a loose ball will first come down (always on)
 -- the ghost ball where your throw will come down (while you hold the ball); the landing
--- ring under it, and under where a loose ball will first come down (TAB: on or off)
+-- ring under it, and under where a loose ball will first come down (always on)
 on VT.Preview
    local tLX, tLZ, tXZ
    if sBall["state"] is "held" and sBall["by"] is sActive and sTestAuto is not true and sAimX is a number then
@@ -1882,7 +1882,7 @@ on VT.ShowHUD
          HUD.Set "VT.Help", "MOUSE: AIM THE GHOST BALL   HOLD THE BUTTON, LET GO: THROW   E: AN EASY ONE", gViewLeft + 20, gViewBottom - 30, 12
       end if
    else
-      HUD.Set "VT.Help", "RUN UNDER THE BALL: WATCH ITS SHADOW   W A S D: RUN   SPACE: JUMP   TAB: LANDING RING", gViewLeft + 20, gViewBottom - 30, 12
+      HUD.Set "VT.Help", "RUN UNDER THE BALL: WATCH ITS SHADOW   W A S D: RUN   SPACE: JUMP", gViewLeft + 20, gViewBottom - 30, 12
    end if
    -- the level's instructions stay until two tosses have come down
    if sTosses < 2 then
