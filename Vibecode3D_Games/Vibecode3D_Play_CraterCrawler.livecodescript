@@ -433,7 +433,7 @@ on Game.OnUpdate
       put sY - 8 into tD
       if sAir <= 0 and (sTicks + i) mod 8 < 2 then subtract 2 from tD
       Entity.SetPosition sWheel[i], kRoverX - 36 + (i - 1) * 14.4, tD, kZ - 16 + (i mod 2) * 32
-      Entity.SetRotation sWheel[i], 0, 0, -sDist / 9
+      Entity.SetRotation sWheel[i], 0, 0, sDist / 9
    end repeat
    Crater.Mountains
    Crater.Saucers
