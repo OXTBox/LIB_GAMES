@@ -6,6 +6,7 @@
 ## CONTROLS  arrows: choose a direction (you keep going until a wall)    Escape: pause
 ## RULES     a chaser on you costs a life; three lives. All dots: the next level,
 ##           with more and faster chasers. 5 levels.
+## NEEDS     ../LIB_BIT/livecode/lib_lean.livecodescript (the walls: Lean.Walls), found by Game.FindFile.
 ######################################################################################
 
 global bPaused, bPlaying
@@ -18,6 +19,7 @@ constant kZ = 600
 constant kCell = 40
 constant kCols = 19
 constant kRows = 13
+constant kLean = "view=front|layers=-20,20|posts=none"
 
 on Game.OnStart
    focus on nothing          -- arrow keys belong to the game, never to a menu or a field
@@ -62,62 +64,33 @@ end Maze.Open
 -- PERF step 1: every wall is ONE mesh of loose lines (was one 12-edge box entity a cell, 136 of them).
 -- Only the outline of each wall block is drawn, a straight run of edges as one line, at the front
 -- (z -8) and the back (z +8) of where the boxes were, so the walls keep their depth.
-function Maze.Wall pC, pR
-   if pC < 1 or pC > kCols or pR < 1 or pR > kRows then return false
-   return (char pC of line pR of sMaze is "#")
-end Maze.Wall
-
--- corner i is the right edge of column i (0 = the left edge of column 1); likewise rows
-function Maze.CornerX pN
-   return (pN + 0.5 - (kCols + 1) / 2) * kCell
-end Maze.CornerX
-
-function Maze.CornerY pJ
-   return (pJ + 0.5 - (kRows + 1) / 2) * kCell
-end Maze.CornerY
-
-command Maze.AddSeg @pMesh, pX1, pY1, pX2, pY2, pZ
-   local tA
-   Mesh.AddVertex pMesh, pX1, pY1, pZ
-   put the result into tA
-   Mesh.AddVertex pMesh, pX2, pY2, pZ
-   Mesh.AddLine pMesh, tA, the result
-end Maze.AddSeg
-
+-- Since 23 Nov the shared LEAN STYLE draws it (LIB_BIT/livecode/lib_lean, Lean.Walls), the library
+-- that grew out of this game's own copy: kLean = the maze seen from the front, two layers at -20 and
+-- +20 hu (40 units a cell: z -8 and +8), no uprights. Same lines as before.
 command Maze.BuildWalls
-   local tMesh, tZs, tZ, tI, tJ, tStart, tOn
-   put Mesh.New() into tMesh
-   put "-8,8" into tZs
-   repeat for each item tZ in tZs
-      -- across: line j lies between row j and row j+1
-      repeat with tJ = 0 to kRows
-         put empty into tStart
-         repeat with tI = 1 to kCols + 1
-            put false into tOn
-            if tI <= kCols then put (Maze.Wall(tI, tJ) is not Maze.Wall(tI, tJ + 1)) into tOn
-            if tOn and tStart is empty then put tI - 1 into tStart
-            if not tOn and tStart is not empty then
-               Maze.AddSeg tMesh, Maze.CornerX(tStart), Maze.CornerY(tJ), Maze.CornerX(tI - 1), Maze.CornerY(tJ), tZ
-               put empty into tStart
-            end if
-         end repeat
-      end repeat
-      -- down: line i lies between column i and column i+1
-      repeat with tI = 0 to kCols
-         put empty into tStart
-         repeat with tJ = 1 to kRows + 1
-            put false into tOn
-            if tJ <= kRows then put (Maze.Wall(tI, tJ) is not Maze.Wall(tI + 1, tJ)) into tOn
-            if tOn and tStart is empty then put tJ - 1 into tStart
-            if not tOn and tStart is not empty then
-               Maze.AddSeg tMesh, Maze.CornerX(tI), Maze.CornerY(tStart), Maze.CornerX(tI), Maze.CornerY(tJ - 1), tZ
-               put empty into tStart
-            end if
-         end repeat
-      end repeat
-   end repeat
+   local tMesh
+   if Maze.LoadLean() then
+      put Lean.Walls(sMaze, kCell, Lean.Style(kLean)) into tMesh
+   else
+      put Mesh.New() into tMesh
+      HUD.Set "Maze.Error", "DOT MAZE: NOT FOUND LIB_BIT/LIVECODE/LIB_LEAN.LIVECODESCRIPT", 20, 180, 14
+   end if
    Mesh.Define "Maze.Walls", tMesh
 end Maze.BuildWalls
+
+-- lib_lean from LIB_BIT (on the install: Vibecode3D Common/LIB_BIT/livecode), found by the engine
+function Maze.LoadLean
+   local tLib, tErr
+   if "lib_lean" is among the lines of the stacksInUse then return true
+   try
+      put Game.FindFile("LIB_BIT/livecode/lib_lean.livecodescript") into tLib
+   catch tErr
+      put empty into tLib
+   end try
+   if tLib is empty then return false
+   start using stack tLib
+   return ("lib_lean" is among the lines of the stacksInUse)
+end Maze.LoadLean
 
 -- PERF step 2: every dot is in ONE mesh (was one 12-edge box entity a dot, 120 of them): a small
 -- square of 4 lines a dot, the front of the old 6x6x6 box. Eating a dot builds the mesh again
