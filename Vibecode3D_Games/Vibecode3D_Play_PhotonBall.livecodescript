@@ -6,7 +6,7 @@
 ## CONTROLS  mouse        aim the ghost ball, hold the button for power, let go: off the roof
 ##           W A S D / arrows  run    SPACE  jump (onto a ledge, over a hole)
 ##           hanging in a hole: SPACE, W or UP climbs out (before your grip gives)
-##           C  swap to the companion    E  an easy one    TAB  landing ring on or off
+##           C  swap to the companion    E  an easy one    (landing ring: per match, kMatchRing)
 ## MATCHES   every 10 catches a new match: the floor is mended and the rule gets worse.
 ##           1  the ball breaks the square where it first comes down
 ##           2  every bounce breaks the square under it
@@ -91,13 +91,14 @@ constant kWallFile = "LIB_GAMES/Vibecode3D_Games/PhotonBall/walls.cellmap"
 constant kMatchRules = "1,2,3,4"  -- the floor rule (1-4, see MATCHES above) of match 1, 2, 3...
 constant kMatchOffMS = ""         -- per match: ms a broken square falls after you step off (empty: kCrumbleOffMS)
 constant kMatchOnMS = ""          -- per match: ms it falls after you step on, rule 2 on (empty: kCrumbleOnMS)
+constant kMatchRing = "1"         -- per match: 1 the landing ring shows, 0 it does not (a difficulty; LIB_COMFY rolls it)
 
 local sStepMS = 33, sTicks = 0, sError
 local sClip          -- [key][frames|fps|travel]; meshes "PB.<key>.<n>"; keys idleP idleG run throw lob catch
 local sHero          -- [PROMPT|GLAZE][key|x|z|yaw|speed|mdx|mdz|anim|frame|act|side|idle|score|catches|color]
 local sActive        -- the hero you play
 local sBall          -- [key|shadow|state (held|loose)|by|x|h|z|vx|vh|vz|air|age|thrower|crossed|banks|tops|backs|floors|peak|touched|easy|hit]
-local sCharging, sPower, sAimX, sAimZ, sLandX, sLandZ, sShowLand, sTestAim, sTestMouse
+local sCharging, sPower, sAimX, sAimZ, sLandX, sLandZ, sTestAim, sTestMouse
 local sMatch, sMatchCatches, sTosses   -- tosses finished this level: the instructions stay for two
 local sMap          -- the walls file: [cols|rows|cell|hu|step|file|problem], [floor][row][col], [slope][row][col], [design][row][col]
 local sFeat         -- ["col,row"] of an arena cell with a feature: block or slope (never breaks)
@@ -302,7 +303,6 @@ on PB.NewMatch
    put 0 into sPlayerDrops
    put false into sCharging
    put 0 into sPower
-   put true into sShowLand
    put 1 into sMatch
    put 0 into sMatchCatches
    put 0 into sTosses
@@ -487,7 +487,7 @@ on PB.Controls
       PB.Swap
       put sActive into tName
    end if
-   if PB.Pressed(tKeys, "65289") then put not sShowLand into sShowLand
+   -- the landing ring is no key any more (Tab is the console's): kMatchRing says, match by match
    if sTestAuto is true then
       put tKeys into sKeyWas
       exit PB.Controls
@@ -1186,9 +1186,9 @@ end PB.Catchable
 -- while you hold the ball: dots along the throw's path until it first touches the floor,
 -- and a ring where it lands
 -- the ghost ball where your throw will come down (while you hold the ball); the landing
--- ring under it, and under where a loose ball will first come down (TAB: on or off)
+-- ring under it, and under where a loose ball will first come down (kMatchRing: per match)
 -- the ghost ball where your throw will come down (while you hold the ball); the landing
--- ring under it, and under where a loose ball will first come down (TAB: on or off)
+-- ring under it, and under where a loose ball will first come down (kMatchRing: per match)
 on PB.Preview
    local tLX, tLZ, tXZ
    if sBall["state"] is "held" and sBall["by"] is sActive and sTestAuto is not true and sAimX is a number then
@@ -1198,7 +1198,7 @@ on PB.Preview
       Entity.SetPosition sGhost, tLX, -kBallR, tLZ
    else
       Entity.SetPosition sGhost, 0, 0, -100000
-      if sBall["state"] is "loose" and sShowLand and sLandX is a number then
+      if sBall["state"] is "loose" and PB.ShowLand() and sLandX is a number then
          put sLandX into tLX
          put sLandZ into tLZ
       end if
@@ -1491,6 +1491,11 @@ function PB.MatchItem pList
    return word 1 of item min(PB.MatchNo(), tN) of pList
 end PB.MatchItem
 
+-- does this match show the landing ring? (kMatchRing: 0 hides it; empty or anything else shows it)
+function PB.ShowLand
+   return PB.MatchItem(kMatchRing) is not "0"
+end PB.ShowLand
+
 -- ms a broken square takes to fall this match: pKind "off" (stepped off) or "on" (stepped on, rule 2 on)
 function PB.CrumbleMS pKind
    local tV
@@ -1534,7 +1539,11 @@ on PB.SetMatch pMatch
    put 0 into sMatchCatches
    put 0 into sTosses
    if pMatch > 1 then
-      PB.Message "MATCH " & pMatch & ": " & PB.RuleName()
+      if PB.ShowLand() then
+         PB.Message "MATCH " & pMatch & ": " & PB.RuleName()
+      else
+         PB.Message "MATCH " & pMatch & ": " & PB.RuleName() & "   NO LANDING RING"
+      end if
       put empty into sTalk
       PB.Say "match" & PB.Rule(), "*", 100
    end if
@@ -2819,6 +2828,7 @@ end PB.ShowHUD
 on PB.Intro
    local tA, tB, tC, tMid
    put "MATCH " & sMatch & ": " & PB.RuleName() into tA
+   if not PB.ShowLand() then put "   NO LANDING RING" after tA
    switch PB.Rule()
       case 1
          put "WHERE THE BALL FIRST COMES DOWN THE SQUARE BREAKS" into tB
