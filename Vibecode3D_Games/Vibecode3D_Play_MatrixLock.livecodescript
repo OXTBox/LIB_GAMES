@@ -42,6 +42,16 @@ function Lock.Row pLevel
    return line pLevel of ("0.05,2,3,3" & cr & "0.06,3,4,3" & cr & "0.07,4,5,3" & cr & "0.085,5,6,3" & cr & "0.1,6,7,3")
 end Lock.Row
 
+-- a level change through the loading screen (LIB_LOADING_SCREEN: burn, green text, the player first,
+-- then the level draws in) when the host has it; else at once, as before. p1-13, 23 Nov 2026
+on Lock.GoLevel pLevel
+   if "LIB_LOADING" is among the lines of the stacksInUse then
+      Loading.Go pLevel
+   else
+      Lock.StartLevel pLevel
+   end if
+end Lock.GoLevel
+
 on Lock.StartLevel
    local tRow
    put Lock.Row(sLevel) into tRow
@@ -276,7 +286,7 @@ on Lock.ClearRows
             put true into sWon
          else
             add 1 to sLevel
-            Lock.StartLevel
+            Lock.GoLevel sLevel
          end if
          exit Lock.ClearRows
       end if

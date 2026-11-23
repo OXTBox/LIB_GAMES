@@ -38,6 +38,16 @@ on Game.OnStart
 end Game.OnStart
 
 -- level table: ball speed | block rows | fall speed | (lives carry over)
+-- a level change through the loading screen (LIB_LOADING_SCREEN: burn, green text, the player first,
+-- then the level draws in) when the host has it; else at once, as before. p1-13, 23 Nov 2026
+on Jai.GoLevel pLevel
+   if "LIB_LOADING" is among the lines of the stacksInUse then
+      Loading.Go pLevel
+   else
+      Jai.StartLevel pLevel
+   end if
+end Jai.GoLevel
+
 on Jai.StartLevel pLevel
    local tRow, tR, tC, tN, tStrong, tColor
    put pLevel into sLevel
@@ -93,7 +103,7 @@ on Game.OnUpdate
          put 3 into sLives
          put 0 into sScore
          put false into sOver
-         Jai.StartLevel 1
+         Jai.GoLevel 1
       end if
       exit Game.OnUpdate
    end if
@@ -176,7 +186,7 @@ on Game.OnUpdate
       if sLevel >= 5 then
          put true into sOver
       else
-         Jai.StartLevel sLevel + 1
+         Jai.GoLevel sLevel + 1
       end if
    end if
    Jai.ShowHUD

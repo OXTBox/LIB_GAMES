@@ -49,6 +49,16 @@ on Game.OnStart
 end Game.OnStart
 
 -- Spark's table: rover speed | hazard count | lives
+-- a level change through the loading screen (LIB_LOADING_SCREEN: burn, green text, the player first,
+-- then the level draws in) when the host has it; else at once, as before. p1-13, 23 Nov 2026
+on Crater.GoLevel pLevel
+   if "LIB_LOADING" is among the lines of the stacksInUse then
+      Loading.Go pLevel
+   else
+      Crater.StartLevel pLevel
+   end if
+end Crater.GoLevel
+
 on Crater.StartLevel pLevel
    local tRow, i, tLast
    put pLevel into sLevel
@@ -316,7 +326,7 @@ on Game.OnUpdate
          put 3 into sLives
          put false into sOver
          put false into sWon
-         Crater.StartLevel 1
+         Crater.GoLevel 1
       end if
       put tKeys into sKeysWas
       exit Game.OnUpdate
@@ -470,7 +480,7 @@ on Crater.Posts
             put empty into sHUDWas
             Crater.ShowHUD
          else
-            Crater.StartLevel sLevel + 1
+            Crater.GoLevel sLevel + 1
          end if
       end if
    end if

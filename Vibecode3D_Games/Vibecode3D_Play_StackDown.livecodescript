@@ -40,6 +40,16 @@ function Stack.Y pR
 end Stack.Y
 
 -- Spark's table: steps per drop | rows to finish | start junk rows | points per row
+-- a level change through the loading screen (LIB_LOADING_SCREEN: burn, green text, the player first,
+-- then the level draws in) when the host has it; else at once, as before. p1-13, 23 Nov 2026
+on Stack.GoLevel pLevel
+   if "LIB_LOADING" is among the lines of the stacksInUse then
+      Loading.Go pLevel
+   else
+      Stack.StartLevel pLevel
+   end if
+end Stack.GoLevel
+
 on Stack.StartLevel pLevel
    local tRow, tR, tC, tGap
    put pLevel into sLevel
@@ -152,7 +162,7 @@ on Game.OnUpdate
          put 0 into sScore
          put false into sOver
          put false into sWon
-         Stack.StartLevel 1
+         Stack.GoLevel 1
       end if
       Stack.ShowHUD
       exit Game.OnUpdate
@@ -221,7 +231,7 @@ on Stack.Land
          put true into sOver
          put true into sWon
       else
-         Stack.StartLevel sLevel + 1
+         Stack.GoLevel sLevel + 1
       end if
    else
       Stack.NewPiece

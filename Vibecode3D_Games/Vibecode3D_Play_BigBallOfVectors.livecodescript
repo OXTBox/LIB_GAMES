@@ -35,6 +35,16 @@ on Game.OnStart
 end Game.OnStart
 
 -- level table: agent count | agent speed | hazard count | catch quota
+-- a level change through the loading screen (LIB_LOADING_SCREEN: burn, green text, the player first,
+-- then the level draws in) when the host has it; else at once, as before. p1-13, 23 Nov 2026
+on Ball.GoLevel pLevel
+   if "LIB_LOADING" is among the lines of the stacksInUse then
+      Loading.Go pLevel
+   else
+      Ball.StartLevel pLevel
+   end if
+end Ball.GoLevel
+
 on Ball.StartLevel pLevel
    local tRow, n
    put pLevel into sLevel
@@ -157,7 +167,7 @@ on Game.OnUpdate
                put true into sWon
                put 0 into sTicks
             else
-               Ball.StartLevel sLevel + 1
+               Ball.GoLevel sLevel + 1
             end if
             exit Game.OnUpdate
          end if

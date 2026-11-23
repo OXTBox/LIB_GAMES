@@ -74,6 +74,16 @@ function Neon.SunColour pIdx
 end Neon.SunColour
 
 -- Spark's table: speed | things a wave
+-- a level change through the loading screen (LIB_LOADING_SCREEN: burn, green text, the player first,
+-- then the level draws in) when the host has it; else at once, as before. p1-13, 23 Nov 2026
+on Neon.GoLevel pLevel
+   if "LIB_LOADING" is among the lines of the stacksInUse then
+      Loading.Go pLevel
+   else
+      Neon.StartLevel pLevel
+   end if
+end Neon.GoLevel
+
 on Neon.StartLevel pLevel
    local tRow, i
    put pLevel into sLevel
@@ -123,7 +133,7 @@ on Game.OnUpdate
          put false into sOver
          Scene.ClearAll
          Neon.Build
-         Neon.StartLevel 1
+         Neon.GoLevel 1
       end if
       put tKeys into sKeysWas
       exit Game.OnUpdate
@@ -202,7 +212,7 @@ on Game.OnUpdate
       end if
    end repeat
    -- a new level every 1500 metres (100 units a metre)
-   if sDist >= sLevel * 150000 and sLevel < 5 then Neon.StartLevel sLevel + 1
+   if sDist >= sLevel * 150000 and sLevel < 5 then Neon.GoLevel sLevel + 1
    Neon.ShowHUD
 end Game.OnUpdate
 

@@ -42,6 +42,16 @@ function Maze.Row pLevel
    return line pLevel of ("3,0.0625,4,3" & cr & "4,0.0625,3,3" & cr & "4,0.125,3,3" & cr & "5,0.125,2,3" & cr & "6,0.125,2,3")
 end Maze.Row
 
+-- a level change through the loading screen (LIB_LOADING_SCREEN: burn, green text, the player first,
+-- then the level draws in) when the host has it; else at once, as before. p1-13, 23 Nov 2026
+on Maze.GoLevel pLevel
+   if "LIB_LOADING" is among the lines of the stacksInUse then
+      Loading.Go pLevel
+   else
+      Maze.StartLevel pLevel
+   end if
+end Maze.GoLevel
+
 on Maze.StartLevel
    local tRow, r, c, tCh, tPow, tFoeN
    put Maze.Row(sLevel) into tRow
@@ -283,7 +293,7 @@ on Maze.Eat n, x, y
          put true into sWon
       else
          add 1 to sLevel
-         Maze.StartLevel
+         Maze.GoLevel sLevel
       end if
    end if
 end Maze.Eat

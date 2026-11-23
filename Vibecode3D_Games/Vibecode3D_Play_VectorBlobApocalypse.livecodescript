@@ -37,6 +37,16 @@ on Game.OnStart
 end Game.OnStart
 
 -- level table: blob count | blob speed | split count | (lives carry over)
+-- a level change through the loading screen (LIB_LOADING_SCREEN: burn, green text, the player first,
+-- then the level draws in) when the host has it; else at once, as before. p1-13, 23 Nov 2026
+on Blob.GoLevel pLevel
+   if "LIB_LOADING" is among the lines of the stacksInUse then
+      Loading.Go pLevel
+   else
+      Blob.StartLevel pLevel
+   end if
+end Blob.GoLevel
+
 on Blob.StartLevel pLevel
    local tRow, n, a
    put pLevel into sLevel
@@ -170,7 +180,7 @@ on Game.OnUpdate
          put true into sOver
          put 0 into sTicks
       else
-         Blob.StartLevel sLevel + 1
+         Blob.GoLevel sLevel + 1
       end if
    end if
    Blob.ShowHUD

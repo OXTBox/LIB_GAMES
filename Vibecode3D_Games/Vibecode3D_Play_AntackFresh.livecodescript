@@ -412,16 +412,16 @@ on Antack.MenuClick pX, pY
    Antack.MenuHover
    switch item 1 of sMenu[sHover]
       case "EASY"
-         Antack.StartLevel "Fight1"
+         Antack.GoLevel "Fight1"
          break
       case "MEDIUM"
-         Antack.StartLevel "Fight2"
+         Antack.GoLevel "Fight2"
          break
       case "HARD"
-         Antack.StartLevel "Fight3"
+         Antack.GoLevel "Fight3"
          break
       case "TRAINER"
-         Antack.StartLevel "Trainer"
+         Antack.GoLevel "Trainer"
          break
       case "QUIT"
          Game.Exit
@@ -456,6 +456,16 @@ on Antack.EndScreen pWon
 end Antack.EndScreen
 
 -------------------------------------------------------------------- a fight level
+
+-- a level change through the loading screen (LIB_LOADING_SCREEN: burn, green text, the player first,
+-- then the level draws in) when the host has it; else at once, as before. p1-13, 23 Nov 2026
+on Antack.GoLevel pLevel
+   if "LIB_LOADING" is among the lines of the stacksInUse then
+      Loading.Go pLevel
+   else
+      Antack.StartLevel pLevel
+   end if
+end Antack.GoLevel
 
 on Antack.StartLevel pName
    local tLevel, tTeam, n, tPos, tKey, tColor, tEX, tEY, tEZ
@@ -553,7 +563,7 @@ on Antack.PlayStep
          if sData["levels"][sLevel]["win"] is "WON" then
             Antack.EndScreen true
          else
-            Antack.StartLevel sData["levels"][sLevel]["win"]
+            Antack.GoLevel sData["levels"][sLevel]["win"]
          end if
       else
          Antack.EndScreen false

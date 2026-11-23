@@ -34,6 +34,16 @@ on Game.OnStart
 end Game.OnStart
 
 -- Spark's table: fish | fish speed | pearls | air seconds
+-- a level change through the loading screen (LIB_LOADING_SCREEN: burn, green text, the player first,
+-- then the level draws in) when the host has it; else at once, as before. p1-13, 23 Nov 2026
+on Dive.GoLevel pLevel
+   if "LIB_LOADING" is among the lines of the stacksInUse then
+      Loading.Go pLevel
+   else
+      Dive.StartLevel pLevel
+   end if
+end Dive.GoLevel
+
 on Dive.StartLevel pLevel
    local tRow, tN, tDir
    put pLevel into sLevel
@@ -93,7 +103,7 @@ on Game.OnUpdate
          put 3 into sLives
          put 0 into sScore
          put false into sOver
-         Dive.StartLevel 1
+         Dive.GoLevel 1
       end if
       exit Game.OnUpdate
    end if
@@ -140,7 +150,7 @@ on Game.OnUpdate
          put true into sOver
          put empty into sHUDWas
       else
-         Dive.StartLevel sLevel + 1
+         Dive.GoLevel sLevel + 1
       end if
    end if
    Dive.ShowHUD

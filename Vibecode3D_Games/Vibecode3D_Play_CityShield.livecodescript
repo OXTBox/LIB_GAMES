@@ -36,6 +36,16 @@ on Game.OnStart
 end Game.OnStart
 
 -- Spark's table: streaks | streak speed | bursts allowed | burst radius
+-- a level change through the loading screen (LIB_LOADING_SCREEN: burn, green text, the player first,
+-- then the level draws in) when the host has it; else at once, as before. p1-13, 23 Nov 2026
+on City.GoLevel pLevel
+   if "LIB_LOADING" is among the lines of the stacksInUse then
+      Loading.Go pLevel
+   else
+      City.StartLevel pLevel
+   end if
+end City.GoLevel
+
 on City.StartLevel pLevel
    local tRow, tN
    put pLevel into sLevel
@@ -86,7 +96,7 @@ on Game.OnUpdate
          put 0 into sScore
          put false into sOver
          put false into sWon
-         City.StartLevel 1
+         City.GoLevel 1
       end if
       put tSpace into sSpaceWas
       exit Game.OnUpdate
@@ -187,7 +197,7 @@ on Game.OnUpdate
          put true into sWon
          put empty into sHUDWas
       else
-         City.StartLevel sLevel + 1
+         City.GoLevel sLevel + 1
       end if
    end if
    City.ShowHUD

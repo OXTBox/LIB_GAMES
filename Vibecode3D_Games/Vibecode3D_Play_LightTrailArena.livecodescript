@@ -61,6 +61,16 @@ on Game.OnStart
 end Game.OnStart
 
 -- Spark's table: rivals = the round number. The arena shrinks each round.
+-- a level change through the loading screen (LIB_LOADING_SCREEN: burn, green text, the player first,
+-- then the level draws in) when the host has it; else at once, as before. p1-13, 23 Nov 2026
+on Light.GoLevel pLevel
+   if "LIB_LOADING" is among the lines of the stacksInUse then
+      Loading.Go pLevel
+   else
+      Light.StartLevel pLevel
+   end if
+end Light.GoLevel
+
 on Light.StartLevel pLevel
    local i, tW, tH, tColors
    put pLevel into sLevel
@@ -449,7 +459,7 @@ on Game.OnUpdate
          put false into sOver
          put false into sWon
          put 0 into sBoosts
-         Light.StartLevel 1
+         Light.GoLevel 1
       end if
       put tKeys into sKeysWas
       exit Game.OnUpdate
@@ -665,7 +675,7 @@ on Light.EndRound
          put empty into sHUDWas
          Light.ShowHUD
       else
-         Light.StartLevel sLevel + 1
+         Light.GoLevel sLevel + 1
       end if
    else
       subtract 1 from sLives

@@ -37,6 +37,16 @@ on Game.OnStart
 end Game.OnStart
 
 -- Spark's table: ball speed | bat width | brick rows | (lives are kept across levels)
+-- a level change through the loading screen (LIB_LOADING_SCREEN: burn, green text, the player first,
+-- then the level draws in) when the host has it; else at once, as before. p1-13, 23 Nov 2026
+on Wall.GoLevel pLevel
+   if "LIB_LOADING" is among the lines of the stacksInUse then
+      Loading.Go pLevel
+   else
+      Wall.StartLevel pLevel
+   end if
+end Wall.GoLevel
+
 on Wall.StartLevel pLevel
    local tRow, tRows, tR, tC, tN, tStrong, tColor
    put pLevel into sLevel
@@ -90,7 +100,7 @@ on Game.OnUpdate
          put 3 into sLives
          put 0 into sScore
          put false into sOver
-         Wall.StartLevel 1
+         Wall.GoLevel 1
       end if
       exit Game.OnUpdate
    end if
@@ -157,7 +167,7 @@ on Game.OnUpdate
       if sLevel >= 5 then
          put true into sOver
       else
-         Wall.StartLevel sLevel + 1
+         Wall.GoLevel sLevel + 1
       end if
    else if sBY > kBottom + 20 then
       subtract 1 from sLives

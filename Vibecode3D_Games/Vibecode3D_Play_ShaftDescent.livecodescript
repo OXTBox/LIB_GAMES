@@ -46,6 +46,16 @@ function Shaft.Row pLevel
    return line pLevel of ("10,2,1.5,45" & cr & "14,4,1.8,55" & cr & "18,6,2.1,65" & cr & "22,8,2.4,75" & cr & "26,10,2.8,85")
 end Shaft.Row
 
+-- a level change through the loading screen (LIB_LOADING_SCREEN: burn, green text, the player first,
+-- then the level draws in) when the host has it; else at once, as before. p1-13, 23 Nov 2026
+on Shaft.GoLevel pLevel
+   if "LIB_LOADING" is among the lines of the stacksInUse then
+      Loading.Go pLevel
+   else
+      Shaft.StartLevel pLevel
+   end if
+end Shaft.GoLevel
+
 on Shaft.StartLevel
    local tRow, r, y, tGap1, tGap2, tW, n, tSeg, x1, x2, tKey
    put Shaft.Row(sLevel) into tRow
@@ -241,7 +251,7 @@ on Game.OnUpdate
          put true into sWon
       else
          add 1 to sLevel
-         Shaft.StartLevel
+         Shaft.GoLevel sLevel
       end if
    end if
    Shaft.ShowHUD
