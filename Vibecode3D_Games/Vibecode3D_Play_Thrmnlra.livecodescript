@@ -12,9 +12,9 @@
 ##           typo fills a letter of the LAUNCH CODES on the Big Board.
 ##           Strike: the codes are complete (or a bomber got through): your missiles fly
 ##           left to right, theirs answer right to left, type their names to destroy them
-##           ([TAB] cycles focus, and costs time), IT'S WAR, the direct order, STRANGE GAME.
+##           ([\] cycles focus, and costs time), IT'S WAR, the direct order, STRANGE GAME.
 ##           Peace: you stood the command down before the codes filled up.
-## CONTROLS  type (letters, space, Return, Backspace, Tab)   click: skip ahead   Escape: Developer
+## CONTROLS  type (letters, space, Return, Backspace, \ for focus)   click: skip ahead   Escape: Developer
 ## RULES     On the map the world clock runs by KEYSTROKE (Cue Thrm.Clock mode=keys):
 ##           missiles only move while you type, so you have a chance. What a typo does
 ##           depends on the phase (Thrm.Typo).
@@ -59,7 +59,7 @@ constant kBlackR = 70                 -- everything this close to a blast is gon
 constant kPadLift = 40                -- a raised missile waits this high over its silo
 constant kOurWords = "OWL,ELK,FOX,YAK,EMU,ANT,BEE,COW"                      -- our missiles
 constant kTheirWords = "SUN,MUD,FIG,JAM,ICE,OAK,RUG,TEA,PIE,ZIP,KEG,HAT,BOX,CUP"   -- theirs
-constant kEnemyDim = "#A04040", kFocus = "#FFE0E0"   -- their names: dim, or focused with Tab
+constant kEnemyDim = "#A04040", kFocus = "#FFE0E0"   -- their names: dim, or focused with \
 constant kTagDim = "#401010"          -- ALERT / ARMED tags blink to this
 constant kCodeLen = 8                 -- letters of the launch code
 constant kCodeDim = 0.14              -- how bright the empty code line is (0..1): barely there
@@ -83,7 +83,7 @@ local sAlertCount    -- typos of the first round: their missiles ready for the a
 local sCode, sCodeDone   -- the launch code letters typed by mistake; true once complete
 local sTags          -- [base id] colour: blinking ALERT / ARMED / LAUNCH tags
 local sStrobe        -- [text|colors|t0|shown]: the strobing order under the console
-local sFocus         -- the enemy missile Tab gave the focus to
+local sFocus         -- the enemy missile \ gave the focus to
 local sStruck        -- "x z" lines: where missiles came down
 local sWar           -- true once the war started (no second start)
 local sClockMode     -- "time" (world runs on its own) or "keys" (each keystroke moves it)
@@ -177,7 +177,9 @@ end Collision.Hit
 
 -- typed keys go to the running clips (the engine only listens for Escape and CapsLock)
 on keyDown pKey
-   if sReady and bPlaying then
+   if sReady and bPlaying and pKey is "\" then
+      Thrm.FocusKey
+   else if sReady and bPlaying then
       Thrm.KeyTick
       dispatch "Seq.Key" to group "Sequencer" with pKey
    else
@@ -223,17 +225,14 @@ on enterInField
    end if
 end enterInField
 
--- Tab cycles the focus among the enemy missiles (their names grow easy to read), and the
--- doom clock moves twice for it: the advantage is a trap (the owner, 13 Nov)
-on tabKey
-   if sReady and bPlaying then
-      Thrm.KeyTick
-      Thrm.KeyTick
-      dispatch "Seq.Key" to group "Sequencer" with "tab"
-   else
-      pass tabKey
-   end if
-end tabKey
+-- \ cycles the focus among the enemy missiles (their names grow easy to read), and the
+-- doom clock moves twice for it: the advantage is a trap (the owner, 13 Nov).
+-- It was Tab until 22 Nov; Tab is the console's key now (ISSUES 0015). The clips still get "tab".
+on Thrm.FocusKey
+   Thrm.KeyTick
+   Thrm.KeyTick
+   dispatch "Seq.Key" to group "Sequencer" with "tab"
+end Thrm.FocusKey
 
 on backspaceKey
    if sReady and bPlaying then
@@ -701,7 +700,7 @@ on Thrm.Destroy pName
    return "destroyed"
 end Thrm.Destroy
 
--- Tab: the next enemy missile in the air gets the focus: its name bolder, brighter, spread
+-- \ (was Tab): the next enemy missile in the air gets the focus: its name bolder, brighter, spread
 -- out, easy to read. The trap: Tab moves the doom clock too (twice, see tabKey).
 on Thrm.Focus
    local tKeys, tKey, n

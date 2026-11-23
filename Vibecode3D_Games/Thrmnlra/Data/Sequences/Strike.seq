@@ -3,7 +3,7 @@
 # of 13 Nov: the Sarge turns around, sees the code on the board, "WHAT THE HELL HAVE YOU
 # DONE?", and the missiles go flying, left to right. AFTER they strike, the enemy launches,
 # RIGHT TO LEFT: one missile for every typo of the first round, at least three, from far
-# from the craters. Only your keys move them now; type their names to destroy them; [TAB]
+# from the craters. Only your keys move them now; type their names to destroy them; [\]
 # makes a name easy to read and costs you time. Then IT'S WAR: TYPE LAUNCH, THAT IS A
 # DIRECT ORDER, and the keyboard misspells it twice on purpose: two more rounds incoming.
 # Columns: when | track | clip | settings | what   (see Intro.seq for the words)
@@ -24,7 +24,7 @@ with      | world | Cue       | call=Thrm.Clock; mode=keys                      
 with      | cam   | Cue       | call=Thrm.CloseUp; dur=2                                         | CLOSE-UP
 with      | term  | Type      | text=STOP THE INCOMING MISSILES!; cps=40; color=#FFB000           | the Sarge shouts
 +0.1      | board | Cue       | call=Thrm.Strobe; text=INCOMING ATTACK. TYPE THE NAME OF THE ENEMY ASSET TO DESTROY | strobes yellow, orange, RED
-with      | term  | Type      | text=[TAB] TO CYCLE FOCUS.; cps=40; color=#C8C8C8                 | Tab: bolder, brighter, easier to read, and the doom clock moves
+with      | term  | Type      | text=[\] TO CYCLE FOCUS.; cps=40; color=#C8C8C8                 | Tab: bolder, brighter, easier to read, and the doom clock moves
 +0        | term  | Assets    | mode=destroy; hold=yes                                           | type SUN, MUD...: each bursts in the air
 +0        | board | Cue       | call=Thrm.Strobe; text=                                          |
 +0.3      | cam   | Cue       | call=Thrm.CloseUp; dur=2.5                                       | CLOSE-UP

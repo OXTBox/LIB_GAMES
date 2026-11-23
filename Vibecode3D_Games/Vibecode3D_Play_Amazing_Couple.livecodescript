@@ -2,7 +2,7 @@
 ## CARD SCRIPT: "Play.Amazing_Couple"   AMAZING COUPLE: PROMPT & GLAZE, third-person companions in a maze  (11 12 2026)
 ## Third person in a vector maze. PROMPT (cyan) and GLAZE (magenta) are minimal stick
 ## figures driven by LIB_MOCAP clips. You play one; the other follows you through the
-## maze on its own (LIB_MAP path finding). TAB swaps who you play. Bring both to the
+## maze on its own (LIB_MAP path finding). C swaps who you play. Bring both to the
 ## gold beacon in the far corner and a new maze is built. Each hero has its own captured
 ## walk and idle (LIB_MOCAP library); Shift runs (a captured jog).
 ## CONTROLS  W / up arrow  walk        S / down arrow  step back     Shift  run
@@ -394,12 +394,12 @@ end Couple.WalkStep
 on Couple.Controls
    local tKeys, tF, tTurn, tName, tDX, tDZ, tStep
    put Couple.Keys() into tKeys
-   -- TAB, once per press
-   if 65289 is among the items of tKeys or 9 is among the items of tKeys then
-      if sKeyWas["tab"] is not true then Couple.Switch
-      put true into sKeyWas["tab"]
+   -- C (companion), once per press; was Tab, which is the console's key now (ISSUES 0015)
+   if 99 is among the items of tKeys or 67 is among the items of tKeys then
+      if sKeyWas["c"] is not true then Couple.Switch
+      put true into sKeyWas["c"]
    else
-      put false into sKeyWas["tab"]
+      put false into sKeyWas["c"]
    end if
    put sActive into tName
    put 0 into tF
