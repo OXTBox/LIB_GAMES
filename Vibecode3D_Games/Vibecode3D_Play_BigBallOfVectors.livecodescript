@@ -7,17 +7,30 @@
 ## CONTROLS  Arrow keys: push the ball   Escape: stop
 ## RULES     roll over agents to catch them. An agent off the edge escapes and adds a
 ##           hazard. Touch a hazard: no control for two seconds. Catch the quota. 5 levels.
+## RAIN      (p1-15, 23 Nov 2026; fixed the same night, owner: "the items we consume should be on the
+##           board, the items that harm us are meant to fall from the sky") the HAZARDS rain down: a grey
+##           ring (the Vector Toss shadow) shows where one will land, never on the ball and never on the
+##           path the ball is rolling along (its momentum, kAhead frames); then it drops fast with a short
+##           pink trail, lands on the ring, and drifts as before. It can't hurt you while it falls.
+##           Agents (the ones you catch) just appear on the board, as before.
 ######################################################################################
 
 global bPaused, bPlaying
 
 local sBall, sX, sZ, sVX, sVZ, sR, sSides, sRogue, sAgent, sHaz, sSerial
+local sRainPicks, sRainMinGap, sRainLanded, sRainNoMark
 local sLevel, sQuota, sCaught, sEscaped, sAgentSpeed, sOver, sWon, sTicks, sTestKeys, sHUDWas
 
 constant kEdge = 440
 constant kPush = 0.9
 constant kDrag = 0.94
 constant kMaxEscapes = 8
+constant kSafeR = 160        -- rain: no hazard lands within this (plus the ball's size) of the ball
+constant kAhead = 17         -- rain: ... nor of where the ball's momentum carries it (frames of coasting)
+constant kWarnTicks = 26     -- rain: frames the landing ring shows before the hazard drops
+constant kFallTicks = 7      -- rain: frames of the fall itself (fast, like digital rain)
+constant kDropH = 420        -- rain: how high above the floor it starts
+constant kStagger = 9        -- rain: frames between the hazards of a level's first wave
 
 on Game.OnStart
    focus on nothing          -- arrow keys belong to the game, never to a menu or a field
@@ -58,6 +71,8 @@ on Ball.StartLevel pLevel
    get Entity.Spawn("Ball.Floor", 0, 4, 0, "#0A280A")
    Mesh.Define "Ball.Agent", Mesh.Pyramid(4, 12, 26)
    Mesh.Define "Ball.Hazard", Mesh.Prism(5, 22, 8)
+   Mesh.Define "Ball.Mark", Ball.RingMesh(16, 12)
+   Mesh.Define "Ball.Trail", Ball.TrailMesh(70)
    put 0 into sX
    put 0 into sZ
    put 0 into sVX
@@ -73,7 +88,7 @@ on Ball.StartLevel pLevel
       Ball.AddAgent
    end repeat
    repeat with n = 1 to item 3 of tRow
-      Ball.AddHazard
+      Ball.AddHazard 12 + (n - 1) * kStagger      -- the hazards rain in one by one, not all at once
    end repeat
    put empty into sHUDWas
 end Ball.StartLevel
@@ -85,6 +100,7 @@ on Ball.Reshape
    put Entity.Spawn("Ball.Poly", sX, -sR, sZ, "cyan") into sBall
 end Ball.Reshape
 
+-- an agent (the ones you catch) appears on the board
 on Ball.AddAgent
    local a
    add 1 to sSerial
@@ -95,14 +111,163 @@ on Ball.AddAgent
    put Entity.Spawn("Ball.Agent", sAgent[sSerial]["x"], 0, sAgent[sSerial]["z"], "#FF5050") into sAgent[sSerial]["key"]
 end Ball.AddAgent
 
-on Ball.AddHazard
+-- a new hazard rains in: a landing ring first (clear of the ball and of its path), then the drop.
+-- sHaz[k]["drop"] counts down: above kFallTicks = only the ring shows; 1..kFallTicks = falling; 0 = drifts
+on Ball.AddHazard pDelay
    add 1 to sSerial
-   put random(700) - 350 into sHaz[sSerial]["x"]
-   put random(700) - 350 into sHaz[sSerial]["z"]
-   if abs(sHaz[sSerial]["x"]) < 90 and abs(sHaz[sSerial]["z"]) < 90 then add 180 to sHaz[sSerial]["x"]
+   Ball.PickSpot sSerial
    put random(628) / 100 into sHaz[sSerial]["dir"]
-   put Entity.Spawn("Ball.Hazard", sHaz[sSerial]["x"], -6, sHaz[sSerial]["z"], "#FF60D0") into sHaz[sSerial]["key"]
+   put kWarnTicks + kFallTicks + max(0, pDelay) into sHaz[sSerial]["drop"]
+   put empty into sHaz[sSerial]["key"]
+   put empty into sHaz[sSerial]["trail"]
+   put Entity.Spawn("Ball.Mark", sHaz[sSerial]["x"], -1, sHaz[sSerial]["z"], "#5A6A80") into sHaz[sSerial]["mark"]
 end Ball.AddHazard
+
+-- how far a spot is from the ball's path: the line from the ball to where its momentum carries it
+function Ball.PathGap pX, pZ
+   local tAX, tAZ, tT, tL2
+   put sVX * kAhead into tAX
+   put sVZ * kAhead into tAZ
+   put tAX * tAX + tAZ * tAZ into tL2
+   if tL2 < 0.01 then return sqrt((pX - sX) ^ 2 + (pZ - sZ) ^ 2)
+   put max(0, min(1, ((pX - sX) * tAX + (pZ - sZ) * tAZ) / tL2)) into tT
+   return sqrt((pX - sX - tT * tAX) ^ 2 + (pZ - sZ - tT * tAZ) ^ 2)
+end Ball.PathGap
+
+-- a landing spot on the grid, kSafeR (+ the ball's size) clear of the ball and its path; else the best of 40 tries
+on Ball.PickSpot pK
+   local tX, tZ, n, tSafe, tFar, tGap, tBest, tBX, tBZ
+   put kSafeR + sR into tSafe
+   put kEdge - 50 into tFar
+   put -1 into tBest
+   repeat with n = 1 to 40
+      put random(2 * tFar) - tFar into tX
+      put random(2 * tFar) - tFar into tZ
+      put Ball.PathGap(tX, tZ) into tGap
+      if tGap > tBest then
+         put tGap into tBest
+         put tX into tBX
+         put tZ into tBZ
+      end if
+      if tGap >= tSafe then exit repeat
+   end repeat
+   put tBX into sHaz[pK]["x"]
+   put tBZ into sHaz[pK]["z"]
+   add 1 to sRainPicks
+   if sRainMinGap is empty then put 1e9 into sRainMinGap
+   put min(sRainMinGap, tBest - tSafe) into sRainMinGap
+end Ball.PickSpot
+
+-- one frame of a hazard's rain; true while it is still on its way down (not playing yet)
+function Ball.Rain pK
+   local tY
+   subtract 1 from sHaz[pK]["drop"]
+   if sHaz[pK]["drop"] is kFallTicks then
+      -- the ball rolled close to the ring (or now rolls toward it) while it warned: the ring moves away before the drop
+      if Ball.PathGap(sHaz[pK]["x"], sHaz[pK]["z"]) < kSafeR + sR then
+         Ball.PickSpot pK
+         Entity.SetPosition sHaz[pK]["mark"], sHaz[pK]["x"], -1, sHaz[pK]["z"]
+      end if
+      put Entity.Spawn("Ball.Hazard", sHaz[pK]["x"], -kDropH, sHaz[pK]["z"], "#FF60D0") into sHaz[pK]["key"]
+      put Entity.Spawn("Ball.Trail", sHaz[pK]["x"], -kDropH, sHaz[pK]["z"], "#C040A0") into sHaz[pK]["trail"]
+   end if
+   if sHaz[pK]["drop"] > kFallTicks then return true
+   if sHaz[pK]["drop"] > 0 then
+      put -kDropH * sHaz[pK]["drop"] / kFallTicks into tY
+      Entity.SetPosition sHaz[pK]["key"], sHaz[pK]["x"], tY, sHaz[pK]["z"]
+      Entity.SetPosition sHaz[pK]["trail"], sHaz[pK]["x"], tY, sHaz[pK]["z"]
+      return true
+   end if
+   -- landed: the ring and the trail go, a small puff, then it drifts as before
+   if sHaz[pK]["mark"] is empty then add 1 to sRainNoMark
+   if sHaz[pK]["mark"] is not empty then Entity.Kill sHaz[pK]["mark"]
+   if sHaz[pK]["trail"] is not empty then Entity.Kill sHaz[pK]["trail"]
+   put empty into sHaz[pK]["mark"]
+   put empty into sHaz[pK]["trail"]
+   Entity.SetPosition sHaz[pK]["key"], sHaz[pK]["x"], -6, sHaz[pK]["z"]
+   FX.Sparks sHaz[pK]["x"], -4, sHaz[pK]["z"], 5, "#FF60D0"
+   add 1 to sRainLanded
+   return false
+end Ball.Rain
+
+-- the landing ring (Vector Toss's shadow): a flat circle of lines
+function Ball.RingMesh pR, pN
+   local tM, i, tFirst, tA, tB
+   put Mesh.New() into tM
+   repeat with i = 0 to pN - 1
+      Mesh.AddVertex tM, pR * cos(2 * pi * i / pN), 0, pR * sin(2 * pi * i / pN)
+      put the result into tB
+      if i is 0 then
+         put tB into tFirst
+      else
+         Mesh.AddLine tM, tA, tB
+      end if
+      put tB into tA
+   end repeat
+   Mesh.AddLine tM, tA, tFirst
+   return tM
+end Ball.RingMesh
+
+-- the short rain trail: one upright line above the falling agent (minus y is up)
+function Ball.TrailMesh pLen
+   local tM, tA, tB
+   put Mesh.New() into tM
+   Mesh.AddVertex tM, 0, -14, 0
+   put the result into tA
+   Mesh.AddVertex tM, 0, -14 - pLen, 0
+   put the result into tB
+   Mesh.AddLine tM, tA, tB
+   return tM
+end Ball.TrailMesh
+
+-- for tests: spawns | smallest gap outside the safe zone | landed | rings showing now | landed with no ring
+-- | hazards on the ground that still have a ring (must be 0)
+function Ball.RainState
+   local tK, tRings, tStale
+   put 0 into tRings
+   put 0 into tStale
+   repeat for each key tK in sHaz
+      if sHaz[tK]["mark"] is not empty then
+         add 1 to tRings
+         if sHaz[tK]["drop"] <= 0 then add 1 to tStale
+      end if
+   end repeat
+   return sRainPicks & "|" & round(sRainMinGap, 1) & "|" & sRainLanded & "|" & tRings & "|" & sRainNoMark & "|" & tStale
+end Ball.RainState
+
+-- for tests: the newest hazard's key, and one hazard's rain: frames left | ring showing | body showing
+function Ball.LastHazard
+   return sSerial
+end Ball.LastHazard
+
+function Ball.RainOf pK
+   if pK is not among the keys of sHaz then return "gone"
+   return sHaz[pK]["drop"] & "|" & (sHaz[pK]["mark"] is not empty) & "|" & (sHaz[pK]["key"] is not empty)
+end Ball.RainOf
+
+-- for tests: how many agents; one hazard's landing spot x|z; put the ball somewhere with a speed
+function Ball.AgentCount
+   return the number of lines of the keys of sAgent
+end Ball.AgentCount
+
+function Ball.HazSpot pK
+   return sHaz[pK]["x"] & "|" & sHaz[pK]["z"]
+end Ball.HazSpot
+
+on Ball.TestPlace pX, pZ, pVX, pVZ
+   put pX into sX
+   put pZ into sZ
+   put pVX into sVX
+   put pVZ into sVZ
+end Ball.TestPlace
+
+on Ball.RainReset
+   put 0 into sRainPicks
+   put empty into sRainMinGap
+   put 0 into sRainLanded
+   put 0 into sRainNoMark
+end Ball.RainReset
+
 
 function Ball.Keys
    if sTestKeys is not empty then return sTestKeys
@@ -199,6 +364,9 @@ on Game.OnUpdate
    end repeat
    -- hazards drift; touching one sends the ball rogue
    repeat for each key tK in sHaz
+      if sHaz[tK]["drop"] > 0 then
+         if Ball.Rain(tK) then next repeat     -- still warning or falling: it can't hurt you yet
+      end if
       add 0.8 * sin(sHaz[tK]["dir"]) to sHaz[tK]["x"]
       add 0.8 * cos(sHaz[tK]["dir"]) to sHaz[tK]["z"]
       if abs(sHaz[tK]["x"]) > kEdge or abs(sHaz[tK]["z"]) > kEdge then add 3.14159 to sHaz[tK]["dir"]
