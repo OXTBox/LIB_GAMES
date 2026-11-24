@@ -11,16 +11,22 @@
 global bPaused, bPlaying
 
 local sWell, sCellKey, sShape, sPC, sPR, sPieceKeys, sColor, sWas, sT, sEvery
-local sLevel, sRows, sNeed, sScore, sPerRow, sOver, sWon, sTestKeys, sHUDWas
+local sLevel, sRows, sNeed, sScore, sPerRow, sOver, sWon, sTestKeys, sHUDWas, sSway
 
 constant kZ = 600
 constant kCols = 10
 constant kRows = 18
 constant kCell = 30
+-- the well sways so it looks alive (p1-25, 23 Nov 2026): it turns a little left and right about the
+-- upright line through its own middle, like a head shaking "no" (owner). Done by the camera: it moves
+-- on a small arc round the well's middle and keeps looking at it, so the middle stays put on screen
+constant kSwayTurn = 6        -- degrees each way
+constant kSwayTurnSecs = 20   -- seconds for one sway there and back (30 frames a second)
 
 on Game.OnStart
    focus on nothing          -- arrow keys belong to the game, never to a menu or a field
    Camera.Reset
+   put 0 into sSway
    Scene.ClearAll
    Particles.Clear
    HUD.Clear
@@ -157,6 +163,7 @@ end Stack.Pressed
 on Game.OnUpdate
    local tKeys, tTry, tFast
    put Stack.Keys() into tKeys
+   Stack.Sway
    if sOver then
       if Stack.Pressed(32, tKeys) then
          put 0 into sScore
@@ -191,6 +198,15 @@ on Game.OnUpdate
    Stack.ShowPiece
    Stack.ShowHUD
 end Game.OnUpdate
+
+-- one frame of the sway: the camera goes round the well's middle (0,0,kZ), the play never changes
+on Stack.Sway
+   local tA
+   add 1 to sSway
+   put sin(2 * pi * sSway / (kSwayTurnSecs * 30)) * kSwayTurn * pi / 180 into tA
+   Camera.SetPosition -kZ * sin(tA), 0, kZ - kZ * cos(tA)
+   Camera.SetLook tA, empty, 0
+end Stack.Sway
 
 -- the shape becomes part of the well; full rows go, everything above moves down
 on Stack.Land
@@ -259,6 +275,8 @@ end Stack.State
 
 on Game.OnStop
    HUD.Clear
+   Camera.SetPosition 0, 0, 0
+   Camera.SetLook 0, empty, 0
 end Game.OnStop
 
 -- the arrows move you; a focused menu or field must never get them
