@@ -71,7 +71,8 @@ The script is in numbered sections, each one lesson for an intermediate xTalk sc
 6. Saving the party (Documents/My Games/Vibecode3D, as the loading screen's last.state).
 7. Other players: two parties in one world over a socket (OXT-Beyond does sockets headless).
 
-## Not seen yet
+## Owner's first look (23 Nov, night): MERGED
 
-Nobody has looked at it on a screen: the camera height, the spell planes, the hill size and the
-speed (47-50 ms a frame headless, Dead Days 41 ms) wait for the owner's first game.
+"That's fun... a great prototype." Camera height okay, spells look good, hills work great, speed good.
+Open (later, not now): spells don't always face the camera (they stand on the caster-target plane;
+a billboard turn toward the camera would fix it). He will go through the game in depth later.
