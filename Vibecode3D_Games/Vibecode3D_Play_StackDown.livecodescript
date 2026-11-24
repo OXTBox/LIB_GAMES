@@ -17,9 +17,10 @@ constant kZ = 600
 constant kCols = 10
 constant kRows = 18
 constant kCell = 30
--- the well sways, very gently, so it looks alive (p1-25, 23 Nov 2026): the camera turns (yaw) a
--- little left and right on one slow sine. Owner: yaw is the way it should go (no roll, no pitch)
-constant kSwayTurn = 1.5      -- degrees each way
+-- the well sways so it looks alive (p1-25, 23 Nov 2026): it turns a little left and right about the
+-- upright line through its own middle, like a head shaking "no" (owner). Done by the camera: it moves
+-- on a small arc round the well's middle and keeps looking at it, so the middle stays put on screen
+constant kSwayTurn = 6        -- degrees each way
 constant kSwayTurnSecs = 20   -- seconds for one sway there and back (30 frames a second)
 
 on Game.OnStart
@@ -198,10 +199,13 @@ on Game.OnUpdate
    Stack.ShowHUD
 end Game.OnUpdate
 
--- one frame of the sway: the camera turns, the play never changes
+-- one frame of the sway: the camera goes round the well's middle (0,0,kZ), the play never changes
 on Stack.Sway
+   local tA
    add 1 to sSway
-   Camera.SetLook sin(2 * pi * sSway / (kSwayTurnSecs * 30)) * kSwayTurn * pi / 180, empty, 0
+   put sin(2 * pi * sSway / (kSwayTurnSecs * 30)) * kSwayTurn * pi / 180 into tA
+   Camera.SetPosition -kZ * sin(tA), 0, kZ - kZ * cos(tA)
+   Camera.SetLook tA, empty, 0
 end Stack.Sway
 
 -- the shape becomes part of the well; full rows go, everything above moves down
@@ -271,6 +275,7 @@ end Stack.State
 
 on Game.OnStop
    HUD.Clear
+   Camera.SetPosition 0, 0, 0
    Camera.SetLook 0, empty, 0
 end Game.OnStop
 
