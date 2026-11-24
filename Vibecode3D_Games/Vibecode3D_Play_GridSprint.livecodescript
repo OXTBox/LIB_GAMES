@@ -1,7 +1,7 @@
 ######################################################################################
 ## CARD SCRIPT: "Play.GridSprint"   GRID SPRINT  (11 14 2026)
 ## A wireframe road curves away to the horizon. Drive one qualifying lap alone: your time
-## sets your place on the grid. Then race seven rivals over two laps. Spark's concept and
+## sets your place on the grid. Then race the rivals over two laps. Spark's concept and
 ## level numbers (LIB_SPARK/arcade/out/124_Grid_Sprint), script by Claude.
 ## CONTROLS  Left/Right (or A/D): steer    Up (or W): gas    Down (or S): brake
 ##           Shift (or G): low/high gear    Space: start the race    Escape: pause
@@ -10,6 +10,12 @@
 ##           road on the curves: hit one and you spin out, lose a life and restart at the
 ##           last green gate. The gate timer runs down; each gate fills it again; if it
 ##           runs out you lose a life. Finish first to go to the next level (5 levels).
+## 23 NOV 2026 (p1-20, owner: "wide open grid, little traffic, random low slopes spaced out"):
+##           the road is wider (half width 300, was 180) with two lane dashes on every slice;
+##           3 rivals (was 7, kRivals); a few low hills (Grid.HeightAt: smooth bumps at least
+##           kHillGap apart, never higher than kHillMax, flat round the start line, the same
+##           each time for a level). The road, signs, gate, rivals and your car ride on them;
+##           your car tips its nose with the slope; uphill slows you a little, downhill helps.
 ######################################################################################
 
 global bPaused, bPlaying
@@ -18,13 +24,18 @@ local sCar, sRail, sSlice, sSign, sSignPool, sRival, sGate, sMount
 local sDist, sOff, sSpeed, sGear, sHeading, sSpin, sCheckDist, sTime, sPhase, sPhaseT
 local sCurve, sSecN, sLapLen, sLap, sPlace, sQualT
 local sLevel, sLives, sScore, sKeysWas, sTestKeys, sHUDWas, sTicks
+local sHill, sHillN, sHeight, sLift
 
 constant kGroundY = 133      -- +Y is down: the road is below the eye (was 90; owner 16 Nov:
                              -- the car 40 pixels lower on the screen: 43 units at the car)
 constant kCarZ = 320
 constant kGap = 200          -- road slices
 constant kSlices = 18
-constant kHalfW = 180        -- the road's half width
+constant kHalfW = 300        -- the road's half width (was 180; p1-20: a wide open grid)
+constant kRivals = 3         -- traffic (was 7; p1-20: little traffic)
+constant kHillMax = 70       -- the highest a hill gets (units; the car is 24 high)
+constant kHillGap = 3200     -- hill middles at least this far apart along the track
+constant kHillStep = 100     -- the height table's step
 constant kSec = 1600         -- one track section
 constant kStartLine = 2000   -- where the finish gate stands on the track
 constant kLaps = 2
@@ -88,7 +99,7 @@ on Grid.StartLevel pLevel
    put Entity.Spawn("Grid.Gate", 0, kGroundY, -3000, "0,255,120") into sGate
    put Entity.Spawn("Grid.Car", 0, kGroundY - 17, kCarZ, "0,230,255") into sCar
    put empty into sRival
-   repeat with i = 1 to 7
+   repeat with i = 1 to kRivals
       put Entity.Spawn("Grid.Rival", 0, kGroundY - 20, -3000, "255,140,0") into sRival[i]["key"]
    end repeat
    put 0 into sHeading
@@ -128,8 +139,61 @@ on Grid.BuildTrack pCurves
          end if
       end repeat
    end repeat
+   Grid.BuildHills
    set the randomSeed to the milliseconds
 end Grid.BuildTrack
+
+-- p1-20: a few low hills, each a smooth bump (half a cosine wave up and down), their middles
+-- kHillGap apart at least and away from the start line (the grid stays flat). The heights go
+-- into a table every kHillStep along the lap; Grid.HeightAt reads it.
+on Grid.BuildHills
+   local tWant, tTry, tC, tW, tOk, j, tGapD, k, tD, tH, tRel
+   put empty into sHill
+   put 0 into sHillN
+   put 3 into tWant
+   if sLevel > 2 then put 4 into tWant
+   repeat with tTry = 1 to 300
+      if sHillN >= tWant then exit repeat
+      put random(sLapLen) into tC
+      put 600 + random(4) * 100 into tW
+      put Grid.Apart(tC, kStartLine) >= 1600 + tW into tOk
+      repeat with j = 1 to sHillN
+         if Grid.Apart(tC, sHill[j]["d"]) < kHillGap then put false into tOk
+      end repeat
+      if not tOk then next repeat
+      add 1 to sHillN
+      put tC into sHill[sHillN]["d"]
+      put tW into sHill[sHillN]["w"]
+      put 30 + random(4) * 10 into sHill[sHillN]["h"]     -- 40 to 70
+   end repeat
+   put empty into sHeight
+   repeat with k = 0 to sLapLen div kHillStep + 1
+      put k * kHillStep into tD
+      put 0 into tH
+      repeat with j = 1 to sHillN
+         put Grid.Apart(tD, sHill[j]["d"]) into tRel
+         if tRel < sHill[j]["w"] then add sHill[j]["h"] * (1 + cos(pi * tRel / sHill[j]["w"])) / 2 to tH
+      end repeat
+      put tH into sHeight[k]
+   end repeat
+end Grid.BuildHills
+
+-- how far apart two places on the lap are, the short way round
+function Grid.Apart pA, pB
+   local tD
+   put abs(pA - pB) mod sLapLen into tD
+   return min(tD, sLapLen - tD)
+end Grid.Apart
+
+-- the ground's height (up is +) at a distance along the track
+function Grid.HeightAt pD
+   local tD, tK
+   put pD mod sLapLen into tD
+   if tD < 0 then add sLapLen to tD
+   put tD / kHillStep into tD
+   put trunc(tD) into tK
+   return sHeight[tK] + (sHeight[tK + 1] - sHeight[tK]) * (tD - tK)
+end Grid.HeightAt
 
 function Grid.CurveAt pD
    local tD
@@ -149,6 +213,13 @@ function Grid.RailMesh
    Mesh.AddLine tM, 1, 2
    Mesh.AddLine tM, 1, 3
    Mesh.AddLine tM, 2, 4
+   -- p1-20: two lane dashes (more grid, while 4 fewer rivals mean 48 fewer lines)
+   Mesh.AddVertex tM, -kHalfW / 3, 0, 0
+   Mesh.AddVertex tM, -kHalfW / 3, 0, kGap / 2
+   Mesh.AddVertex tM, kHalfW / 3, 0, 0
+   Mesh.AddVertex tM, kHalfW / 3, 0, kGap / 2
+   Mesh.AddLine tM, 5, 6
+   Mesh.AddLine tM, 7, 8
    return tM
 end Grid.RailMesh
 
@@ -212,7 +283,7 @@ on Grid.Begin pPhase
          put 0 into sSpin
          put sDist into sCheckDist
          put Grid.FullTime() into sTime
-         repeat with i = 1 to 7
+         repeat with i = 1 to kRivals
             put -99999 into sRival[i]["d"]
          end repeat
          break
@@ -225,14 +296,15 @@ on Grid.Begin pPhase
          put sDist into sCheckDist
          put Grid.FullTime() into sTime
          put 0 into sLap
-         -- the rivals take the other seven slots
+         -- the rivals take the other slots (p1-20: spread over the wide road, the same speeds
+         -- the last three of the old seven had)
          put 0 into tSlot
-         repeat with i = 1 to 7
+         repeat with i = 1 to kRivals
             add 1 to tSlot
             if tSlot is sPlace then add 1 to tSlot
             put kStartLine - (tSlot - 1) * 260 - 150 into sRival[i]["d"]
-            put ((tSlot mod 2) * 2 - 1) * 70 into sRival[i]["off"]
-            put (100 + sLevel * 20) / 6 * (0.78 + i * 0.03) into sRival[i]["top"]
+            put ((tSlot mod 2) * 2 - 1) * 110 into sRival[i]["off"]
+            put (100 + sLevel * 20) / 6 * (0.78 + (i + 7 - kRivals) * 0.03) into sRival[i]["top"]
             put 0 into sRival[i]["v"]
          end repeat
          break
@@ -341,6 +413,10 @@ on Grid.Drive pKeys
    add tC * sSpeed * 0.0004 to sHeading
    put max(-kHalfW - 160, min(kHalfW + 160, sOff)) into sOff
    if abs(sOff) > kHalfW then put sSpeed * 0.96 into sSpeed     -- the dirt slows you
+   -- p1-20: uphill slows you a little, downhill pulls you on
+   if sSpin <= 0 and sSpeed > 0 then
+      put max(0, sSpeed - (Grid.HeightAt(sDist + 50) - Grid.HeightAt(sDist - 50)) * 0.006) into sSpeed
+   end if
    -- move on
    put sDist into tWas
    add sSpeed to sDist
@@ -396,27 +472,27 @@ on Grid.Lap
    if sPhase is "qual" then
       -- the qualifying time sets your slot: 8th to 1st
       put sPhaseT into sQualT
-      put 1 + max(0, min(7, (sQualT - round(sLapLen / 34)) div 25)) into sPlace
+      put 1 + max(0, min(kRivals, (sQualT - round(sLapLen / 34)) div 25)) into sPlace
       Grid.Begin "grid"
       exit Grid.Lap
    end if
    add 1 to sLap
    if sLap >= kLaps then
       put 1 into sPlace
-      repeat with i = 1 to 7
+      repeat with i = 1 to kRivals
          if sRival[i]["d"] > sDist then add 1 to sPlace
       end repeat
-      add (9 - sPlace) * 50 * sLevel to sScore
+      add (kRivals + 2 - sPlace) * 100 * sLevel to sScore
       put "done" into sPhase
       put empty into sHUDWas
    end if
 end Grid.Lap
 
--- the seven rivals: they ignore curves and stay in their lines
+-- the rivals: they ignore curves and stay in their lines
 on Grid.Rivals pMoving
    local i, tRel, tAhead
    put 0 into tAhead
-   repeat with i = 1 to 7
+   repeat with i = 1 to kRivals
       if pMoving then
          put min(sRival[i]["top"], sRival[i]["v"] + 0.4) into sRival[i]["v"]
          add sRival[i]["v"] to sRival[i]["d"]
@@ -426,7 +502,7 @@ on Grid.Rivals pMoving
       if pMoving and tRel > 0 and tRel < kCarHalfL + kRivalHalfL and abs(sRival[i]["off"] - sOff) < kCarHalfW + kRivalHalfW then
          put sRival[i]["v"] * 0.6 into sSpeed
          put sRival[i]["d"] - (kCarHalfL + kRivalHalfL + 1) into sDist
-         FX.Sparks (sRival[i]["off"] - sOff) / 2, kGroundY - 25, kCarZ + kCarHalfL, 6, "255,140,0"
+         FX.Sparks (sRival[i]["off"] - sOff) / 2, Grid.GroundY(0) - 25, kCarZ + kCarHalfL, 6, "255,140,0"
          put sRival[i]["d"] - sDist into tRel
       end if
       if tRel > 0 then add 1 to tAhead
@@ -437,9 +513,16 @@ on Grid.Rivals pMoving
    end if
 end Grid.Rivals
 
+-- the screen y of the ground pRel ahead of the car (p1-20: the hills; the eye rides up
+-- with the car by 0.6 of its height, so the car bobs a little and the hills ahead show)
+function Grid.GroundY pRel
+   return kGroundY - Grid.HeightAt(sDist + pRel) + sLift
+end Grid.GroundY
+
 -- the road: each slice shifts by the curve ahead of it
 on Grid.DrawRoad
    local i, tZ, tX, tDX, tFrac, tK, tRel, tN, tD, tA
+   put Grid.HeightAt(sDist) * 0.6 into sLift
    put sDist mod kGap into tFrac
    put 0 into tX
    put 0 into tDX
@@ -456,15 +539,16 @@ on Grid.DrawRoad
    put sSlice[trunc(tA)] + (sSlice[trunc(tA) + 1] - sSlice[trunc(tA)]) * (tA - trunc(tA)) into tA
    repeat with i = 0 to kSlices
       put sSlice[i] - tA - sOff into sSlice[i]
-      Entity.SetPosition sRail[i], sSlice[i], kGroundY, kCarZ - kGap + i * kGap - tFrac
+      Entity.SetPosition sRail[i], sSlice[i], Grid.GroundY((i - 1) * kGap - tFrac), kCarZ - kGap + i * kGap - tFrac
    end repeat
    -- the car (it spins when it hits a sign)
    if sSpin > 0 then
       Entity.SetRotation sCar, 0, sSpin / 2.5, 0
    else
-      Entity.SetRotation sCar, 0, Grid.CurveAt(sDist) * -0.03, 0
+      -- p1-20: the nose tips up the slope (+x turn lifts the nose: +y is down)
+      Entity.SetRotation sCar, atan((Grid.HeightAt(sDist + 75) - Grid.HeightAt(sDist - 75)) / 150), Grid.CurveAt(sDist) * -0.03, 0
    end if
-   Entity.SetPosition sCar, 0, kGroundY - 17, kCarZ
+   Entity.SetPosition sCar, 0, Grid.GroundY(0) - 17, kCarZ
    -- far mountains slide as the road turns
    repeat with i = 1 to 5
       put ((i * 4400 - sHeading * 6000) mod 22000) - 11000 into tX
@@ -478,7 +562,7 @@ on Grid.DrawRoad
       if tRel < -100 then add sLapLen to tRel
       if tRel > -100 and tRel < kSlices * kGap - 100 and tN < 8 then
          add 1 to tN
-         Entity.SetPosition sSignPool[tN], Grid.RoadX(tRel) + sSign[tK]["off"], kGroundY - 30, kCarZ + tRel
+         Entity.SetPosition sSignPool[tN], Grid.RoadX(tRel) + sSign[tK]["off"], Grid.GroundY(tRel) - 30, kCarZ + tRel
       end if
    end repeat
    repeat with i = tN + 1 to 8
@@ -488,17 +572,17 @@ on Grid.DrawRoad
    put (sDist - kStartLine) mod (sLapLen / 4) into tD
    put sLapLen / 4 - tD into tRel
    if tRel < kSlices * kGap - 100 then
-      Entity.SetPosition sGate, Grid.RoadX(tRel), kGroundY, kCarZ + tRel
+      Entity.SetPosition sGate, Grid.RoadX(tRel), Grid.GroundY(tRel), kCarZ + tRel
    else
       Entity.SetPosition sGate, 0, kGroundY, -3000
    end if
    -- rivals in view
-   repeat with i = 1 to 7
+   repeat with i = 1 to kRivals
       put sRival[i]["d"] - sDist into tRel
       -- (owner 16 Nov: "traffic from nowhere": a rival coming from behind used to pop up
       -- 150 behind you, big on the screen; now it is drawn from just in front of the eye)
       if tRel > 90 - kCarZ and tRel < kSlices * kGap - 100 then
-         Entity.SetPosition sRival[i]["key"], Grid.RoadX(tRel) + sRival[i]["off"], kGroundY - 20, kCarZ + tRel
+         Entity.SetPosition sRival[i]["key"], Grid.RoadX(tRel) + sRival[i]["off"], Grid.GroundY(tRel) - 20, kCarZ + tRel
       else
          Entity.SetPosition sRival[i]["key"], 0, kGroundY - 20, -3000
       end if
@@ -522,13 +606,13 @@ on Grid.ShowHUD
    HUD.Set "Grid.Score", "SCORE" && sScore && "  LIVES" && sLives && "  LEVEL" && sLevel, 20, 40, 14
    switch sPhase
       case "qual"
-         put "QUALIFYING LAP, ALONE: THE 7 RIVALS WAIT AT THE START   GEAR" && toUpper(sGear) && "  GATE TIME" && sTime div 30 into tLine
+         put "QUALIFYING LAP, ALONE: THE" && kRivals && "RIVALS WAIT AT THE START   GEAR" && toUpper(sGear) && "  GATE TIME" && sTime div 30 into tLine
          break
       case "grid"
-         put "QUALIFIED" && sPlace & "/8: ON THE GRID WITH THE 7 RIVALS.   SPACE TO RACE" into tLine
+         put "QUALIFIED" && sPlace & "/" & kRivals + 1 & ": ON THE GRID WITH THE" && kRivals && "RIVALS.   SPACE TO RACE" into tLine
          break
       case "race"
-         put "PLACE" && sPlace & "/8   LAP" && min(kLaps, sLap + 1) & "/" & kLaps && "  GEAR" && toUpper(sGear) && "  GATE TIME" && sTime div 30 into tLine
+         put "PLACE" && sPlace & "/" & kRivals + 1 && "  LAP" && min(kLaps, sLap + 1) & "/" & kLaps && "  GEAR" && toUpper(sGear) && "  GATE TIME" && sTime div 30 into tLine
          break
       case "done"
          if sPlace is 1 and sLevel is 5 then
@@ -536,7 +620,7 @@ on Grid.ShowHUD
          else if sPlace is 1 then
             put "FIRST PLACE!  SPACE FOR THE NEXT TRACK" into tLine
          else
-            put "FINISHED" && sPlace & "/8.  SPACE TO TRY AGAIN" into tLine
+            put "FINISHED" && sPlace & "/" & kRivals + 1 & ".  SPACE TO TRY AGAIN" into tLine
          end if
          break
       case "over"
@@ -576,6 +660,23 @@ end Grid.TestEntities
 function Grid.RoadAtCar
    return Grid.RoadX(0)
 end Grid.RoadAtCar
+
+-- p1-20 test hooks: the hills (middle,half length,height per line) and the traffic count
+function Grid.TestHills
+   local j, tOut
+   repeat with j = 1 to sHillN
+      put sHill[j]["d"] & "," & sHill[j]["w"] & "," & sHill[j]["h"] & return after tOut
+   end repeat
+   return tOut
+end Grid.TestHills
+
+function Grid.TestRivalCount
+   return kRivals & "," & the number of elements of sRival & "," & sLapLen
+end Grid.TestRivalCount
+
+function Grid.TestCarY
+   return Grid.GroundY(0) - 17
+end Grid.TestCarY
 
 on Game.OnStop
    HUD.Clear
