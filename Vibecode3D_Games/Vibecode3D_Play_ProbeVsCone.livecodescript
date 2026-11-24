@@ -15,6 +15,9 @@
 ##           bars bank the spear: the first three bounces keep it lively.
 ##           A fast loose spear that hits you costs a life. Hit the Cone with the
 ##           password complete. 5 levels.
+##           (23 Nov 2026, p1-23) an energy pulse wiggles between the standing cubes of the outer
+##           ring: it stops the spear (it drops back loose). Where a cube is gone the gap is open.
+##           A loose spear never rests where you can't reach it: it slides out from the shield.
 ######################################################################################
 
 global bPaused, bPlaying
@@ -24,6 +27,7 @@ local sPX, sPY, sPlayer, sBoss, sRing, sRings, sSpear, sTok, sTokN, sPass, sGot
 local sLevel, sLives, sUpdate, sSpeed, sNextUpdate, sOver, sWon, sTicks, sTestKeys, sKeysWas
 local sArm, sHeld, sOrb, sOrbN, sBump, sAimAng, sAimMode, sMouseWas, sRay
 local sHUDWas, sMsg, sMsgUntil, sSafe, sFaceX, sFaceY, sAimX, sAimY, sAim
+local sPulse
 
 constant kZ = 360
 constant kLeft = -380
@@ -122,6 +126,8 @@ on Probe.StartLevel
    put -pi / 2 into sAimAng
    Mesh.Define "Probe.Ray", Mesh.New()
    put Entity.Spawn("Probe.Ray", 0, 0, kZ, "#806020") into sRay
+   Probe.DrawPulse
+   put Entity.Spawn("Probe.Pulse", 0, 0, kZ, "#80B0FF") into sPulse
    put sTicks + sUpdate into sNextUpdate
    put 0 into sSafe
    Probe.Say "BREAK CUBES, COLLECT" && the number of chars of sPass && "KEYS, THEN HIT THE CONE", 4
@@ -326,6 +332,7 @@ on Probe.AimAt
    put cos(sAimAng) into sAimX
    put sin(sAimAng) into sAimY
    if sTicks mod 2 is 0 then Probe.DrawRay
+   if sTicks mod 2 is 1 then Probe.DrawPulse
    -- the aim line, in front of the runner
    Entity.SetPosition sAim, sPX + sAimX * 62, sPY - 20 + sAimY * 62, kZ
    Entity.SetRotation sAim, 0, 0, sAimAng
@@ -414,6 +421,151 @@ on Probe.MakeBumpers
    Mesh.Define "Probe.Bumpers", tM
    get Entity.Spawn("Probe.Bumpers", 0, 0, kZ, "#40E0FF")
 end Probe.MakeBumpers
+
+-------------------------------------------------------------------- the energy pulse
+-- one wiggling ring of energy between the standing cubes of the outer ring (p1-23, 23 Nov 2026).
+-- Only between two neighbours that both stand: where a cube is gone the gap stays open.
+
+-- cube i of the outer ring and its neighbour: "ax,ay,bx,by", or empty when either is gone
+function Probe.PulseLink i
+   local k, j
+   put max(1, sRings) into k
+   if sRing[k]["n"] is empty or sRing[k]["n"] < 2 then return empty
+   put i mod sRing[k]["n"] + 1 into j
+   if sRing[k][i]["key"] is empty or sRing[k][j]["key"] is empty then return empty
+   return sRing[k][i]["x"] & comma & sRing[k][i]["y"] & comma & sRing[k][j]["x"] & comma & sRing[k][j]["y"]
+end Probe.PulseLink
+
+-- the drawn ring: each link in six wiggling pieces, from cube edge to cube edge (cheap: about 100 lines)
+on Probe.DrawPulse
+   local tM, k, i, tL, tAX, tAY, tBX, tBY, tLen, ux, uy, j, f, w, x, y
+   put Mesh.New() into tM
+   put max(1, sRings) into k
+   repeat with i = 1 to sRing[k]["n"]
+      put Probe.PulseLink(i) into tL
+      if tL is empty then next repeat
+      put item 1 of tL into tAX
+      put item 2 of tL into tAY
+      put item 3 of tL into tBX
+      put item 4 of tL into tBY
+      put sqrt((tBX - tAX) ^ 2 + (tBY - tAY) ^ 2) into tLen
+      if tLen < 30 then next repeat
+      put (tBX - tAX) / tLen into ux
+      put (tBY - tAY) / tLen into uy
+      repeat with j = 0 to 6
+         put (12 + (tLen - 24) * j / 6) into f
+         put 0 into w
+         if j > 0 and j < 6 then put 5 * sin(sTicks * 0.45 + j * 1.9 + i * 0.7) into w
+         put tAX + ux * f - uy * w into x
+         put tAY + uy * f + ux * w into y
+         Mesh.AddVertex tM, x, y, 0
+         if j > 0 then Mesh.AddLine tM, tM["count"] - 1, tM["count"]
+      end repeat
+   end repeat
+   Mesh.Define "Probe.Pulse", tM
+end Probe.DrawPulse
+
+-- does the move from x0,y0 to x1,y1 cross a pulse link (away from its two cubes)?
+-- the link's unit normal "nx,ny", or empty
+function Probe.PulseHit x0, y0, x1, y1
+   local k, R, d0, d1, i, tL, tAX, tAY, tBX, tBY, ex, ey, rx, ry, tDen, t, u, tLen
+   put max(1, sRings) into k
+   put Probe.Radius(k) into R
+   put sqrt((x0 - kBossX) ^ 2 + (y0 - kBossY) ^ 2) into d0
+   put sqrt((x1 - kBossX) ^ 2 + (y1 - kBossY) ^ 2) into d1
+   if min(d0, d1) > R + 4 or max(d0, d1) < R * 0.9 then return empty
+   put x1 - x0 into rx
+   put y1 - y0 into ry
+   repeat with i = 1 to sRing[k]["n"]
+      put Probe.PulseLink(i) into tL
+      if tL is empty then next repeat
+      put item 1 of tL into tAX
+      put item 2 of tL into tAY
+      put item 3 of tL - tAX into ex
+      put item 4 of tL - tAY into ey
+      put rx * ey - ry * ex into tDen
+      if abs(tDen) < 0.0001 then next repeat
+      -- t along the move, u along the link
+      put ((tAX - x0) * ey - (tAY - y0) * ex) / tDen into t
+      put ((tAX - x0) * ry - (tAY - y0) * rx) / tDen into u
+      put sqrt(ex * ex + ey * ey) into tLen
+      if t >= 0 and t <= 1 and u * tLen > 16 and u * tLen < tLen - 16 then
+         return (-ey / tLen) & comma & (ex / tLen)
+      end if
+   end repeat
+   return empty
+end Probe.PulseHit
+
+-- could the runner stand near enough to pick the spear up at x,y?
+function Probe.Reachable x, y
+   local tPX, tPY
+   put max(kLeft + 12, min(kRight - 12, x)) into tPX
+   put max(kTop + 30, min(kBottom - 8, y + 10)) into tPY
+   if abs(tPX - x) >= 16 or abs(tPY - 10 - y) >= 22 then return false
+   return sqrt((tPX - kBossX) ^ 2 + (tPY - kBossY) ^ 2) > Probe.Radius(max(1, sRings)) + 26
+end Probe.Reachable
+
+-- an unreachable resting spear slides out from the Cone; under the top wall it slides sideways
+on Probe.NudgeSpear
+   local dx, dy, d, tS
+   put sSpear["x"] - kBossX into dx
+   put sSpear["y"] - kBossY into dy
+   if abs(dx) < 1 then put 1 into dx
+   put sqrt(dx * dx + dy * dy) into d
+   add dx / d * 3 to sSpear["x"]
+   add dy / d * 3 to sSpear["y"]
+   if sSpear["y"] < kTop + 4 then
+      put kTop + 4 into sSpear["y"]
+      put 1 into tS
+      if dx < 0 then put -1 into tS
+      add 3 * tS to sSpear["x"]
+   end if
+   put max(kTop + 4, min(kBottom - 4, sSpear["y"])) into sSpear["y"]
+   put max(kLeft + 4, min(kRight - 4, sSpear["x"])) into sSpear["x"]
+end Probe.NudgeSpear
+
+-- for tests: put the spear in flight (or loose) at x,y with speed vx,vy
+on Probe.TestSpear x, y, vx, vy, pState
+   if sSpear["key"] is empty or sSpear["state"] is "hand" then put Entity.Spawn("Probe.Spear", x, y, kZ, "#40E0FF") into sSpear["key"]
+   put x into sSpear["x"]
+   put y into sSpear["y"]
+   put vx into sSpear["vx"]
+   put vy into sSpear["vy"]
+   if pState is empty then put "flying" into pState
+   put pState into sSpear["state"]
+   put 0 into sSpear["bounces"]
+end Probe.TestSpear
+
+-- for tests: "x,y,vx,vy,state" of the spear
+function Probe.TestSpearInfo
+   return sSpear["x"] & comma & sSpear["y"] & comma & sSpear["vx"] & comma & sSpear["vy"] & comma & sSpear["state"]
+end Probe.TestSpearInfo
+
+-- for tests: "ring,count,x,y of cube i" / break cube i of the outer ring / the runner's place
+function Probe.TestCube i
+   local k
+   put max(1, sRings) into k
+   return k & comma & sRing[k]["n"] & comma & sRing[k][i]["x"] & comma & sRing[k][i]["y"] & comma & (sRing[k][i]["key"] is not empty)
+end Probe.TestCube
+
+on Probe.TestBreak i
+   local k
+   put max(1, sRings) into k
+   if sRing[k][i]["key"] is not empty then Entity.Kill sRing[k][i]["key"]
+   put empty into sRing[k][i]["key"]
+end Probe.TestBreak
+
+on Probe.TestPlace x, y, pLevel
+   if pLevel is not empty and pLevel is not sLevel then
+      put pLevel into sLevel
+      Probe.StartLevel
+   end if
+   put x into sPX
+   put y into sPY
+   put 999999 into sNextUpdate          -- no shield update in the middle of a test
+   put 5 into sLives
+   put false into sOver
+end Probe.TestPlace
 
 -------------------------------------------------------------------- the orbiters
 
@@ -527,8 +679,23 @@ on Probe.MoveSpear
       Probe.PlaceSpear
       exit Probe.MoveSpear
    end if
+   local tX0, tY0, tN
+   put sSpear["x"] into tX0
+   put sSpear["y"] into tY0
    add sSpear["vx"] to sSpear["x"]
    add sSpear["vy"] to sSpear["y"]
+   -- the energy pulse: the spear stops short of it and drops back, loose and slow
+   put Probe.PulseHit(tX0, tY0, sSpear["x"], sSpear["y"]) into tN
+   if tN is not empty then
+      put tX0 into sSpear["x"]
+      put tY0 into sSpear["y"]
+      put sSpear["vx"] * item 1 of tN + sSpear["vy"] * item 2 of tN into tV
+      put (sSpear["vx"] - 2 * tV * item 1 of tN) * 0.3 into sSpear["vx"]
+      put (sSpear["vy"] - 2 * tV * item 2 of tN) * 0.3 into sSpear["vy"]
+      put "loose" into sSpear["state"]
+      FX.Sparks sSpear["x"], sSpear["y"], kZ, 6, "#80B0FF"
+      if sMsg is empty then Probe.Say "ENERGY PULSE: AIM FOR A CUBE OR A GAP", 1
+   end if
    -- ricochets off walls and bumpers: the first three keep the spear lively
    get Probe.Reflect(sSpear["x"], sSpear["y"], sSpear["vx"], sSpear["vy"])
    if it is not empty then
@@ -550,7 +717,9 @@ on Probe.MoveSpear
    end if
    put sqrt(sSpear["vx"] ^ 2 + sSpear["vy"] ^ 2) into tV
    -- shield cubes: one breaks, drops a key, and the spear comes home
+   -- (a spear barely moving, or sliding out to reach, breaks nothing: no free keys)
    repeat with k = 1 to sRings
+      if tV < 2 then exit repeat
       repeat with i = 1 to sRing[k]["n"]
          if sRing[k][i]["key"] is empty then next repeat
          if abs(sRing[k][i]["x"] - sSpear["x"]) < 16 and abs(sRing[k][i]["y"] - sSpear["y"]) < 16 then
@@ -563,8 +732,8 @@ on Probe.MoveSpear
          end if
       end repeat
    end repeat
-   -- the Cone
-   if abs(sSpear["x"] - kBossX) < 22 and abs(sSpear["y"] - kBossY) < 30 and tV > 1 then
+   -- the Cone (only a spear coming at it: one inside its box going away is left to fly out)
+   if abs(sSpear["x"] - kBossX) < 22 and abs(sSpear["y"] - kBossY) < 30 and tV > 1 and sSpear["vx"] * (kBossX - sSpear["x"]) + sSpear["vy"] * (kBossY - sSpear["y"]) > 0 then
       if the number of chars of sGot >= the number of chars of sPass then
          FX.Sparks kBossX, kBossY, kZ, 60, "#B060FF"
          Entity.Kill sSpear["key"]
@@ -596,7 +765,13 @@ on Probe.MoveSpear
             exit Probe.MoveSpear
          end if
       end if
-      if tV < 0.3 then
+      -- slowing down where the runner can't reach (at the Cone, inside the shield, under the top
+      -- wall over the Cone): it stops and slides out to the nearest place he can reach
+      if tV < 2 and not Probe.Reachable(sSpear["x"], sSpear["y"]) then
+         put 0 into sSpear["vx"]
+         put 0 into sSpear["vy"]
+         Probe.NudgeSpear
+      else if tV < 0.3 then
          put 0 into sSpear["vx"]
          put 0 into sSpear["vy"]
       end if

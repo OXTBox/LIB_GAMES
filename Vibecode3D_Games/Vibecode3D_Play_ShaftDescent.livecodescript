@@ -5,7 +5,9 @@
 ## gaps, avoid patrol drones, reach the exit at the bottom before the air runs out. The
 ## camera follows down the shaft.
 ## Teaches: gravity, a jump curve, platforms, a following camera.
-## CONTROLS  Left/Right: run   Space: jump   Escape: stop
+## CONTROLS  Left/Right: run   Shift (held): run faster, uses more air   Space: jump   Escape: stop
+## p1-24 (23 Nov 2026, play test 0001 note): "a run button (Shift, uses more air)". Shift held while
+## moving = kRunFactor x speed and kRunAir x air use (keysDown 65505/65506, same codes in both engines).
 ## RULES     a drone, or the air running out, costs a life (back to the top). 5 levels.
 ######################################################################################
 
@@ -13,13 +15,15 @@ global bPaused, bPlaying
 
 local sX, sY, sVX, sVY, sOnGround, sPlayer, sRows, sDrone, sDroneCount, sExitY, sExitX
 local sLevel, sLives, sAir, sAirMax, sDroneSpeed, sOver, sWon, sTicks, sTestKeys, sJumpWas
-local sHUDWas, sCamY, sMsg, sMsgUntil, sBest
+local sHUDWas, sCamY, sMsg, sMsgUntil, sBest, sRunning
 
 constant kZ = 600
 constant kHalfW = 330          -- the shaft runs from -330 to 330
 constant kRowGap = 130         -- height between platform rows
 constant kThick = 12
 constant kRun = 4.2
+constant kRunFactor = 1.7      -- Shift held: top speed x this
+constant kRunAir = 2           -- Shift held while moving: air goes this many times faster
 constant kJump = -10.5         -- the jump's starting speed (up is negative)
 constant kGravity = 0.5
 constant kFallMax = 13
@@ -166,7 +170,7 @@ on Shaft.TestKeys pKeys
 end Shaft.TestKeys
 
 on Game.OnUpdate
-   local tKeys, tJump, tOldY, r, tSeg, n
+   local tKeys, tJump, tOldY, r, tSeg, n, tTop, tShift
    add 1 to sTicks
    put Shaft.Keys() into tKeys
    put (32 is among the items of tKeys) into tJump
@@ -175,11 +179,17 @@ on Game.OnUpdate
       put tJump into sJumpWas
       exit Game.OnUpdate
    end if
-   -- run: quick to start, quick to stop
+   -- run: quick to start, quick to stop; Shift held = run faster (and use more air, below)
+   put (65505 is among the items of tKeys or 65506 is among the items of tKeys) into tShift
+   put kRun into tTop
+   if tShift then put kRun * kRunFactor into tTop
+   put false into sRunning
    if (65361 is among the items of tKeys or 97 is among the items of tKeys) then
-      put max(-kRun, sVX - 0.9) into sVX
+      put max(-tTop, sVX - 0.9) into sVX
+      put tShift into sRunning
    else if (65363 is among the items of tKeys or 100 is among the items of tKeys) then
-      put min(kRun, sVX + 0.9) into sVX
+      put min(tTop, sVX + 0.9) into sVX
+      put tShift into sRunning
    else
       put sVX * 0.6 into sVX
    end if
@@ -236,8 +246,12 @@ on Game.OnUpdate
          exit Game.OnUpdate
       end if
    end repeat
-   -- air
-   subtract 1 from sAir
+   -- air (running with Shift uses it kRunAir times as fast)
+   if sRunning then
+      subtract kRunAir from sAir
+   else
+      subtract 1 from sAir
+   end if
    if sAir <= 0 then
       Shaft.LoseLife "OUT OF AIR"
       exit Game.OnUpdate
@@ -285,6 +299,7 @@ on Shaft.ShowHUD
    if tWords is sHUDWas then exit Shaft.ShowHUD
    put tWords into sHUDWas
    HUD.Set "Shaft.Score", "AIR" && tAir && "  LIVES" && sLives && "  LEVEL" && sLevel && "  DEPTH" && sBest && "OF" && item 1 of Shaft.Row(sLevel) + 1, 20, 120, 14
+   HUD.Set "Shaft.Help", Shaft.HelpLine(), 20, 98, 12
    HUD.Remove "Shaft.Msg"
    if sOver and sWon then
       HUD.Set "Shaft.Msg", "THE BOTTOM OF THE LAST SHAFT.  SPACE TO PLAY AGAIN", 20, 142, 14
@@ -294,6 +309,15 @@ on Shaft.ShowHUD
       HUD.Set "Shaft.Msg", sMsg, 20, 142, 14
    end if
 end Shaft.ShowHUD
+
+function Shaft.HelpLine
+   return "ARROWS RUN   SPACE JUMP   SHIFT = RUN (MORE AIR)"
+end Shaft.HelpLine
+
+-- for tests: the air left in frames, the x speed, and whether Shift-running this frame
+function Shaft.RunState
+   return sAir & "|" & sVX & "|" & sRunning
+end Shaft.RunState
 
 function Shaft.State
    return sLevel & "|" & sLives & "|" & round(sX) & "," & round(sY) & "|" & sOnGround & "|" & sAir div 30 & "|" & sBest & "|" & sOver
