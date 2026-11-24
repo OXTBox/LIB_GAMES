@@ -5,7 +5,7 @@
 ## jump and aim the gun. Reach each green flag and hold it. Spark's concept and level numbers
 ## (LIB_SPARK/arcade/out/809_Squad_Buggy), script by Claude.
 ## CONTROLS  Right/Left (or D/A): drive on / back up    Space: jump (light gravity, it floats)
-##           Mouse: the reticle aims the gun, click to fire    Escape: pause
+##           Mouse: the reticle aims the gun, click to fire    G / right button: grenade    Escape: pause
 ##           Stand still beside a fallen soldier to pick him up.
 ## RULES     a walker that reaches the buggy is run down (land on one to squash it), but the
 ##           bump throws a soldier off. A walker that reaches a fallen soldier takes him.
@@ -23,6 +23,10 @@
 ##  ground stays where it was on the screen): half as much land again on each side. How much a
 ##  bomb wrecks the land is one number, kWreck (0 = no craters, 1 = as before, 2 = twice as big);
 ##  Squad.SetWreck sets it while playing, and ComfyUI's Terrain node has it as the "wreck" knob.
+## 23 Nov 2026 (owner: the wider view is there so OUR grenades can wreck the land ahead, or behind):
+##  G (or the right mouse button) lobs a GRENADE in an arc to the ground under the reticle, ahead or
+##  behind. It digs a crater as a bomb does (kWreck sizes it) and takes out walkers. Hold G to keep
+##  lobbing (one every kNadeWait steps). Too near the buggy and its blast throws a soldier off too.
 ######################################################################################
 
 global bPaused, bPlaying
@@ -37,6 +41,7 @@ local sRet, sAimX, sAimH, sFireT, sTestAim, sTestMouse, sJumped, sFired
 local sTower, sSnipe, sSnipeN, sNoSnipe, sBehind, sWarned  -- buildings, roof snipers
 local sMove                                              -- how fast you drive this step
 local sWreck, sCrR, sCrD                                 -- kWreck now, and a crater's width and depth
+local sNade, sNadeN, sNadeT, sTestNade, sThrown          -- grenades in the air, their count, the wait
 
 constant kZ = 300            -- screen scale 300/z: 1 unit = 1 pixel
 constant kBase = 230
@@ -56,6 +61,9 @@ constant kShotV = 22
 constant kTowerGap = 1100    -- about this far between buildings and water towers
 constant kSnipeRange = 620   -- snipers fire while their roof is this near ahead
 constant kRoundV = 4.2       -- a sniper's round: slow enough to shoot down or dodge
+constant kNadeWait = 20      -- grenades: steps between two lobs while G is held
+constant kNadeFar = 900      -- grenades: farthest lob (ahead or behind)
+constant kNadeR = 60         -- grenades: walkers this near the blast go
 
 on Game.OnStart
    focus on nothing
@@ -73,6 +81,7 @@ on Game.OnStart
    put false into sWon
    put 0 into sTicks
    put false into sJumped
+   put false into sThrown
    put false into sFired
    put false into sNoSnipe
    Squad.StartLevel 1
@@ -173,6 +182,12 @@ on Squad.Restart pX
    end repeat
    put empty into sBomb
    put 0 into sBombN
+   repeat for each key tK in sNade
+      Entity.Kill sNade[tK]["key"]
+   end repeat
+   put empty into sNade
+   put 0 into sNadeN
+   put 0 into sNadeT
    put empty into sCrater
    put 0 into sCraterN
    repeat for each key tK in sTower
@@ -468,6 +483,8 @@ on Game.OnUpdate
    if sOver then exit Game.OnUpdate
    Squad.Shoot
    Squad.Shots
+   Squad.Grenades tKeys
+   if sOver then exit Game.OnUpdate
    Squad.Flags
    if sMsgT > 0 then
       subtract 1 from sMsgT
@@ -860,6 +877,87 @@ on Squad.Shots
    end repeat
 end Squad.Shots
 
+-------------------------------------------------------------------- grenades (ours)
+-- G or the right mouse button: lob one toward the ground under the reticle (no reticle: straight
+-- ahead). It flies an arc in the game's light gravity and goes off where it meets the ground.
+on Squad.Grenades pKeys
+   local tK, tDown, tErr
+   if sNadeT > 0 then subtract 1 from sNadeT
+   if sTestNade is not empty then
+      put sTestNade is true into tDown
+   else
+      put Squad.Down(103, pKeys) or Squad.Down(71, pKeys) into tDown
+      if not tDown and gNoMouse is not true then
+         try
+            put mouse(3) is "down" into tDown
+         catch tErr
+         end try
+      end if
+   end if
+   if tDown and sNadeT <= 0 then
+      put kNadeWait into sNadeT
+      Squad.Lob
+   end if
+   repeat for each key tK in sNade
+      subtract kGrav from sNade[tK]["vh"]
+      add sNade[tK]["vx"] to sNade[tK]["x"]
+      add sNade[tK]["vh"] to sNade[tK]["h"]
+      if sNade[tK]["h"] <= Squad.H(sNade[tK]["x"]) and sNade[tK]["vh"] < 0 then
+         Squad.NadeBlast sNade[tK]["x"]
+         Entity.Kill sNade[tK]["key"]
+         delete variable sNade[tK]
+         if sOver then
+            exit Squad.Grenades
+         end if
+      else
+         Entity.SetPosition sNade[tK]["key"], Squad.SX(sNade[tK]["x"]), kBase - sNade[tK]["h"], kZ
+         Entity.SetRotation sNade[tK]["key"], 0, 0, sTicks / 3
+      end if
+   end repeat
+end Squad.Grenades
+
+-- the throw: from the buggy's back, timed so it comes down on the ground at the aim point
+on Squad.Lob
+   local tX, tH, tTX, tTH, tT
+   put sX into tX
+   put sY + 50 into tH
+   if sAimX is empty then
+      put sX + 300 into tTX
+   else
+      put max(sX - kNadeFar, min(sX + kNadeFar, sAimX)) into tTX
+   end if
+   put Squad.H(tTX) into tTH
+   put max(24, min(70, abs(tTX - tX) / 9 + 20)) into tT          -- flight steps: longer for far throws
+   add 1 to sNadeN
+   put tX into sNade[sNadeN]["x"]
+   put tH into sNade[sNadeN]["h"]
+   put (tTX - tX) / tT into sNade[sNadeN]["vx"]
+   put (tTH - tH + 0.5 * kGrav * tT * tT) / tT into sNade[sNadeN]["vh"]
+   put Entity.Spawn("Squad.Bomb", Squad.SX(tX), kBase - tH, kZ, "120,255,90") into sNade[sNadeN]["key"]
+   put true into sThrown
+end Squad.Lob
+
+-- our grenade goes off on the ground: the bomb's blast (crater, walkers, the buggy if near) plus
+-- walkers a little further out, and points for them
+on Squad.NadeBlast pX
+   local tK, tN
+   put 0 into tN
+   repeat for each key tK in sEnemy
+      if abs(sEnemy[tK]["x"] - pX) < kNadeR then
+         FX.Sparks Squad.SX(sEnemy[tK]["x"]), kBase - Squad.H(sEnemy[tK]["x"]) - 18, kZ, 8, "200,80,255"
+         Entity.Kill sEnemy[tK]["key"]
+         delete variable sEnemy[tK]
+         add 1 to tN
+      end if
+   end repeat
+   if tN > 0 then
+      add 50 * tN to sScore
+      put empty into sHUDWas
+   end if
+   Squad.Blast pX, Squad.H(pX), true
+   FX.Sparks Squad.SX(pX), kBase - Squad.H(pX), kZ, 10, "120,255,90"
+end Squad.NadeBlast
+
 -- bombers cross the sky (most from ahead), dropping bombs where the buggy is heading
 on Squad.Flyers
    local tK, tT, tLand, tSide
@@ -1178,7 +1276,7 @@ on Squad.ShowHUD
    repeat with i = 1 to 3
       if sMan[i]["state"] is "on" then add 1 to tOn
    end repeat
-   put sLevel & "|" & sLives & "|" & sScore & "|" & sOver & "|" & tOn & "|" & sFlagX & "|" & sHold div 30 & "|" & sMsg & "|" & (sJumped and sFired) into tWords
+   put sLevel & "|" & sLives & "|" & sScore & "|" & sOver & "|" & tOn & "|" & sFlagX & "|" & sHold div 30 & "|" & sMsg & "|" & (sJumped and sFired and sThrown) into tWords
    if tWords is sHUDWas then exit Squad.ShowHUD
    put tWords into sHUDWas
    HUD.Set "Squad.Score", "SCORE" && sScore && " LIVES" && sLives && " LEVEL" && sLevel && " FLAG" && min(sFlagX, sFlagN) & "/" & sFlagN && " SQUAD" && tOn & "/3", 20, 40, 14
@@ -1195,10 +1293,10 @@ on Squad.ShowHUD
    end if
    HUD.Set "Squad.Msg", tLine, 20, 70, 12
    -- the controls stay up until you have jumped and fired
-   if sJumped and sFired then
+   if sJumped and sFired and sThrown then
       HUD.Remove "Squad.Help"
    else
-      HUD.Set "Squad.Help", "D: DRIVE   A: BACK UP   SPACE: JUMP   MOUSE: AIM   CLICK: FIRE", 20, gViewBottom - 30, 11
+      HUD.Set "Squad.Help", "D: DRIVE   A: BACK UP   SPACE: JUMP   MOUSE: AIM   CLICK: FIRE   G: GRENADE", 20, gViewBottom - 30, 11
    end if
 end Squad.ShowHUD
 
@@ -1209,7 +1307,7 @@ function Squad.State
       put "|m" & i && sMan[i]["state"] after tS
    end repeat
    put "|air " & sAir & "|up " & round(sY - Squad.H(sX)) & "|bombers " & the number of lines of the keys of sFly & "|bombs " & the number of lines of the keys of sBomb & "|craters " & the number of lines of the keys of sCrater after tS
-   put "|towers " & Squad.TowersNear() & "|snipers " & the number of lines of the keys of sSnipe & "|rounds " & Squad.Rounds() & "|behind " & sBehind after tS
+   put "|towers " & Squad.TowersNear() & "|snipers " & the number of lines of the keys of sSnipe & "|rounds " & Squad.Rounds() & "|behind " & sBehind & "|grenades " & the number of lines of the keys of sNade after tS
    return tS
 end Squad.State
 
@@ -1242,6 +1340,11 @@ on Squad.TestCrater pDX
    add 1 to sCraterN
    put sX + pDX into sCrater[sCraterN]
 end Squad.TestCrater
+
+-- grenade button for tests: true = G held (empty = the real keys and mouse)
+on Squad.TestNade pDown
+   put pDown into sTestNade
+end Squad.TestNade
 
 on Squad.TestQuiet
    put 1e9 into sNextEnemy
