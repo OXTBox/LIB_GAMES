@@ -8,6 +8,9 @@
 ##           100 points. Land on a purple enemy car from a jump: 200 points. Blue water
 ##           must be jumped. Water, the ditch, rocks and enemy cars on the ground cost a
 ##           life. Reach the flag at the end of each stage; 5 stages.
+## 23 Nov 2026 (p1-16): cars never overlap (pushed apart each frame), and a car you bump or land
+##           on spins out ONE way (picked at the first hit, kept) and slides off the screen. Fake
+##           physics, no engine physics.
 ######################################################################################
 
 global bPaused, bPlaying
@@ -21,6 +24,10 @@ constant kHalfW = 210        -- the road's half width
 constant kSliceGap = 60
 constant kSlices = 18
 constant kJumpSteps = 26
+constant kCarW = 56          -- two cars closer than this sideways AND kCarL along the road overlap
+constant kCarL = 96
+constant kOffX = 800         -- a spun-out car past this x is off the screen (500 px from the middle of a 900 px card)
+constant kSpinSpeed = 12     -- a spun-out car slides at least this fast
 
 on Game.OnStart
    focus on nothing
@@ -295,9 +302,28 @@ end Rally.Spawn
 
 on Rally.Things pInAir, pLand
    local tT, tR, tY, tDX, tDY, tCX, tGone, tW
+   Rally.Separate
    repeat for each key tT in sThing
       put false into tGone
-      if sThing[tT]["kind"] is among the items of "car,enemy" then
+      if sThing[tT]["spin"] is not empty and sThing[tT]["kind"] is among the items of "car,enemy" then
+         -- spinning out: one way only, sliding sideways until it leaves the screen
+         add sThing[tT]["v"] to sThing[tT]["w"]
+         add sThing[tT]["vx"] to sThing[tT]["x"]
+         add sThing[tT]["spin"] * 0.3 to sThing[tT]["rot"]
+         Entity.SetRotation sThing[tT]["key"], 0, 0, sThing[tT]["rot"]
+         if not sThing[tT]["scored"] and abs(sThing[tT]["x"] - Rally.RoadX(sThing[tT]["w"])) > kHalfW + 10 then
+            -- off the road: the 100 points a shove always paid
+            put true into sThing[tT]["scored"]
+            add 100 to sScore
+            put empty into sHUDWas
+            FX.Sparks sThing[tT]["x"], Rally.ScreenY(sThing[tT]["w"]), kZ, 14, "255,200,60"
+         end if
+         if abs(sThing[tT]["x"]) > kOffX then
+            Entity.Kill sThing[tT]["key"]
+            delete variable sThing[tT]
+            next repeat
+         end if
+      else if sThing[tT]["kind"] is among the items of "car,enemy" then
          add sThing[tT]["v"] to sThing[tT]["w"]
          -- enemies lean toward you
          if sThing[tT]["kind"] is "enemy" and abs(sThing[tT]["w"] - sDist) < 400 then
@@ -324,18 +350,21 @@ on Rally.Things pInAir, pLand
          put sThing[tT]["x"] - sX into tDX
          put sThing[tT]["w"] - sDist into tDY
          if abs(tDX) < 50 and abs(tDY) < 90 then
-            if pLand and sThing[tT]["kind"] is "enemy" then
-               Rally.Wreck tT, 200
-               next repeat
+            if pLand then
+               -- landed on it: it spins out from under you (an enemy pays 200 now)
+               if sThing[tT]["kind"] is "enemy" then
+                  add 200 to sScore
+                  put true into sThing[tT]["scored"]
+                  put empty into sHUDWas
+                  FX.Sparks sThing[tT]["x"], Rally.ScreenY(sThing[tT]["w"]), kZ, 14, "255,200,60"
+               end if
+               Rally.SpinOut tT, Rally.Sign(tDX), kSpinSpeed + abs(sVX)
             else if not pInAir then
                if sThing[tT]["kind"] is "car" then
-                  -- the bump: it flies away from you, you bounce back a little
-                  put Rally.Sign(tDX) * (6 + abs(sVX)) into sThing[tT]["vx"]
+                  -- the bump: it spins out away from you, you bounce back a little
+                  Rally.SpinOut tT, Rally.Sign(tDX), kSpinSpeed + abs(sVX)
                   put -Rally.Sign(tDX) * 3 into sVX
                   put sX + tDX - Rally.Sign(tDX) * 52 into sThing[tT]["x"]
-                  if abs(tDY) > 70 then
-                     add Rally.Sign(tDY) * 8 to sThing[tT]["w"]
-                  end if
                else
                   put Rally.Sign(tDX) * 4 into sThing[tT]["vx"]
                   put -Rally.Sign(tDX) * 9 into sVX
@@ -372,6 +401,76 @@ on Rally.Things pInAir, pLand
       end if
    end repeat
 end Rally.Things
+
+-- a hit car spins out: the way is picked at the FIRST hit and never flips
+on Rally.SpinOut pT, pDir, pSpeed
+   if sThing[pT]["spin"] is not empty then exit Rally.SpinOut
+   put Rally.Sign(pDir) into sThing[pT]["spin"]
+   put sThing[pT]["spin"] * max(kSpinSpeed, abs(pSpeed)) into sThing[pT]["vx"]
+   put 0 into sThing[pT]["rot"]
+   put sScroll into sThing[pT]["v"]          -- it keeps level with you, so it leaves by the side
+   if sThing[pT]["scored"] is empty then put false into sThing[pT]["scored"]
+end Rally.SpinOut
+
+-- fake physics: no two cars overlap. Each overlapping pair is pushed apart, half each, along the
+-- shallower side of the overlap. A spinning car that hits a still one hard spins it out too.
+on Rally.Separate
+   local tCars, tA, tB, i, j, tDX, tDW, tPX, tPW, tS
+   repeat for each key tA in sThing
+      if sThing[tA]["kind"] is among the items of "car,enemy" then put tA & comma after tCars
+   end repeat
+   delete the last char of tCars
+   repeat with i = 1 to the number of items of tCars - 1
+      put item i of tCars into tA
+      repeat with j = i + 1 to the number of items of tCars
+         put item j of tCars into tB
+         put sThing[tB]["x"] - sThing[tA]["x"] into tDX
+         put sThing[tB]["w"] - sThing[tA]["w"] into tDW
+         if abs(tDX) >= kCarW or abs(tDW) >= kCarL then next repeat
+         put kCarW - abs(tDX) into tPX
+         put kCarL - abs(tDW) into tPW
+         if tPX <= tPW then
+            put Rally.Sign(tDX) into tS
+            subtract tS * tPX / 2 from sThing[tA]["x"]
+            add tS * tPX / 2 to sThing[tB]["x"]
+         else
+            put Rally.Sign(tDW) into tS
+            subtract tS * tPW / 2 from sThing[tA]["w"]
+            add tS * tPW / 2 to sThing[tB]["w"]
+         end if
+         -- a hard knock: a spinning car passes its spin on (the struck car flies away from it)
+         if sThing[tA]["spin"] is not empty and sThing[tB]["spin"] is empty then
+            Rally.SpinOut tB, Rally.Sign(tDX), abs(sThing[tA]["vx"])
+         else if sThing[tB]["spin"] is not empty and sThing[tA]["spin"] is empty then
+            Rally.SpinOut tA, -Rally.Sign(tDX), abs(sThing[tB]["vx"])
+         end if
+      end repeat
+   end repeat
+end Rally.Separate
+
+-- test hooks: put a car anywhere (pX across, pW along the road); read one back
+function Rally.TestPut pKind, pX, pW
+   if pKind is "enemy" then
+      Rally.Add "enemy", "Rally.Enemy", pX, pW, "200,60,255"
+   else
+      Rally.Add "car", "Rally.RoadCar", pX, pW, "255,60,60"
+   end if
+   put 0 into sThing[sThingN]["v"]
+   return sThingN
+end Rally.TestPut
+
+function Rally.TestThing pT
+   if sThing[pT]["key"] is empty then return "gone"
+   return sThing[pT]["x"] & comma & sThing[pT]["w"] & comma & sThing[pT]["spin"]
+end Rally.TestThing
+
+on Rally.TestNoSpawn
+   put 1e9 into sNextSpawn
+end Rally.TestNoSpawn
+
+function Rally.TestPlayer
+   return sX & comma & sDist
+end Rally.TestPlayer
 
 function Rally.Sign pN
    if pN < 0 then return -1
