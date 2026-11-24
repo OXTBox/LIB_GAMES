@@ -19,6 +19,10 @@
 ##           and that is when the bombers come in from BEHIND: two directions at once.
 ## (owner's notes of 15 Nov 8:16 PM: buildings, water towers, enemies on them ahead,
 ##  attack by air from behind)
+## 23 Nov 2026 (p1-18): a WIDER VIEW: the camera stands kCamBack further back (and higher, so the
+##  ground stays where it was on the screen): half as much land again on each side. How much a
+##  bomb wrecks the land is one number, kWreck (0 = no craters, 1 = as before, 2 = twice as big);
+##  Squad.SetWreck sets it while playing, and ComfyUI's Terrain node has it as the "wreck" knob.
 ######################################################################################
 
 global bPaused, bPlaying
@@ -32,18 +36,22 @@ local sCrater, sCraterN, sFly, sFlyN, sBomb, sBombN, sNextFly
 local sRet, sAimX, sAimH, sFireT, sTestAim, sTestMouse, sJumped, sFired
 local sTower, sSnipe, sSnipeN, sNoSnipe, sBehind, sWarned  -- buildings, roof snipers
 local sMove                                              -- how fast you drive this step
+local sWreck, sCrR, sCrD                                 -- kWreck now, and a crater's width and depth
 
 constant kZ = 300            -- screen scale 300/z: 1 unit = 1 pixel
 constant kBase = 230
 constant kBuggyX = -120      -- the buggy stays here on the screen
 constant kSeg = 20
-constant kSlices = 52
+constant kSlices = 78       -- ground slices on the screen (52 before the wider view)
+constant kSlicesBack = 32   -- and how many of them behind the buggy (24 before)
+constant kCamBack = 150     -- WIDER VIEW: the camera this far back; 0 = the old close view
 constant kFlagGap = 2400
 constant kHoldSteps = 600    -- 20 seconds
 constant kGrav = 0.18        -- lighter than earth: jumps float
 constant kJumpV = 6.2        -- up to about 100 high, two seconds in the air
 constant kCraterR = 52       -- a bomb's crater: half width
 constant kCraterD = 38       -- and depth (craters on craters dig deeper, to 70)
+constant kWreck = 1          -- how much a bomb wrecks the land: 0 none, 1 as made, 2 twice (ComfyUI "wreck")
 constant kShotV = 22
 constant kTowerGap = 1100    -- about this far between buildings and water towers
 constant kSnipeRange = 620   -- snipers fire while their roof is this near ahead
@@ -52,6 +60,9 @@ constant kRoundV = 4.2       -- a sniper's round: slow enough to shoot down or d
 on Game.OnStart
    focus on nothing
    Camera.Reset
+   Squad.View
+   if sWreck is not a number then put kWreck into sWreck
+   Squad.SetWreck sWreck
    Scene.ClearAll
    Particles.Clear
    HUD.Clear
@@ -66,6 +77,24 @@ on Game.OnStart
    put false into sNoSnipe
    Squad.StartLevel 1
 end Game.OnStart
+
+-- the wider view: the camera kCamBack behind the screen, and raised so the ground line stays put
+on Squad.View
+   Camera.SetPosition 0, kBase - kBase * (kZ + kCamBack) / kZ, -kCamBack
+end Squad.View
+
+-- how much a bomb wrecks the land: 0 = the land stays whole, 1 = as made, 2 = craters twice the size
+-- (they still stack no deeper than 70, so a jump always gets out). Empty = back to kWreck.
+on Squad.SetWreck pAmount
+   if pAmount is not a number then put kWreck into pAmount
+   put max(0, min(2, pAmount)) into sWreck
+   put kCraterR * sWreck into sCrR
+   put kCraterD * sWreck into sCrD
+end Squad.SetWreck
+
+function Squad.Wreck
+   return sWreck
+end Squad.Wreck
 
 -- Spark's table: buggy speed | flags | lives | bonus
 -- a level change through the loading screen (LIB_LOADING_SCREEN: burn, green text, the player first,
@@ -193,7 +222,7 @@ function Squad.H pX
    put 0 into tDig
    repeat for each key tK in sCrater
       put abs(pX - sCrater[tK]) into tD
-      if tD < kCraterR then add kCraterD * (1 - (tD / kCraterR) ^ 2) to tDig
+      if tD < sCrR then add sCrD * (1 - (tD / sCrR) ^ 2) to tDig
    end repeat
    return tH - min(70, tDig)
 end Squad.H
@@ -507,17 +536,20 @@ on Squad.ShowBuggy
 end Squad.ShowBuggy
 
 on Squad.Ground
-   local i, tIdx, tName, tFirst
-   put sX div kSeg - 24 into tFirst
+   local i, tIdx, tName, tFirst, tH, tH2
+   put sX div kSeg - kSlicesBack into tFirst
+   put Squad.H(tFirst * kSeg) into tH2
    repeat with i = 0 to kSlices
       put tFirst + i into tIdx
-      put Squad.SliceName(Squad.H((tIdx + 1) * kSeg) - Squad.H(tIdx * kSeg)) into tName
+      put tH2 into tH
+      put Squad.H((tIdx + 1) * kSeg) into tH2
+      put Squad.SliceName(tH2 - tH) into tName
       if tName is not sSlice[i]["type"] then
          if sSlice[i]["key"] is not empty then Entity.Kill sSlice[i]["key"]
          put Entity.Spawn(tName, 0, kBase, kZ, "120,200,90") into sSlice[i]["key"]
          put tName into sSlice[i]["type"]
       end if
-      Entity.SetPosition sSlice[i]["key"], Squad.SX(tIdx * kSeg), kBase - Squad.H(tIdx * kSeg), kZ
+      Entity.SetPosition sSlice[i]["key"], Squad.SX(tIdx * kSeg), kBase - tH, kZ
    end repeat
 end Squad.Ground
 
@@ -533,9 +565,9 @@ on Squad.Enemies
       if sX < 300 then put 1 into tSide
       add 1 to sEnemyN
       if tSide is 1 then
-         put sX + 640 into sEnemy[sEnemyN]["x"]
+         put sX + 640 + 2 * kCamBack into sEnemy[sEnemyN]["x"]
       else
-         put sX - 320 into sEnemy[sEnemyN]["x"]
+         put sX - 320 - 2 * kCamBack into sEnemy[sEnemyN]["x"]
       end if
       put Entity.Spawn("Squad.Enemy", Squad.SX(sEnemy[sEnemyN]["x"]), kBase, kZ, "200,80,255") into sEnemy[sEnemyN]["key"]
    end if
@@ -584,7 +616,7 @@ on Squad.Enemies
          end if
          next repeat
       end if
-      if abs(tEX - sX) > 900 then
+      if abs(tEX - sX) > 900 + 2 * kCamBack then
          Entity.Kill sEnemy[tK]["key"]
          delete variable sEnemy[tK]
       end if
@@ -665,7 +697,7 @@ on Squad.Aim
    else
       put sX + item 1 of tM - kBuggyX into sAimX
       put kBase - item 2 of tM into sAimH
-      Entity.SetPosition sRet, item 1 of tM * (kZ - 6) / kZ, item 2 of tM * (kZ - 6) / kZ, kZ - 6
+      Entity.SetPosition sRet, item 1 of tM * (kZ + kCamBack - 6) / (kZ + kCamBack), Squad.RetY(item 2 of tM), kZ - 6
       Entity.SetRotation sRet, 0, 0, sTicks / 25
    end if
    if sFireT > 0 then subtract 1 from sFireT
@@ -675,22 +707,37 @@ on Squad.Aim
    end if
 end Squad.Aim
 
+-- the reticle stands 6 nearer than the buggy: on the same screen point as y at the buggy's depth
+function Squad.RetY pY
+   local tCY
+   put kBase - kBase * (kZ + kCamBack) / kZ into tCY
+   return tCY + (pY - tCY) * (kZ + kCamBack - 6) / (kZ + kCamBack)
+end Squad.RetY
+
 -- the mouse as a point at the buggy's depth ("x,y" as entities are placed), or empty
 function Squad.MousePoint
    local tP, tErr, tM
    if sTestAim is not empty then return sTestAim
    if gNoMouse is true then return empty
    try
-      put Engine.Info("projection") into tP
-      set the itemDelimiter to comma
-      if item 3 of tP is not a number or item 1 of tP <= 0 then return empty
       put Engine.Mouse() into tM
       if tM is empty then return empty
-      return ((item 1 of tM - item 2 of tP) * kZ / item 1 of tP) & comma & ((item 2 of tM - item 3 of tP) * kZ / item 1 of tP)
+      return Squad.ScreenPoint(item 1 of tM, item 2 of tM)
    catch tErr
       return empty
    end try
 end Squad.MousePoint
+
+-- a screen pixel as a point at the buggy's depth ("x,y" as entities are placed), or empty. The camera
+-- stands kCamBack back and raised (Squad.View): a pixel there is (kZ + kCamBack) / projection units
+function Squad.ScreenPoint pMX, pMY
+   local tP
+   put Engine.Info("projection") into tP
+   set the itemDelimiter to comma
+   if item 3 of tP is not a number or item 1 of tP <= 0 or pMX is not a number or pMY is not a number then return empty
+   return ((pMX - item 2 of tP) * (kZ + kCamBack) / item 1 of tP) & comma & \
+         (kBase - kBase * (kZ + kCamBack) / kZ + (pMY - item 3 of tP) * (kZ + kCamBack) / item 1 of tP)
+end Squad.ScreenPoint
 
 function Squad.MouseDown
    local tErr
@@ -830,9 +877,9 @@ on Squad.Flyers
             Squad.Say "BOMBERS BEHIND YOU!"
          end if
          if tSide is 1 then
-            Squad.AddFlyer sX + 720, -(2 + 0.3 * sLevel)
+            Squad.AddFlyer sX + 720 + 2 * kCamBack, -(2 + 0.3 * sLevel)
          else
-            Squad.AddFlyer sX - 520, sV + 1.5 + 0.3 * sLevel
+            Squad.AddFlyer sX - 520 - kCamBack, sV + 1.5 + 0.3 * sLevel
          end if
       end if
    end if
@@ -851,7 +898,7 @@ on Squad.Flyers
             put 30 into sFly[tK]["cool"]
          end if
       end if
-      if abs(sFly[tK]["x"] - sX) > 1000 then
+      if abs(sFly[tK]["x"] - sX) > 1000 + 2 * kCamBack then
          Entity.Kill sFly[tK]["key"]
          delete variable sFly[tK]
       end if
@@ -920,7 +967,7 @@ end Squad.Bombs
 on Squad.Blast pX, pH, pDig
    local tK
    FX.Sparks Squad.SX(pX), kBase - pH, kZ, 18, "255,160,40"
-   if pDig then
+   if pDig and sCrR > 0 then
       add 1 to sCraterN
       put pX into sCrater[sCraterN]
       repeat for each key tK in sCrater
@@ -1251,6 +1298,7 @@ end Squad.ManX
 
 on Game.OnStop
    HUD.Clear
+   Camera.Reset
 end Game.OnStop
 
 on arrowKey pKey
