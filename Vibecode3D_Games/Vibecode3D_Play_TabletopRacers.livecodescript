@@ -6,6 +6,8 @@
 ## (LIB_SPARK/arcade/out/945_Tabletop_Racers), script by Claude.
 ## CONTROLS  Left/Right (or A/D): steer    Space (or Up): accelerate    Down: brake
 ##           Escape: pause
+## START     each table (and each try again) begins on an empty stretch: you pull up to the
+##           start line, the rivals pull up beside you, 3 2 1 GO (p1-14, 23 Nov 2026)
 ## RULES     10 points for every stretch of table you cover. A crumb or a pencil costs
 ##           2 seconds, a juice spill 5. Off the side of the table: a life. Get a long
 ##           way ahead of a rival and it drops out. Reach the far edge before the clock
@@ -16,7 +18,7 @@ global bPaused, bPlaying
 
 local sCar, sX, sW, sAng, sSpeed, sTableLen, sSlice, sThing, sThingN, sRival, sTime, sSpin
 local sLevel, sLives, sScore, sOver, sWon, sMul, sMsg, sMsgT, sPassed, sNextScore
-local sKeysWas, sTestKeys, sHUDWas, sTicks
+local sKeysWas, sTestKeys, sHUDWas, sTicks, sPhase, sPhaseT, sCount
 
 constant kZ = 340            -- screen scale 300/z
 constant kCarY = 200         -- where your car sits on the screen
@@ -24,6 +26,9 @@ constant kHalfW = 330        -- half the table's width
 constant kSliceGap = 80
 constant kSlices = 11
 constant kTop = 9
+constant kPullIn = 45        -- steps the cars take to pull up to the line
+constant kGridBack = 260     -- how far behind the line they come from
+constant kClear = 900        -- the first stretch past the line is empty
 
 on Game.OnStart
    focus on nothing
@@ -184,7 +189,7 @@ on Table.StartLevel pLevel
    put empty into sThing
    put 0 into sThingN
    -- the table's clutter, laid out once
-   put 500 into tW
+   put kClear into tW
    repeat while tW < sTableLen - 300
       put random(100) into tN
       if tN <= 50 then
@@ -200,29 +205,40 @@ on Table.StartLevel pLevel
       add max(90, 260 - pLevel * 30) + random(140) to tW
    end repeat
    Table.Add "finish", "Table.Edge", 0, sTableLen, "255,255,255"
+   Table.Add "start", "Table.Edge", 0, 0, "0,230,120"
    -- the rivals
    repeat for each key tK in sRival
       Entity.Kill sRival[tK]["key"]
    end repeat
    put empty into sRival
-   repeat with i = 1 to item 2 of tRow
-      put -kHalfW + i * 2 * kHalfW / (item 2 of tRow + 2) into sRival[i]["x"]
-      put 0 into sRival[i]["w"]
+   -- the grid: one slot more than there are rivals, across the table; you take the middle one
+   put item 2 of tRow into tN
+   put (tN + 1) div 2 into tK
+   repeat with i = 1 to tN
+      if i <= tK then
+         put Table.Slot(i - 1, tN) into sRival[i]["x"]
+      else
+         put Table.Slot(i, tN) into sRival[i]["x"]
+      end if
+      put -kGridBack - i * 40 into sRival[i]["w"]
       put (3.2 + random(10) / 10) * (0.85 + sMul * 0.15) into sRival[i]["v"]
       put true into sRival[i]["in"]
       put Entity.Spawn("Table.Car", sRival[i]["x"], kCarY, kZ, "255,0,255") into sRival[i]["key"]
+      Entity.SetPosition sRival[i]["key"], 0, -900, kZ
    end repeat
-   put kHalfW * 0.85 * (item 2 of tRow + 1) / (item 2 of tRow + 2) - kHalfW * 0.85 into sX
-   put 0 into sX
-   put 0 into sW
+   put Table.Slot(tK, tN) into sX
+   put -kGridBack into sW
    put 0 into sAng
    put 0 into sSpeed
    put 0 into sSpin
    put 1800 into sTime
    put 0 into sPassed
    put 100 into sNextScore
-   put "TABLE" && pLevel & ": RACE TO THE FAR EDGE" into sMsg
-   put 60 into sMsgT
+   put "grid" into sPhase
+   put 0 into sPhaseT
+   put empty into sCount
+   put "TABLE" && pLevel & ": PULL UP TO THE LINE" into sMsg
+   put 0 into sMsgT
    put empty into sHUDWas
 end Table.StartLevel
 
@@ -273,6 +289,10 @@ on Game.OnUpdate
       exit Game.OnUpdate
    end if
    put tKeys into sKeysWas
+   if sPhase is not "race" then
+      Table.Grid
+      exit Game.OnUpdate
+   end if
    -- steering: the car turns, and goes where it points
    if sSpin > 0 then
       subtract 1 from sSpin
@@ -342,7 +362,7 @@ on Game.OnUpdate
             put abs(sThing[tT]["x"] - sX) < 72 and abs(sThing[tT]["w"] - sW) < 72 into tHit
             break
          case "finish"
-            if sW >= sThing[tT]["w"] then
+            if sW >= sThing[tT]["w"] and sThing[tT]["w"] > 0 then
                Table.Finish
                exit Game.OnUpdate
             end if
@@ -397,6 +417,78 @@ on Game.OnUpdate
    end if
    Table.ShowHUD
 end Game.OnUpdate
+
+-- the start: everyone pulls up (eased, the rivals a little after you), then 3 2 1 GO.
+-- No keys count until GO; the clock waits too.
+on Table.Grid
+   local tU, tK, tN, tRW
+   add 1 to sPhaseT
+   if sPhase is "grid" then
+      put min(1, sPhaseT / kPullIn) into tU
+      put -kGridBack * (1 - tU) ^ 2 into sW
+      put 0 into tN
+      repeat for each key tK in sRival
+         add 1 to tN
+         put min(1, max(0, (sPhaseT - tK * 6) / kPullIn)) into tU
+         put (-kGridBack - tK * 40) * (1 - tU) ^ 2 into sRival[tK]["w"]
+         if sRival[tK]["w"] > -0.5 then put 0 into sRival[tK]["w"]
+      end repeat
+      if sPhaseT >= kPullIn + tN * 6 + 8 then
+         put 0 into sW
+         put "count" into sPhase
+         put 0 into sPhaseT
+         put 3 into sCount
+         put 3 into sMsg
+      end if
+   else
+      -- count: 3, 2, 1 a second each, then GO
+      put 3 - sPhaseT div 30 into sCount
+      if sCount <= 0 then
+         put "race" into sPhase
+         put "GO!" into sMsg
+         put 30 into sMsgT
+         put empty into sHUDWas
+         Table.ShowHUD
+         exit Table.Grid
+      end if
+      put sCount into sMsg
+   end if
+   Table.Draw
+   Table.ShowHUD
+end Table.Grid
+
+-- everything where it is, with nothing moving by itself (the start)
+on Table.Draw
+   local tFrac, i, tWW, tT, tY, tK
+   Entity.SetPosition sCar, sX, kCarY, kZ
+   Entity.SetRotation sCar, 0, 0, sAng
+   put sW mod kSliceGap into tFrac
+   if tFrac < 0 then add kSliceGap to tFrac
+   repeat with i = 0 to kSlices
+      put sW - 160 + i * kSliceGap - tFrac into tWW
+      Entity.SetPosition sSlice[i], 0, Table.ScreenY(tWW) - kSliceGap, kZ
+   end repeat
+   repeat for each key tT in sThing
+      put Table.ScreenY(sThing[tT]["w"]) into tY
+      if tY > 420 or tY < -460 then
+         Entity.SetPosition sThing[tT]["key"], 0, -900, kZ
+      else
+         Entity.SetPosition sThing[tT]["key"], sThing[tT]["x"], tY, kZ + 2
+      end if
+   end repeat
+   repeat for each key tK in sRival
+      Entity.SetPosition sRival[tK]["key"], sRival[tK]["x"], Table.ScreenY(sRival[tK]["w"]), kZ
+   end repeat
+end Table.Draw
+
+-- slot j (0 .. pRivals) of the starting grid, as x
+function Table.Slot pJ, pRivals
+   return round(-kHalfW * 0.7 + pJ * 1.4 * kHalfW / max(1, pRivals))
+end Table.Slot
+
+function Table.Phase
+   return sPhase & "," & sCount
+end Table.Phase
 
 function Table.Sgn pN
    if pN < 0 then return -1
