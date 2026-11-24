@@ -22,6 +22,13 @@ Real window (OXT-Beyond, 900x600, 23 Nov): solid 31 fps (5 ms draw), glass 31 fp
 
 Test: `OXT-BEYOND/tests/t77_corridor_lab.txt` (33 checks).
 
+## Owner's first look (23 Nov 2026)
+"PERFECTLY acceptable game, very well done": merged. He reported a right-hand wall vanishing when
+close and turned 1-15 degrees (an end behind the eye): fixed in LIB_RAYCAST 2463099.
+Seen: the solid walls jitter a little. Likely causes to try: wall edges rounded to 0.1 px and the
+one-column overlap at hidden edges change from frame to frame; the shade steps (0.05) flip colour
+as the depth crosses them. Not urgent.
+
 ## Not yet
 Doors open instantly-ish (10 frames glowing), no sliding animation. No sounds. Monsters do not
 open doors or avoid each other. No mouse look. xRay (raylib) has no own draw of these polygons:
