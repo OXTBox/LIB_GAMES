@@ -18,7 +18,7 @@ C changes the number of rays (80/120/160/240): fewer = faster; wall corners stay
 
 ## Headless speed (OXT-Beyond, no window, 23 Nov 2026; painting is not counted)
 solid 3.6 ms, glass 3.9, lines 3.9 a frame at 120 rays; glass 80/160/240 rays: 3.2/5.0/7.2 ms.
-Real-window speed still to be measured (the HUD shows FPS).
+Real window (OXT-Beyond, 900x600, 23 Nov): solid 31 fps (5 ms draw), glass 31 fps at 120 rays.
 
 Test: `OXT-BEYOND/tests/t77_corridor_lab.txt` (33 checks).
 

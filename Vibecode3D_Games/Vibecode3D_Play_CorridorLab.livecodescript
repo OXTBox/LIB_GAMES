@@ -616,7 +616,7 @@ on CL.MakeView
    set the textFont of the templateField to "Courier New"
    set the textSize of the templateField to 13
    create field "CL.Hud" in group "CL.View" of sCard
-   set the rect of field "CL.Hud" of sCard to item 1 of tR + 10, item 4 of tR - 30, item 3 of tR - 10, item 4 of tR - 6
+   set the rect of field "CL.Hud" of sCard to item 1 of tR + 10, item 4 of tR - 56, item 3 of tR - 10, item 4 of tR - 32   -- above the host's own label
    create field "CL.Msg" in group "CL.View" of sCard
    set the rect of field "CL.Msg" of sCard to item 1 of tR + 10, item 2 of tR + 40, item 3 of tR - 10, item 2 of tR + 64
    set the textAlign of field "CL.Msg" of sCard to "center"
@@ -974,9 +974,9 @@ end CL.MaxX
 on CL.DrawGun pL, pT, pW, pH
    local tCX, tBY, tBX, tPts, tU, tLines
    put pL + pW div 2 + round(sin(sBob) * 8) into tCX
-   put pT + pH + round(abs(cos(sBob)) * 5) into tBY
+   put pT + pH - 34 + round(abs(cos(sBob)) * 5) into tBY
    if sFire > 6 then add 10 to tBY
-   put "-26,0 -20,-52 -11,-74 11,-74 20,-52 26,0 -26,0" into tLines
+   put "-30,44 -20,-52 -11,-74 11,-74 20,-52 30,44 -30,44" into tLines
    put empty into tPts
    repeat for each word tU in tLines
       put (tCX + item 1 of tU) & comma & (tBY + item 2 of tU) & cr after tPts
