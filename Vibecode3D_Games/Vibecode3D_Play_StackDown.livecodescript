@@ -11,16 +11,23 @@
 global bPaused, bPlaying
 
 local sWell, sCellKey, sShape, sPC, sPR, sPieceKeys, sColor, sWas, sT, sEvery
-local sLevel, sRows, sNeed, sScore, sPerRow, sOver, sWon, sTestKeys, sHUDWas
+local sLevel, sRows, sNeed, sScore, sPerRow, sOver, sWon, sTestKeys, sHUDWas, sSway
 
 constant kZ = 600
 constant kCols = 10
 constant kRows = 18
 constant kCell = 30
+-- the well sways, very gently, so it looks alive (p1-25, 23 Nov 2026): a slow roll and a slower
+-- turn, two sines that never line up; degrees and seconds (30 frames a second)
+constant kSwayRoll = 1.5
+constant kSwayRollSecs = 16
+constant kSwayTurn = 1
+constant kSwayTurnSecs = 23
 
 on Game.OnStart
    focus on nothing          -- arrow keys belong to the game, never to a menu or a field
    Camera.Reset
+   put 0 into sSway
    Scene.ClearAll
    Particles.Clear
    HUD.Clear
@@ -157,6 +164,7 @@ end Stack.Pressed
 on Game.OnUpdate
    local tKeys, tTry, tFast
    put Stack.Keys() into tKeys
+   Stack.Sway
    if sOver then
       if Stack.Pressed(32, tKeys) then
          put 0 into sScore
@@ -191,6 +199,15 @@ on Game.OnUpdate
    Stack.ShowPiece
    Stack.ShowHUD
 end Game.OnUpdate
+
+-- one frame of the sway: the camera turns, the play never changes
+on Stack.Sway
+   local tA, tB
+   add 1 to sSway
+   put sin(2 * pi * sSway / (kSwayRollSecs * 30)) * kSwayRoll * pi / 180 into tA
+   put sin(2 * pi * sSway / (kSwayTurnSecs * 30)) * kSwayTurn * pi / 180 into tB
+   Camera.SetLook tB, empty, tA
+end Stack.Sway
 
 -- the shape becomes part of the well; full rows go, everything above moves down
 on Stack.Land
@@ -259,6 +276,7 @@ end Stack.State
 
 on Game.OnStop
    HUD.Clear
+   Camera.SetLook 0, empty, 0
 end Game.OnStop
 
 -- the arrows move you; a focused menu or field must never get them
