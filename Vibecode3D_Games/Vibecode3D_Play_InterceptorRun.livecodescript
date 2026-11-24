@@ -2,24 +2,27 @@
 ## CARD SCRIPT: "Play.InterceptorRun"   INTERCEPTOR RUN  (11 14 2026)
 ## An armed agent car up a top-down highway: shoot or ram the red cars, spare the white
 ## ones, drive into the back of an orange supply truck for a special weapon, dodge the
-## helicopter's bombs. At the end of the road is the water: your car becomes a boat.
+## helicopter's turret. At the end of the road is the water: your car becomes a boat.
 ## Spark's concept and level numbers (LIB_SPARK/arcade/out/478_Interceptor_Run),
 ## script by Claude.
 ## CONTROLS  Arrows (or WASD): drive    Space: gun    X (or Shift): special weapon
 ##           Escape: pause    mouse wheel (or + and -): zoom in on the car, and back out
 ## RULES     red car shot or rammed side-on: 150. White car hit: -200. Being run into
-##           head-on, a bomb blast, or the road edge: a life. Supply trucks give, in turn,
+##           head-on, a turret shot, or the road edge: a life. Supply trucks give, in turn,
 ##           MISSILES (8, heat seeking: they turn after the nearest red car or the
 ##           helicopter, blast a wide circle, and bring the helicopter down) and OIL (5 slicks behind you that
 ##           spin out red cars coming up from below). Reach the water: next level (5).
+## 23 Nov 2026 (p1-21): the helicopter flies straight down from the top to about half the
+##           screen, its body always facing down the screen (only the rotor spins); a small
+##           turret on it turns to you and shoots. Cars that run onto the water sink (~1 s).
 ######################################################################################
 
 global bPaused, bPlaying
 
 local sCar, sBoat, sX, sVX, sDist, sStageLen, sSlice, sSliceWet, sThing, sThingN, sNextSpawn
-local sShot, sShotN, sGunWait, sSpecial, sAmmo, sTruckN, sHeli, sHeliX, sBombWait, sWet
+local sShot, sShotN, sGunWait, sSpecial, sAmmo, sTruckN, sHeli, sHeliX, sTurretWait, sWet
 local sLevel, sLives, sScore, sOver, sWon, sHurt, sScroll, sKeysWas, sTestKeys, sHUDWas, sTicks
-local sRotor, sHeliY, sZoom, sZoomF
+local sRotor, sHeliY, sZoom, sZoomF, sTurret, sHeliGo
 
 constant kZ = 380            -- the play plane (screen scale is 300/z: 0.8 px a unit)
 constant kCarY = 170
@@ -28,6 +31,10 @@ constant kSliceGap = 60
 constant kSlices = 13
 constant kWaterLen = 1100
 constant kZoomMax = 4        -- zoom steps (mouse wheel or + -); each brings the eye 15% nearer
+constant kHeliTop = -360     -- the helicopter comes in above the screen's top edge ...
+constant kHeliStop = -40     -- ... and flies straight down to about half the screen
+constant kHeliShotV = 7      -- turret shot speed on the screen
+constant kSinkTicks = 30     -- a car on the water sinks in about a second
 
 on Game.OnStart
    focus on nothing
@@ -57,9 +64,10 @@ on Int.Build
    Mesh.Define "Int.Boat", Int.BoatMesh()
    Mesh.Define "Int.Heli", Int.HeliMesh()
    Mesh.Define "Int.Rotor", Int.RotorMesh()
+   Mesh.Define "Int.Turret", Int.TurretMesh()
+   Mesh.Define "Int.HeliShot", Mesh.Box(6, 6, 6)
    Mesh.Define "Int.Shot", Mesh.Box(4, 14, 4)
    Mesh.Define "Int.Missile", Mesh.Pyramid(3, 6, 22)
-   Mesh.Define "Int.Bomb", Mesh.Box(12, 12, 12)
    Mesh.Define "Int.Oil", Mesh.Prism(7, 26, 2)
    Mesh.Define "Int.Slice", Int.SliceMesh(false)
    Mesh.Define "Int.Wave", Int.SliceMesh(true)
@@ -72,6 +80,7 @@ on Int.Build
    put Entity.Spawn("Int.Boat", 0, -900, kZ, "0,230,255") into sBoat
    put Entity.Spawn("Int.Heli", 0, -900, kZ - 60, "150,150,160") into sHeli
    put Entity.Spawn("Int.Rotor", 0, -900, kZ - 74, "200,200,210") into sRotor
+   put Entity.Spawn("Int.Turret", 0, -900, kZ - 64, "255,200,60") into sTurret
 end Int.Build
 
 function Int.CarMesh pW, pH
@@ -114,19 +123,31 @@ end Int.BoatMesh
 function Int.HeliMesh
    local tM
    put Mesh.New() into tM
+   -- nose to +y (down the screen, the way it flies), tail boom up the screen
    Int.AddBox tM, 0, 0, 0, 34, 50, 20
-   Int.AddBox tM, 0, 50, 0, 6, 50, 6
+   Int.AddBox tM, 0, -50, 0, 6, 50, 6
    return tM
 end Int.HeliMesh
+
+-- the turret: a small block and its barrel along +y; it alone turns to aim (p1-21)
+function Int.TurretMesh
+   local tM
+   put Mesh.New() into tM
+   Int.AddBox tM, 0, 0, 0, 10, 10, 6
+   Mesh.AddVertex tM, 0, 4, 0
+   Mesh.AddVertex tM, 0, 26, 0
+   Mesh.AddLine tM, tM["count"] - 1, tM["count"]
+   return tM
+end Int.TurretMesh
 
 -- the rotor is its own thing: it spins, the body doesn't (owner, 16 Nov)
 function Int.RotorMesh
    local tM
    put Mesh.New() into tM
-   Mesh.AddVertex tM, -70, -70, 0
-   Mesh.AddVertex tM, 70, 70, 0
-   Mesh.AddVertex tM, -70, 70, 0
-   Mesh.AddVertex tM, 70, -70, 0
+   Mesh.AddVertex tM, -40, -40, 0
+   Mesh.AddVertex tM, 40, 40, 0
+   Mesh.AddVertex tM, -40, 40, 0
+   Mesh.AddVertex tM, 40, -40, 0
    Mesh.AddLine tM, 1, 2
    Mesh.AddLine tM, 3, 4
    return tM
@@ -198,7 +219,7 @@ on Int.StartLevel pLevel
    put 30 into sHurt
    put 0 into sGunWait
    put false into sWet
-   put 0 into sBombWait
+   put 0 into sTurretWait
    put -1 into sHeliX
    repeat for each key tK in sThing
       Entity.Kill sThing[tK]["key"]
@@ -366,7 +387,8 @@ on Int.Spawn
    -- from level 2 the helicopter comes now and then
    if sLevel >= 2 and sHeliX < 0 and random(6) is 1 then
       put tCX into sHeliX
-      put 0 into sBombWait
+      put empty into sHeliY
+      put 40 into sTurretWait
    end if
 end Int.Spawn
 
@@ -395,29 +417,61 @@ on Int.Fire pKind, pX, pDummy
    end if
 end Int.Fire
 
--- the helicopter crosses above, dropping bombs where you are
+-- the helicopter flies straight down from the top to about half the screen, its body facing
+-- down the screen the whole time (it never turns: only the rotor spins, p1-21); a small turret
+-- turns toward you and shoots. After a while it climbs back out the top.
 on Int.Helicopter
-   local tY
+   local tDX, tDY, tLen, tA
    if sHeliX < 0 then
       Entity.SetPosition sHeli, 0, -900, kZ - 60
       Entity.SetPosition sRotor, 0, -900, kZ - 74
+      Entity.SetPosition sTurret, 0, -900, kZ - 64
       put empty into sHeliY
+      put empty into sHeliGo
       exit Int.Helicopter
    end if
-   add max(-3, min(3, (sX - sHeliX) * 0.03)) to sHeliX
-   put -180 + 20 * sin(sTicks / 20) into tY
-   put tY into sHeliY
-   Entity.SetPosition sHeli, sHeliX, tY, kZ - 60
-   Entity.SetPosition sRotor, sHeliX, tY, kZ - 74
-   Entity.SetRotation sRotor, 0, 0, sTicks / 2
-   subtract 1 from sBombWait
-   if sBombWait <= 0 then
-      Int.AddThing "bomb", "Int.Bomb", sHeliX, sDist + (kCarY - tY), 0, "255,40,40"
-      put 40 into sThing[sThingN]["fuse"]
-      put 70 - sLevel * 6 into sBombWait
+   if sHeliY is empty then
+      put kHeliTop into sHeliY
+      put "in" into sHeliGo
    end if
-   -- it leaves after a while
-   if random(400) is 1 then put -1 into sHeliX
+   if sHeliGo is "in" then
+      add 2.5 to sHeliY
+      if sHeliY >= kHeliStop then
+         put kHeliStop into sHeliY
+         put "hover" into sHeliGo
+      end if
+   else if sHeliGo is "hover" then
+      -- it leaves after a while
+      if random(400) is 1 then
+         put "out" into sHeliGo
+      end if
+   else
+      subtract 4 from sHeliY
+      if sHeliY < kHeliTop then
+         put -1 into sHeliX
+         Int.Helicopter
+         exit Int.Helicopter
+      end if
+   end if
+   Entity.SetPosition sHeli, sHeliX, sHeliY, kZ - 60
+   Entity.SetRotation sHeli, 0, 0, 0
+   Entity.SetPosition sRotor, sHeliX, sHeliY, kZ - 74
+   Entity.SetRotation sRotor, 0, 0, sTicks / 2
+   -- the turret aims at the car (its barrel is +y at no turn)
+   put sX - sHeliX into tDX
+   put kCarY - sHeliY into tDY
+   put atan2(-tDX, tDY) into tA
+   Entity.SetPosition sTurret, sHeliX, sHeliY, kZ - 64
+   Entity.SetRotation sTurret, 0, 0, tA
+   subtract 1 from sTurretWait
+   if sTurretWait <= 0 and sHeliY > -300 and sHeliGo is not "out" and not sWet then
+      put max(1, sqrt(tDX * tDX + tDY * tDY)) into tLen
+      Int.AddThing "hshot", "Int.HeliShot", sHeliX + 26 * tDX / tLen, sDist + kCarY - (sHeliY + 26 * tDY / tLen), 0, "255,40,40"
+      put kHeliShotV * tDX / tLen into sThing[sThingN]["hx"]
+      put kHeliShotV * tDY / tLen into sThing[sThingN]["hy"]
+      put Int.ScreenY(sThing[sThingN]["w"]) into sThing[sThingN]["y"]
+      put 60 - sLevel * 4 into sTurretWait
+   end if
 end Int.Helicopter
 
 on Int.Shots
@@ -495,6 +549,8 @@ on Int.Seek pS
       put empty into sHeliY
       Entity.SetPosition sHeli, 0, -900, kZ - 60
       Entity.SetPosition sRotor, 0, -900, kZ - 74
+      Entity.SetPosition sTurret, 0, -900, kZ - 64
+      put empty into sHeliGo
       Entity.Kill sShot[pS]["key"]
       delete variable sShot[pS]
       put empty into sHUDWas
@@ -535,18 +591,51 @@ on Int.Things
                if sThing[tR]["kind"] is "oil" and abs(sThing[tR]["w"] - sThing[tT]["w"]) < 50 and abs(sThing[tR]["x"] - sThing[tT]["x"]) < 40 and sThing[tT]["spin"] is 0 then put 24 into sThing[tT]["spin"]
             end repeat
             break
-         case "bomb"
-            subtract 1 from sThing[tT]["fuse"]
-            Entity.SetRotation sThing[tT]["key"], sTicks / 4, sTicks / 3, 0
-            if sThing[tT]["fuse"] <= 0 then
-               FX.Sparks sThing[tT]["x"], Int.ScreenY(sThing[tT]["w"]), kZ, 20, "255,80,40"
-               if abs(sThing[tT]["x"] - sX) < 60 and abs(sThing[tT]["w"] - sDist) < 60 then Int.Hurt
+         case "hshot"
+            -- a turret shot flies straight on the screen, at where the car was
+            add sThing[tT]["hx"] to sThing[tT]["x"]
+            add sThing[tT]["hy"] to sThing[tT]["y"]
+            put sThing[tT]["y"] into tY
+            if abs(sThing[tT]["x"] - sX) < 24 and abs(tY - kCarY) < 40 and not sWet then
+               FX.Sparks sX, kCarY, kZ, 10, "255,80,40"
+               Int.Hurt
+               put 999 into tY
+            end if
+            if tY > 480 or tY < -400 or abs(sThing[tT]["x"]) > 1200 then
                Entity.Kill sThing[tT]["key"]
                delete variable sThing[tT]
+            else
+               Entity.SetPosition sThing[tT]["key"], sThing[tT]["x"], tY, kZ - 2
+            end if
+            next repeat
+      end switch
+      -- a car that runs onto the water sinks: it slows, drops below the water line, is gone (p1-21)
+      if sThing[tT]["kind"] is among the items of "enemy,civ,truck" then
+         if sThing[tT]["sink"] is empty and sThing[tT]["w"] >= sStageLen - kWaterLen then
+            put kSinkTicks into sThing[tT]["sink"]
+            Entity.SetColor sThing[tT]["key"], "90,140,220"
+         end if
+         if sThing[tT]["sink"] is not empty then
+            subtract 1 from sThing[tT]["sink"]
+            put sThing[tT]["v"] * 0.85 into sThing[tT]["v"]
+            put sThing[tT]["vx"] * 0.8 into sThing[tT]["vx"]
+            add sThing[tT]["v"] to sThing[tT]["w"]
+            add sThing[tT]["vx"] to sThing[tT]["x"]
+            if sThing[tT]["sink"] <= 0 then
+               if sThing[tT]["kind"] is "enemy" then add 150 to sScore
+               FX.Sparks sThing[tT]["x"], Int.ScreenY(sThing[tT]["w"]), kZ, 8, "40,140,255"
+               Entity.Kill sThing[tT]["key"]
+               delete variable sThing[tT]
+               put empty into sHUDWas
                next repeat
             end if
-            break
-      end switch
+            -- down it goes: further from the eye, nose first
+            put kZ + 3 * (kSinkTicks - sThing[tT]["sink"]) into sThing[tT]["z"]
+            Entity.SetPosition sThing[tT]["key"], sThing[tT]["x"], Int.ScreenY(sThing[tT]["w"]), sThing[tT]["z"]
+            Entity.SetRotation sThing[tT]["key"], 0.03 * (kSinkTicks - sThing[tT]["sink"]), 0, 0
+            next repeat
+         end if
+      end if
       add sThing[tT]["v"] to sThing[tT]["w"]
       add sThing[tT]["vx"] to sThing[tT]["x"]
       put sThing[tT]["vx"] * 0.92 into sThing[tT]["vx"]
@@ -655,8 +744,38 @@ end Int.TestSpecial
 
 on Int.TestHeli pX
    put pX into sHeliX
-   put 999 into sBombWait
+   put empty into sHeliY
+   put 999 into sTurretWait
 end Int.TestHeli
+
+-- tests: the turret may shoot now; no new traffic; a line on the helicopter; a thing's life
+on Int.TestHeliFire
+   put 0 into sTurretWait
+end Int.TestHeliFire
+
+on Int.TestQuiet
+   put 1e9 into sNextSpawn
+end Int.TestQuiet
+
+function Int.HeliInfo
+   if sHeliX < 0 then return "gone"
+   return round(sHeliX, 1) & "|" & round(sHeliY, 1) & "|" & sHeliGo & "|" & Entity.GetRotation(sHeli) & "|" & Entity.GetRotation(sTurret) & "|" & Int.Count("hshot")
+end Int.HeliInfo
+
+function Int.Count pKind
+   local tK, tN
+   put 0 into tN
+   repeat for each key tK in sThing
+      if sThing[tK]["kind"] is pKind then add 1 to tN
+   end repeat
+   return tN
+end Int.Count
+
+function Int.ThingInfo pN
+   if pN is "last" then put sThingN into pN
+   if pN is not among the keys of sThing then return "gone"
+   return sThing[pN]["kind"] & "|" & sThing[pN]["sink"] & "|" & round(sThing[pN]["w"]) & "|" & sThing[pN]["z"]
+end Int.ThingInfo
 
 function Int.HeliX
    return sHeliX
@@ -670,6 +789,8 @@ end Int.TestRotation
 on Int.TestThing pKind, pX, pAhead
    if pKind is "enemy" then
       Int.AddThing "enemy", "Int.Enemy", pX, sDist + pAhead, sScroll, "255,60,60"
+   else if pKind is "truck" then
+      Int.AddThing "truck", "Int.Truck", pX, sDist + pAhead, sScroll, "255,150,0"
    else
       Int.AddThing "civ", "Int.Civ", pX, sDist + pAhead, sScroll, "235,235,235"
    end if
