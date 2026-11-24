@@ -25,7 +25,7 @@ global bPaused, bPlaying
 global gCameraYaw, gCameraPitch, gNoMouse, gViewBottom
 
 local sBike, sBikeN, sGrid, sCols, sRows, sSegN, sBoost, sBoosts, sBit, sCellsRidden
-local sSeg, sLenDef, sRivalBits, sTestHold
+local sSeg, sLenDef, sRivalBits, sTestHold, sChunk, sChunkN
 local sLevel, sLives, sScore, sOver, sWon, sMsg, sMsgT, sEndT, sX0, sY0
 local sKeysWas, sTestKeys, sHUDWas, sTicks
 local sCamT, sCamS, sCamGoT, sCamGoS, sCamDrag, sCamH0, sCamV0, sCamT0, sCamS0
@@ -40,6 +40,7 @@ constant kBitLife = 360      -- steps a bit stays (12 seconds), then it moves
 constant kReach = 1          -- a bike this many cells away (beside it) takes the bit
 constant kBreakR = 5         -- taking a bit breaks the trail cells this near it
 constant kCamSets = 4        -- set camera angles (Light.CamSet)
+constant kChunk = 12         -- straight runs drawn together as one object (p1-22: few objects = fast frames)
 
 on Game.OnStart
    focus on nothing
@@ -94,6 +95,8 @@ on Light.StartLevel pLevel
    end repeat
    put empty into sLenDef
    put empty into sSeg
+   put empty into sChunk
+   put 0 into sChunkN
    -- the grid: walls all round
    put empty into sGrid
    repeat with i = 0 to sCols + 1
@@ -355,8 +358,12 @@ on Light.Break pCX, pCY
       end repeat
    end repeat
    if not tBroke then exit Light.Break
+   local tChunks
    repeat for each key i in sSeg
-      if Light.SegNear(i, pCX, pCY) then Light.DrawSeg i
+      if Light.SegNear(i, pCX, pCY) then put true into tChunks[sSeg[i]["chunk"]]
+   end repeat
+   repeat for each key i in tChunks
+      Light.DrawChunk i
    end repeat
 end Light.Break
 
@@ -371,13 +378,26 @@ function Light.SegNear pN, pCX, pCY
    return true
 end Light.SegNear
 
--- a straight trail is drawn as the runs of its cells still standing
-on Light.DrawSeg pN
-   local tKey, k, tRun, tB, tCX, tCY, tDX, tDY
-   repeat for each line tKey in sSeg[pN]["keys"]
-      Entity.Kill tKey
+-- a chunk (up to kChunk straight trails of one bike) is ONE object: one mesh of the runs of its
+-- cells still standing, in screen units, the object at 0,0. Before 23 Nov every run was its own
+-- object, and the engine's cost is mostly per object (p1-22: the frame rate fell as trails grew)
+on Light.DrawChunk pC
+   local tM, n, tB
+   Entity.Kill sChunk[pC]["key"]
+   put empty into sChunk[pC]["key"]
+   put Mesh.New() into tM
+   repeat for each line n in sChunk[pC]["segs"]
+      Light.SegInto tM, n
    end repeat
-   put empty into sSeg[pN]["keys"]
+   if tM["count"] is 0 then exit Light.DrawChunk
+   Mesh.Define "Light.Chunk" & pC, tM
+   put sChunk[pC]["b"] into tB
+   put Entity.Spawn("Light.Chunk" & pC, 0, 0, kZ, sBike[tB]["color"]) into sChunk[pC]["key"]
+end Light.DrawChunk
+
+-- a straight trail's runs of standing cells into mesh pM
+on Light.SegInto @pM, pN
+   local k, tRun, tB, tCX, tCY, tDX, tDY
    put sSeg[pN]["b"] into tB
    put sSeg[pN]["dx"] into tDX
    put sSeg[pN]["dy"] into tDY
@@ -391,25 +411,36 @@ on Light.DrawSeg pN
          end if
       else if tRun >= 0 then
          -- cells tRun down to k + 1 stand
-         Light.DrawRun pN, tRun, k + 1
+         Light.RunInto pM, pN, tRun, k + 1
          put -1 into tRun
       end if
    end repeat
-end Light.DrawSeg
+end Light.SegInto
 
-on Light.DrawRun pN, pFrom, pTo
-   local tKey, tSX, tSY, tB
-   put sSeg[pN]["b"] into tB
-   put Light.PX(sSeg[pN]["ex"] - sSeg[pN]["dx"] * pFrom) into tSX
-   put Light.PY(sSeg[pN]["ey"] - sSeg[pN]["dy"] * pFrom) into tSY
+-- one run as the trail's two lines (floor and top, as Light.LineMesh); one cell = a short dash
+on Light.RunInto @pM, pN, pFrom, pTo
+   local tX1, tY1, tX2, tY2, tDX, tDY, tC
+   put sSeg[pN]["dx"] into tDX
+   put sSeg[pN]["dy"] into tDY
+   put Light.PX(sSeg[pN]["ex"] - tDX * pFrom) into tX1
+   put Light.PY(sSeg[pN]["ey"] - tDY * pFrom) into tY1
    if pFrom is pTo then
-      put Entity.Spawn("Light.Dot", tSX - 3 * sSeg[pN]["dx"], tSY - 3 * sSeg[pN]["dy"], kZ, sBike[tB]["color"]) into tKey
+      put tX1 + 3 * tDX into tX2
+      put tY1 + 3 * tDY into tY2
+      subtract 3 * tDX from tX1
+      subtract 3 * tDY from tY1
    else
-      put Entity.Spawn(Light.LenName(pFrom - pTo), tSX, tSY, kZ, sBike[tB]["color"]) into tKey
+      put tX1 + tDX * (pFrom - pTo) * kCell into tX2
+      put tY1 + tDY * (pFrom - pTo) * kCell into tY2
    end if
-   Entity.SetRotation tKey, 0, 0, atan2(sSeg[pN]["dy"], sSeg[pN]["dx"])
-   put tKey & cr after sSeg[pN]["keys"]
-end Light.DrawRun
+   put pM["count"] into tC
+   Mesh.AddVertex pM, tX1, tY1, 0
+   Mesh.AddVertex pM, tX2, tY2, 0
+   Mesh.AddVertex pM, tX1, tY1, -6
+   Mesh.AddVertex pM, tX2, tY2, -6
+   Mesh.AddLine pM, tC + 1, tC + 2
+   Mesh.AddLine pM, tC + 3, tC + 4
+end Light.RunInto
 
 -- one trail mesh for each length, made when first needed
 function Light.LenName pLen
@@ -574,18 +605,22 @@ on Light.Step pB
 end Light.Step
 
 on Light.AddPiece pB
-   local tSX, tSY, tKey
-   -- the piece runs from kPiece cells back to here
-   put Light.PX(sBike[pB]["cx"] - sBike[pB]["dx"] * kPiece) into tSX
-   put Light.PY(sBike[pB]["cy"] - sBike[pB]["dy"] * kPiece) into tSY
-   put Entity.Spawn("Light.Piece", tSX, tSY, kZ, sBike[pB]["color"]) into tKey
+   local tSX, tSY, tKey, tLen
+   -- ONE line from the run's start to here, made longer each time (p1-22: one object, not one a piece)
+   put sBike[pB]["run"] into tLen
+   repeat for each line tKey in sBike[pB]["pieces"]
+      Entity.Kill tKey
+   end repeat
+   put Light.PX(sBike[pB]["cx"] - sBike[pB]["dx"] * tLen) into tSX
+   put Light.PY(sBike[pB]["cy"] - sBike[pB]["dy"] * tLen) into tSY
+   put Entity.Spawn(Light.LenName(tLen), tSX, tSY, kZ, sBike[pB]["color"]) into tKey
    Entity.SetRotation tKey, 0, 0, atan2(sBike[pB]["dy"], sBike[pB]["dx"])
-   put tKey & cr after sBike[pB]["pieces"]
+   put tKey into sBike[pB]["pieces"]
 end Light.AddPiece
 
--- a turn: the run's pieces become one long line
+-- a turn: the run becomes a straight trail in the bike's newest chunk
 on Light.CloseSegment pB
-   local tLen, tKey, tLine, tSX, tSY
+   local tLen, tKey, tLine, tC
    put sBike[pB]["run"] into tLen
    repeat for each line tKey in sBike[pB]["pieces"]
       Entity.Kill tKey
@@ -600,11 +635,16 @@ on Light.CloseSegment pB
    put sBike[pB]["dx"] into sSeg[sSegN]["dx"]
    put sBike[pB]["dy"] into sSeg[sSegN]["dy"]
    put tLen into sSeg[sSegN]["len"]
-   put Light.PX(sBike[pB]["cx"] - sBike[pB]["dx"] * tLen) into tSX
-   put Light.PY(sBike[pB]["cy"] - sBike[pB]["dy"] * tLen) into tSY
-   put Entity.Spawn(Light.LenName(tLen), tSX, tSY, kZ, sBike[pB]["color"]) into tKey
-   Entity.SetRotation tKey, 0, 0, atan2(sBike[pB]["dy"], sBike[pB]["dx"])
-   put tKey & cr into sSeg[sSegN]["keys"]
+   put sBike[pB]["chunk"] into tC
+   if tC is empty or the number of lines of sChunk[tC]["segs"] >= kChunk then
+      add 1 to sChunkN
+      put sChunkN into tC
+      put pB into sChunk[tC]["b"]
+      put tC into sBike[pB]["chunk"]
+   end if
+   put tC into sSeg[sSegN]["chunk"]
+   put sSegN & cr after sChunk[tC]["segs"]
+   Light.DrawChunk tC
 end Light.CloseSegment
 
 -- the rivals look a few cells ahead and turn toward the more open side
