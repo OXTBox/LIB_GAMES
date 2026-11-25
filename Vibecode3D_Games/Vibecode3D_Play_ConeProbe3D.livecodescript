@@ -653,6 +653,7 @@ on CP3.Throw pC
    put cos(sHead) * CP3.ThrowSpeed(pC) into sSpear["vx"]
    put sin(sHead) * CP3.ThrowSpeed(pC) into sSpear["vy"]
    put "flying" into sSpear["state"]
+   Sound.Play "Throw"
    put 0 into sSpear["bounces"]
    put 0 into sSpear["fly"]
    put CP3.FlyTime(pC) into sSpear["flyT"]
@@ -665,6 +666,7 @@ end CP3.Throw
 on CP3.Dash
    if sDash > 0 or not CP3.Use("dash") then exit CP3.Dash
    put 10 into sDash
+   Sound.Play "Jump"
    put max(sSafe, 12) into sSafe
    FX.Sparks sPX, -10, -sPY, 8, "#40E0FF"
 end CP3.Dash
@@ -673,6 +675,7 @@ on CP3.Recall
    if sSpear["state"] is "hand" or sSpear["state"] is "return" then exit CP3.Recall
    if not CP3.Use("recall") then exit CP3.Recall
    put "return" into sSpear["state"]
+   Sound.Play "Select"
    CP3.Say "RECALL", 1
 end CP3.Recall
 
@@ -819,6 +822,7 @@ on CP3.MoveSpear
          put sSpear["vy"] * 0.25 into sSpear["vy"]
          put "loose" into sSpear["state"]
          FX.Sparks sSpear["x"], -2, -sSpear["y"], 4, "#40E0FF"
+         Sound.Play "Thud"
       end if
    else
       put 2 into sSpear["h"]
@@ -833,6 +837,7 @@ on CP3.MoveSpear
       put (sSpear["vy"] - 2 * tV * item 2 of tN) * 0.3 into sSpear["vy"]
       put "loose" into sSpear["state"]
       FX.Sparks sSpear["x"], -10, -sSpear["y"], 6, "#80B0FF"
+      Sound.Play "Zap"
       if sMsg is empty then CP3.Say "ENERGY PULSE: AIM FOR A CUBE OR A GAP", 1
    end if
    -- ricochets off walls and bumpers: the first three keep it lively
@@ -843,6 +848,7 @@ on CP3.MoveSpear
       put max(kLeft, min(kRight, sSpear["x"])) into sSpear["x"]
       put max(kTop, min(kBottom, sSpear["y"])) into sSpear["y"]
       add 1 to sSpear["bounces"]
+      Sound.Play "Bounce"
       FX.Sparks sSpear["x"], -sSpear["h"], -sSpear["y"], 4, "#40E0FF"
       if sSpear["bounces"] > 3 then
          put sSpear["vx"] * 0.75 into sSpear["vx"]
@@ -864,6 +870,7 @@ on CP3.MoveSpear
          if abs(sRing[k][i]["x"] - sSpear["x"]) < 16 and abs(sRing[k][i]["y"] - sSpear["y"]) < 16 then
             CP3.BreakCube k, i
             FX.Sparks sRing[k][i]["x"], -10, -sRing[k][i]["y"], 10, "#FF60D0"
+            Sound.Play "Explode"
             CP3.DropToken sRing[k][i]["x"], sRing[k][i]["y"]
             put "return" into sSpear["state"]
             exit CP3.MoveSpear
@@ -874,6 +881,7 @@ on CP3.MoveSpear
    if sqrt((sSpear["x"] - kBossX) ^ 2 + (sSpear["y"] - kBossY) ^ 2) < 26 and tV > 1 and sSpear["vx"] * (kBossX - sSpear["x"]) + sSpear["vy"] * (kBossY - sSpear["y"]) > 0 then
       if the number of chars of sGot >= the number of chars of sPass then
          FX.Sparks kBossX, -35, -kBossY, 60, "#B060FF"
+         Sound.Play "Win"
          Entity.Kill sSpear["key"]
          put "hand" into sSpear["state"]
          if sLevel >= 5 then
@@ -888,6 +896,7 @@ on CP3.MoveSpear
       put -sSpear["vx"] into sSpear["vx"]
       put -sSpear["vy"] * 0.9 into sSpear["vy"]
       put "loose" into sSpear["state"]
+      Sound.Play "Blip"
       CP3.Say "ACCESS DENIED: THE PASSWORD IS NOT COMPLETE", 2
    end if
    -- loose: dangerous while it moves fast; lying still it can be picked up
@@ -980,6 +989,7 @@ on CP3.MoveOrbiters
                subtract 2 * tN * dx / d from sSpear["vx"]
                subtract 2 * tN * dy / d from sSpear["vy"]
             end if
+            Sound.Play "Hit"
             CP3.Say "SMASHED", 1
             next repeat
          end if
@@ -1017,6 +1027,7 @@ on CP3.Tokens
          delete variable sTok[t]
          if the number of chars of sGot < the number of chars of sPass then
             put char (the number of chars of sGot + 1) of sPass after sGot
+            Sound.Play "Pickup"
             FX.Sparks sPX, -20, -sPY, 8, "#FFE060"
             if sGot is sPass then CP3.Say "PASSWORD COMPLETE: HIT THE CONE", 3
          end if
@@ -1029,9 +1040,11 @@ on CP3.LoseLife
    FX.Sparks sPX, -16, -sPY, 30, "#40E0FF"
    subtract 1 from sLives
    put 60 into sSafe
+   Sound.Play "Hurt"
    put empty into sHUDWas
    if sLives <= 0 then
       put true into sOver
+      Sound.Play "Lose"
       CP3.Say "SPEARED BY YOUR OWN PROBE", 999
       exit CP3.LoseLife
    end if

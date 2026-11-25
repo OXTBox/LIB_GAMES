@@ -13,7 +13,7 @@
 
 global bPaused, bPlaying
 
-local sStepMS = 33, sTicks = 0, sFaceKey, sPanelKey
+local sStepMS = 33, sTicks = 0, sFaceKey, sPanelKey, sSwayWas
 
 constant kFaceCell = 10      -- world units per grid cell: the face is 480 x 260
 constant kFaceHeight = 6     -- how far the blocks stand out of the panel
@@ -38,6 +38,7 @@ on Game.OnStart
    put Entity.Spawn("Face.Panel", 0, 0, kFaceDist, "30,95,105") into sPanelKey
    put Entity.Spawn("Face.Bits", 0, 0, kFaceDist, "130,250,250") into sFaceKey
    Face.Turn
+   Sound.Play "Warp"
    HUD.Set "Face.Title", "CLAUDE", 20, 120, 16
 end Game.OnStart
 
@@ -50,6 +51,12 @@ end Game.OnUpdate
 on Face.Turn
    local tYaw
    put kFaceYaw * sin(sTicks * sStepMS / 2400) into tYaw
+   -- a soft tick each time the sway passes the middle (once a swing)
+   if sSwayWas is not empty and sSwayWas is not (tYaw > 0) then
+      if tYaw > 0 then Sound.Play "Blip"
+      if tYaw <= 0 then Sound.Play "Select"
+   end if
+   put (tYaw > 0) into sSwayWas
    if sFaceKey is not empty then Entity.SetRotation sFaceKey, 0.18, tYaw, 0
    if sPanelKey is not empty then Entity.SetRotation sPanelKey, 0.18, tYaw, 0
 end Face.Turn

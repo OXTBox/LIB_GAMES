@@ -114,13 +114,19 @@ on Game.OnUpdate
       exit Game.OnUpdate
    end if
    if not sStarted then
-      if tFlap then put true into sStarted
+      if tFlap then
+         put true into sStarted
+         Sound.Play "Warp"
+      end if
       Flop.ShowHUD
       put tFlap into sFlapWas
       exit Game.OnUpdate
    end if
    -- one flap per press; under 3 parts the ship can't fly
-   if tFlap and not sFlapWas and sParts >= 3 then put kFlap into sVY
+   if tFlap and not sFlapWas and sParts >= 3 then
+      put kFlap into sVY
+      Sound.Play "Jump"
+   end if
    put tFlap into sFlapWas
    add sGravity to sVY
    add sVY to sY
@@ -138,6 +144,7 @@ on Game.OnUpdate
          -- a crash: the ship is 40 high at most; outside the gap while inside the column
          if sSafe <= 0 and abs(sCols[tK]["x"] - kShipX) < kColW / 2 + 28 and abs(sY - sCols[tK]["gap"]) > sCols[tK]["h"] / 2 - 22 then
             put true into tHit
+            Sound.Play "Thud"
             -- the terrain it hit breaks away
             FX.Sparks sCols[tK]["x"], sY, kZ, 14, "#40FF80"
             Entity.Kill sCols[tK]["top"]
@@ -152,11 +159,13 @@ on Game.OnUpdate
          end if
          delete variable sCols[tK]
          add 1 to sDist
+         Sound.Play "Blip"
          put empty into sHUDWas
          Flop.AddColumn
          -- a new level every 12 columns
          if sDist mod 12 is 0 and sLevel < 5 then
             add 1 to sLevel
+            Sound.Play "Powerup"
             Flop.SetLevel
          end if
       end if
@@ -175,6 +184,7 @@ on Game.OnUpdate
    set the itemDel to comma
    if sY > kFloor then
       put true into sOver
+      Sound.Play "PlayerCrash"
       FX.Sparks kShipX, kFloor, kZ, 30, "#4C8CFF"
       put empty into sHUDWas
    end if
@@ -190,6 +200,7 @@ on Flop.LosePart
    end repeat
    if tLast > 0 then
       FX.Sparks kShipX, sY, kZ, 10, "#4C8CFF"
+      Sound.Play "Hurt"
       Entity.Kill sPartKeys[tLast]
       delete variable sPartKeys[tLast]
       subtract 1 from sParts

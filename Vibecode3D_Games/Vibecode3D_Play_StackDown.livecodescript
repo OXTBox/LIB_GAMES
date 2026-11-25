@@ -103,6 +103,7 @@ on Stack.NewPiece
    if not Stack.Fits(sShape, sPC, sPR) then
       put true into sOver
       put empty into sHUDWas
+      Sound.Play "Lose"
       exit Stack.NewPiece
    end if
    put empty into sPieceKeys
@@ -182,7 +183,10 @@ on Game.OnUpdate
    end if
    if Stack.Pressed(65362, tKeys) then
       put Stack.Turned(sShape) into tTry
-      if Stack.Fits(tTry, sPC, sPR) then put tTry into sShape
+      if Stack.Fits(tTry, sPC, sPR) then
+         put tTry into sShape
+         Sound.Play "Blip"
+      end if
    end if
    put (65364 is among the items of tKeys) into tFast
    add 1 to sT
@@ -211,6 +215,7 @@ end Stack.Sway
 -- the shape becomes part of the well; full rows go, everything above moves down
 on Stack.Land
    local tCell, tR, tC, tFull, tGone, tNew, tAt, tUp
+   Sound.Play "Thud"
    repeat for each word tCell in sShape
       put sColor into sWell[(sPC + item 1 of tCell) & comma & (sPR + item 2 of tCell)]
    end repeat
@@ -241,12 +246,15 @@ on Stack.Land
    end repeat
    add tGone * sPerRow to sScore
    add tGone to sRows
+   if tGone > 0 then Sound.Play "Pickup"
    Stack.Draw
    if sRows >= sNeed then
       if sLevel >= 5 then
          put true into sOver
          put true into sWon
+         Sound.Play "Win"
       else
+         Sound.Play "Warp"
          Stack.GoLevel sLevel + 1
       end if
    else

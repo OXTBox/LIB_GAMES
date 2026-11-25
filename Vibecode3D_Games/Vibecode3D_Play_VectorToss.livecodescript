@@ -507,6 +507,7 @@ on VT.Jump pName
    put kJumpV into sHero[pName]["vh"]
    put 0.01 into sHero[pName]["h"]
    VT.Act pName, "jump"
+   Sound.Play "Jump"
    VT.StaminaAdd pName, -2, "JUMP"
 end VT.Jump
 
@@ -665,6 +666,7 @@ on VT.Launch pName, pVel, pEasy
    put empty into sBall["touched"]
    put (pEasy is true) into sBall["easy"]
    put empty into sPlan
+   Sound.Play "Throw"
    VT.PredictLand
    -- the thrower's turn is over; the partner's begins (catching it)
    VT.TurnEnd pName
@@ -791,6 +793,11 @@ on VT.BallStep
       put sHero[tName]["z"] into sBall["z"]
    else
       VT.Advance sBall
+      if sBall["hit"] is "floor" then
+         Sound.Play "Thud"
+      else if sBall["hit"] is not empty then
+         Sound.Play "Bounce"
+      end if
       if sBall["hit"] is not empty and sBall["hit"] is not "floor" then VT.PredictLand
       if sBall["x"] * sHero[sBall["thrower"]]["side"] < 0 then put true into sBall["crossed"]
       if sBall["hit"] is "floor" and sBall["touched"] is empty then
@@ -856,10 +863,12 @@ on VT.Catch pName
    put sBall["easy"] into tWas
    if sBall["touched"] is not empty then
       -- a pick-up from the floor: no points, no rally
+      Sound.Play "Blip"
       VT.GiveBall pName
       exit VT.Catch
    end if
    put VT.CatchPoints() into tP
+   Sound.Play "Pickup"
    add tP to sHero[pName]["score"]
    repeat while sHero[pName]["score"] >= sHero[pName]["nextHang"]
       add 1 to sHero[pName]["hangs"]
@@ -1399,6 +1408,7 @@ on VT.SetLevel pLevel, pSnap
    VT.ShowWalls
    if pLevel > 1 then
       VT.Message "LEVEL " & pLevel
+      Sound.Play "Warp"
       put empty into sTalk
       VT.Say "level", "*", 100
    end if
@@ -1491,6 +1501,7 @@ on VT.HitTile pX, pZ
    if tLeft is 0 then
       put Entity.Spawn("VT.Hole", tX, 0, tZ, "#FF5030") into sTileKey[tT]
       VT.Message "THE FLOOR BROKE"
+      Sound.Play "Explode"
       VT.Say "crack", "*", 50
    else
       put Entity.Spawn("VT.Crack", tX, -1, tZ, "#C08030") into sTileKey[tT]
@@ -1546,11 +1557,13 @@ on VT.HeroFall pName
             put round(1500 / sStepMS) into sHero[pName]["timer"]
             put empty into sHero[pName]["act"]
             VT.Message pName & " HANGS ON"
+            Sound.Play "Powerup"
             VT.Say "hang", pName, 80
          else if sHero[pName]["h"] < -160 and sHero[pName]["last"] is not true then
             -- no hang caught it: a fatal fall (climbing out never counts)
             put true into sHero[pName]["last"]
             add 1 to sHero[pName]["falls"]
+            Sound.Play "Hurt"
             if sHero[pName]["falls"] >= kMaxFalls then
                VT.GameOver pName
             end if
@@ -1627,6 +1640,7 @@ end VT.SafeSpot
 on VT.GameOver pName
    local tMid
    put true into sOver
+   Sound.Play "Lose"
    put (gViewLeft + gViewRight) / 2 into tMid
    HUD.Remove "VT.Intro1"
    HUD.Remove "VT.Intro2"
@@ -1645,6 +1659,7 @@ on VT.OverKeys
    local tKeys, tK
    put VT.Keys() into tKeys
    if VT.Pressed(tKeys, "65293,65421,114,82") then
+      Sound.Play "Select"
       repeat for each item tK in "VT.Over1,VT.Over2,VT.Over3,VT.Over4"
          HUD.Remove tK
       end repeat

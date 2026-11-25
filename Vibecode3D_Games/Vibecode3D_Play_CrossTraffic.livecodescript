@@ -77,6 +77,7 @@ on Cross.StartLevel pLevel
       end repeat
    end repeat
    put Entity.Spawn("Cross.Walker", 0, Cross.Y(0), kZ, "white") into sWalker
+   Sound.Play "Warp"
    Cross.Home
 end Cross.StartLevel
 
@@ -110,7 +111,7 @@ function Cross.Pressed pKey, pKeys
 end Cross.Pressed
 
 on Game.OnUpdate
-   local tKeys, tK, tX, tY
+   local tKeys, tK, tX, tY, tWas
    put Cross.Keys() into tKeys
    if sOver then
       if Cross.Pressed(32, tKeys) then
@@ -121,10 +122,12 @@ on Game.OnUpdate
       end if
       exit Game.OnUpdate
    end if
+   put sRow & "," & sCol into tWas
    if Cross.Pressed(65362, tKeys) then add 1 to sRow
    if Cross.Pressed(65364, tKeys) then put max(0, sRow - 1) into sRow
    if Cross.Pressed(65361, tKeys) then put max(1, sCol - 1) into sCol
    if Cross.Pressed(65363, tKeys) then put min(kCols, sCol + 1) into sCol
+   if tWas is not sRow & "," & sCol then Sound.Play "Jump"
    put (sCol - (kCols + 1) / 2) * kHop into tX
    put Cross.Y(sRow) into tY
    Entity.SetPosition sWalker, tX, tY, kZ
@@ -146,8 +149,10 @@ on Game.OnUpdate
    end if
    if sRow > sLanes then
       add 1 to sHome
+      Sound.Play "Pickup"
       add 50 + sTime div 30 to sScore
       if sHome >= 3 then
+         Sound.Play "Win"
          if sLevel >= 5 then
             put true into sOver
             put empty into sHUDWas
@@ -164,7 +169,11 @@ end Game.OnUpdate
 on Cross.Hurt pX, pY
    subtract 1 from sLives
    FX.Sparks pX, pY, kZ, 12, "red"
-   if sLives <= 0 then put true into sOver
+   Sound.Play "Hurt"
+   if sLives <= 0 then
+      put true into sOver
+      Sound.Play "Lose"
+   end if
    Cross.Home
    Cross.ShowHUD
 end Cross.Hurt

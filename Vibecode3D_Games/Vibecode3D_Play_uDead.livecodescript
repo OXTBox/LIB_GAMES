@@ -74,6 +74,7 @@ local sPX, sPZ, sMouseReady, sTestKeys, sKeyWas
 local sState, sNow, sSpeed, sMode, sHideHUD, sHelp, sTip, sTipAt
 local sField, sJob, sJobName, sJobD, sJobQ, sJobHead, sJobTail, sJobDoors
 local sAmmo, sAmmoN, sFx, sFxN, sBlood, sStrobeAt, sStrobeOn, sNoiseAt, sEase
+local sSndShoot, sSndKill, sSndDown
 local sNades, sNextCheck, sCountZ, sCountH, sHUDWas, sMsg, sMsgUntil, sNextLevelAt
 
 -------------------------------------------------------------------- engine hooks
@@ -190,6 +191,7 @@ end uDead.Words
 
 -- start a level: a generated one, or (legacy) one of the 2009 maps
 on uDead.StartLevel pIndex
+   Sound.Play "Warp"
    Scene.ClearAll
    Particles.Clear
    HUD.Clear
@@ -1635,6 +1637,10 @@ end uDead.HitDoor
 on uDead.KillHuman pId
    if sE[pId]["state"] is not "alive" then exit uDead.KillHuman
    put "corpse" into sE[pId]["state"]
+   if sSndKill <> sTicks then
+      put sTicks into sSndKill
+      Sound.Play "Hit"
+   end if
    put sNow + kRiseHuman into sE[pId]["riseAt"]
    FX.Sparks sE[pId]["x"] * kM, -1.0 * kM, sE[pId]["z"] * kM, 12, "#E02020"
    uDead.Dress pId
@@ -1649,6 +1655,10 @@ on uDead.HurtZombie pId, pDamage, pFinal
    FX.Sparks sE[pId]["x"] * kM, -1.2 * kM, sE[pId]["z"] * kM, 8, "#D01010"
    put true into sE[pId]["hurt"]
    if sE[pId]["hp"] > 0 then exit uDead.HurtZombie
+   if sSndDown <> sTicks then
+      put sTicks into sSndDown
+      Sound.Play "Hurt"
+   end if
    subtract 1 from sE[pId]["lives"]
    if pFinal then put 0 into sE[pId]["lives"]
    uDead.ClearOrder pId
@@ -1781,6 +1791,7 @@ on uDead.Shoot pId, pFoe, pD
    if sE[pId]["nades"] > 0 and pD > 3 and pD < 10 then
       subtract 1 from sE[pId]["nades"]
       put sNow + 1.2 into sE[pId]["next"]
+      Sound.Play "Throw"
       uDead.Throw sE[pId]["x"], sE[pId]["z"], sE[pFoe]["x"], sE[pFoe]["z"]
       exit uDead.Shoot
    end if
@@ -1817,6 +1828,10 @@ on uDead.Shoot pId, pFoe, pD
    -- the muzzle flash, and a ring across the ground so you see where shots come from
    FX.Sparks (sE[pId]["x"] + sin(sE[pId]["yaw"]) * 0.8) * kM, -1.38 * kM, (sE[pId]["z"] + cos(sE[pId]["yaw"]) * 0.8) * kM, 10, "#FFF080"
    uDead.Ring sE[pId]["x"], sE[pId]["z"], "#FF9040", 0.6
+   if sSndShoot <> sTicks then
+      put sTicks into sSndShoot
+      Sound.Play "Shoot"
+   end if
    put max(0.25, 0.95 - pD * 0.04) into tChance
    if tGun is "sniper" then put 0.55 into tChance
    put tChance * sEase into tChance
@@ -1870,6 +1885,7 @@ on uDead.Grenades
          put sNades[tN]["z1"] into tZ
          FX.Sparks tX * kM, -0.6 * kM, tZ * kM, 30, "#FF9020"
          FX.Sparks tX * kM, -1.2 * kM, tZ * kM, 16, "#FFF0A0"
+         Sound.Play "Explode"
          Entity.Kill sNades[tN]["key"]
          delete variable sNades[tN]
          repeat for each line tId in sIds
@@ -2217,6 +2233,7 @@ on uDead.Command
          exit uDead.Command
       end if
       put "attack" into sE[tZomb]["order"]
+      Sound.Play "Select"
       put tBest into sE[tZomb]["target"]
       put empty into sE[tZomb]["rushAt"]
       put 1.2 into sJob["O" & tZomb]["every"]
@@ -2233,6 +2250,7 @@ on uDead.Command
       exit uDead.Command
    end if
    put "goto" into sE[tZomb]["order"]
+   Sound.Play "Select"
    put tGX into sE[tZomb]["gx"]
    put tGZ into sE[tZomb]["gz"]
    put empty into sE[tZomb]["rushAt"]
@@ -2267,9 +2285,11 @@ on uDead.CheckEnd
    if sState is not "play" then exit uDead.CheckEnd
    if sCountH = 0 then
       put "won" into sState
+      Sound.Play "Win"
       put empty into sHUDWas
    else if sCountZ = 0 then
       put "lost" into sState
+      Sound.Play "Lose"
       put empty into sHUDWas
    end if
 end uDead.CheckEnd

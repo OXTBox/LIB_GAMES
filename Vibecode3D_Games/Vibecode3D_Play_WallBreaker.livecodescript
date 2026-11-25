@@ -81,6 +81,7 @@ on Wall.StartLevel pLevel
    put Entity.Spawn("Wall.Ball", 0, kBatY - 16, kZ, "white") into sBall
    put true into sStuck
    put empty into sHUDWas
+   Sound.Play "Warp"
 end Wall.StartLevel
 
 function Wall.Keys
@@ -114,6 +115,7 @@ on Game.OnUpdate
       put kBatY - 16 into sBY
       if 32 is among the items of tKeys then
          put false into sStuck
+         Sound.Play "Throw"
          put sSpeed * 0.5 into sDX
          put -sSpeed into sDY
       end if
@@ -126,19 +128,23 @@ on Game.OnUpdate
    if sBX < kLeft + 7 then
       put kLeft + 7 into sBX
       put abs(sDX) into sDX
+      Sound.Play "Blip"
    end if
    if sBX > kRight - 7 then
       put kRight - 7 into sBX
       put -abs(sDX) into sDX
+      Sound.Play "Blip"
    end if
    if sBY < kTop + 7 then
       put kTop + 7 into sBY
       put abs(sDY) into sDY
+      Sound.Play "Blip"
    end if
    -- the bat: where the ball lands on it sets the angle
    if sDY > 0 and sBY >= kBatY - 14 and sBY <= kBatY + 6 and abs(sBX - sBatX) <= tHalf + 7 then
       put (sBX - sBatX) / tHalf * sSpeed * 0.9 into sDX
       put -sSpeed into sDY
+      Sound.Play "Bounce"
    end if
    -- bricks: at most one a step
    repeat for each key tN in sBrick
@@ -152,11 +158,13 @@ on Game.OnUpdate
          end if
          subtract 1 from sBrick[tN]["hits"]
          FX.Sparks sBrick[tN]["x"], sBrick[tN]["y"], kZ, 5, "yellow"
+         Sound.Play "Hit"
          if sBrick[tN]["hits"] <= 0 then
             Entity.Kill sBrick[tN]["key"]
             delete variable sBrick[tN]
             subtract 1 from sBricksLeft
             add 10 to sScore
+            Sound.Play "Pickup"
          end if
          put empty into sHUDWas
          exit repeat
@@ -164,6 +172,7 @@ on Game.OnUpdate
    end repeat
    Entity.SetPosition sBall, sBX, sBY, kZ
    if sBricksLeft <= 0 then
+      Sound.Play "Win"
       if sLevel >= 5 then
          put true into sOver
       else
@@ -173,7 +182,11 @@ on Game.OnUpdate
       subtract 1 from sLives
       put true into sStuck
       put empty into sHUDWas
-      if sLives <= 0 then put true into sOver
+      Sound.Play "Hurt"
+      if sLives <= 0 then
+         put true into sOver
+         Sound.Play "Lose"
+      end if
    end if
    Wall.ShowHUD
 end Game.OnUpdate

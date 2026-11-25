@@ -225,6 +225,7 @@ on Game.OnUpdate
    if (99 is among the items of tKeys and not (99 is among the items of sKeysWas)) or \
          (67 is among the items of tKeys and not (67 is among the items of sKeysWas)) then
       put 3 - sActive into sActive
+      Sound.Play "Select"
       put empty into sHUDWas
    end if
    if 32 is among the items of tKeys and not (32 is among the items of sKeysWas) then Maze.Throw
@@ -280,6 +281,7 @@ on Maze.Eat n, x, y
    subtract 1 from sDotsLeft
    if tWhat is "power" then
       add 1 to sHeld[n]
+      Sound.Play "Pickup"
       add 50 to sScore
       FX.Sparks Maze.X(x), Maze.Y(y), kZ, 10, item n of kColors
    else
@@ -291,8 +293,10 @@ on Maze.Eat n, x, y
       if sLevel >= 5 then
          put true into sOver
          put true into sWon
+         Sound.Play "Win"
       else
          add 1 to sLevel
+         Sound.Play "Warp"
          Maze.GoLevel sLevel
       end if
    end if
@@ -356,6 +360,7 @@ on Maze.Throw
    put sActive into n
    if sHeld[n] <= 0 or sPoly is not empty then exit Maze.Throw
    subtract 1 from sHeld[n]
+   Sound.Play "Throw"
    put round(sAgent[n]["x"]) into sPoly["x"]
    put round(sAgent[n]["y"]) into sPoly["y"]
    put sAgent[n]["face"] into sPoly["dir"]
@@ -419,11 +424,13 @@ on Maze.Touches
          if abs(sPoly["x"] - sFoe[n]["x"]) < 0.6 and abs(sPoly["y"] - sFoe[n]["y"]) < 0.6 then
             if sPoly["by"] is 1 then
                put 240 into sFoe[n]["gone"]
+               Sound.Play "Hit"
                FX.Sparks Maze.X(sFoe[n]["x"]), Maze.Y(sFoe[n]["y"]), kZ, 20, "#FF5050"
                Maze.Recolor n, "#202020"
                add 100 to sScore
             else
                put 180 into sFoe[n]["charm"]
+               Sound.Play "Zap"
                Maze.Recolor n, "#40FF80"
                add 50 to sScore
             end if
@@ -449,8 +456,10 @@ on Maze.LoseLife a
    put empty into sHUDWas
    if sLives <= 0 then
       put true into sOver
+      Sound.Play "Lose"
       exit Maze.LoseLife
    end if
+   Sound.Play "Hurt"
    -- everyone back to the start; the dots stay eaten
    repeat with n = 1 to 2
       put sAgent[n]["x0"] into sAgent[n]["x"]

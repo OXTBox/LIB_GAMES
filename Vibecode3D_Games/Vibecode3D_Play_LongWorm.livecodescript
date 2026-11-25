@@ -88,6 +88,7 @@ on Worm.StartLevel pLevel
    put Entity.Spawn("Worm.Food", 0, 0, kZ, "yellow") into sFoodKey
    Worm.PlaceFood
    put empty into sHUDWas
+   Sound.Play "Warp"
 end Worm.StartLevel
 
 on Worm.PlaceFood
@@ -151,7 +152,9 @@ on Game.OnUpdate
    if tC < 1 or tC > kCols or tR < 1 or tR > kRows or sWall[tHead] is true or tHead is among the lines of sBody then
       subtract 1 from sLives
       FX.Sparks Worm.X(tC), Worm.Y(tR), kZ, 12, "red"
+      Sound.Play "Hurt"
       if sLives <= 0 then
+         Sound.Play "Lose"
          put true into sOver
          put empty into sHUDWas
       else
@@ -176,9 +179,11 @@ on Game.OnUpdate
    end if
    if tHead is sFood then
       add 1 to sEaten
+      Sound.Play "Pickup"
       add 1 to sGrow
       put empty into sHUDWas
       if sEaten >= sNeed then
+         Sound.Play "Win"
          if sLevel >= 5 then
             put true into sOver
          else

@@ -175,6 +175,7 @@ on Game.OnUpdate
       if tPress then
          put false into sOnVine
          put kJump * 0.8 into sVY
+         Sound.Play "Jump"
       end if
    else
       if (65361 is among the items of tKeys or 97 is among the items of tKeys) then subtract kRunSpeed from sX
@@ -184,7 +185,10 @@ on Game.OnUpdate
          -- on the floor
          put kGround into sY
          put 0 into sVY
-         if tPress then put kJump into sVY
+         if tPress then
+            put kJump into sVY
+            Sound.Play "Jump"
+         end if
       end if
       if sVY is not 0 or sY < kGround or Vine.OverPit(sX) then
          add kGravity to sVY
@@ -192,11 +196,13 @@ on Game.OnUpdate
          if sY >= kGround and not Vine.OverPit(sX) then
             put kGround into sY
             put 0 into sVY
+            Sound.Play "Thud"
          end if
       end if
       -- catch the vine in the air
       if sHasVine and sY < kGround and abs(sX - tTipX) < 34 and abs(sY - 30 - tTipY) < 50 and sVY >= -6 then
          put true into sOnVine
+         Sound.Play "Blip"
       end if
    end if
    Entity.SetPosition sRunner, sX, sY - 23, kZ
@@ -215,6 +221,7 @@ on Game.OnUpdate
          Entity.Kill sGem[tN]["key"]
          delete variable sGem[tN]
          add 10 to sScore
+         Sound.Play "Pickup"
          put empty into sHUDWas
       end if
    end repeat
@@ -228,11 +235,14 @@ on Game.OnUpdate
          if sLevel >= 5 then
             put true into sOver
             put empty into sHUDWas
+            Sound.Play "Win"
          else
+            Sound.Play "Warp"
             Vine.GoLevel sLevel + 1
          end if
       else
          add 1 to sScreen
+         Sound.Play "Warp"
          Vine.BuildScreen
       end if
    end if
@@ -242,7 +252,9 @@ end Game.OnUpdate
 on Vine.Hurt
    subtract 1 from sLives
    FX.Sparks sX, sY - 20, kZ, 12, "red"
+   Sound.Play "Hurt"
    if sLives <= 0 then
+      Sound.Play "Lose"
       put true into sOver
       put empty into sHUDWas
       Vine.ShowHUD

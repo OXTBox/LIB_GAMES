@@ -124,6 +124,7 @@ on Game.OnUpdate
       put kManY - 44 into sBY
       if 32 is among the items of tKeys then
          put false into sHeld
+         Sound.Play "Throw"
          put tLean * sSpeed * 0.6 into sDX
          put -sSpeed into sDY
       end if
@@ -133,10 +134,12 @@ on Game.OnUpdate
       if sBX < kLeft + 7 then
          put kLeft + 7 into sBX
          put abs(sDX) into sDX
+         Sound.Play "Bounce"
       end if
       if sBX > kRight - 7 then
          put kRight - 7 into sBX
          put -abs(sDX) into sDX
+         Sound.Play "Bounce"
       end if
       if sBY < kTop + 7 then
          put kTop + 7 into sBY
@@ -146,6 +149,7 @@ on Game.OnUpdate
       repeat for each key tN in sBlock
          if abs(sBX - sBlock[tN]["x"]) <= kBW / 2 + 4 and abs(sBY - sBlock[tN]["y"]) <= kBH / 2 + 6 then
             put abs(sDY) into sDY
+            Sound.Play "Hit"
             subtract 1 from sBlock[tN]["hits"]
             FX.Sparks sBlock[tN]["x"], sBlock[tN]["y"], kZ, 5, "yellow"
             if sBlock[tN]["hits"] <= 0 then
@@ -154,6 +158,7 @@ on Game.OnUpdate
                delete variable sBlock[tN]
                subtract 1 from sLeft
                add 10 to sScore
+               Sound.Play "Blip"
             end if
             put empty into sHUDWas
             exit repeat
@@ -162,6 +167,7 @@ on Game.OnUpdate
       -- back in the scoop, or on the floor
       if sDY > 0 and sBY >= kManY - 50 and sBY <= kManY - 20 and abs(sBX - sManX) <= 30 then
          put true into sHeld
+         Sound.Play "Pickup"
          add 5 to sScore
          put empty into sHUDWas
       else if sBY > kFloor then
@@ -185,7 +191,9 @@ on Game.OnUpdate
    if sLeft <= 0 and not sOver then
       if sLevel >= 5 then
          put true into sOver
+         Sound.Play "Win"
       else
+         Sound.Play "Warp"
          Jai.GoLevel sLevel + 1
       end if
    end if
@@ -197,7 +205,9 @@ on Jai.LoseLife
    put true into sHeld
    put empty into sHUDWas
    FX.Sparks sManX, kManY, kZ, 12, "red"
+   Sound.Play "Hurt"
    if sLives <= 0 then put true into sOver
+   if sLives <= 0 then Sound.Play "Lose"
 end Jai.LoseLife
 
 on Jai.ShowHUD

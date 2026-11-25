@@ -70,6 +70,7 @@ on Blob.StartLevel pLevel
    end repeat
    put 0 into sCool
    put empty into sHUDWas
+   Sound.Play "Warp"
 end Blob.StartLevel
 
 on Blob.Add pX, pZ, pKind
@@ -94,7 +95,7 @@ on Blob.TestKeys pKeys
 end Blob.TestKeys
 
 on Game.OnUpdate
-   local tKeys, tK, tB, d, r, tGone, n, a, tLeft
+   local tKeys, tK, tB, d, r, tGone, n, a, tLeft, tHitSnd, tBoomSnd
    add 1 to sTicks
    put Blob.Keys() into tKeys
    if sOver then
@@ -104,6 +105,8 @@ on Game.OnUpdate
    if (65361 is among the items of tKeys or 97 is among the items of tKeys) then subtract kSpin from sAim
    if (65363 is among the items of tKeys or 100 is among the items of tKeys) then add kSpin to sAim
    Entity.SetRotation sGun, 1.5708, sAim, 0        -- the pyramid lies down and points along the aim
+   put false into tHitSnd
+   put false into tBoomSnd
    -- shooting: one shot every 5 steps while Space is held
    if sCool > 0 then subtract 1 from sCool
    if 32 is among the items of tKeys and sCool <= 0 then
@@ -115,6 +118,7 @@ on Game.OnUpdate
       put Entity.Spawn("Blob.Shot", sShot[sSerial]["x"], -14, sShot[sSerial]["z"], "white") into sShot[sSerial]["key"]
       Entity.SetRotation sShot[sSerial]["key"], 0, sAim, 0
       put 5 into sCool
+      Sound.Play "PlayerLaser"
    end if
    -- shots fly; the first blob one touches is hit
    repeat for each key tK in sShot
@@ -130,6 +134,8 @@ on Game.OnUpdate
             put true into tGone
             FX.Sparks sBlob[tB]["x"], -20, sBlob[tB]["z"], 8, "#FF60D0"
             Entity.Kill sBlob[tB]["key"]
+            if not tHitSnd then Sound.Play "Hit"
+            put true into tHitSnd
             if sBlob[tB]["kind"] is "big" then
                -- a big one splits
                repeat with n = 1 to sSplit
@@ -137,6 +143,8 @@ on Game.OnUpdate
                   Blob.Add sBlob[tB]["x"] + 40 * sin(a), sBlob[tB]["z"] + 40 * cos(a), "small"
                end repeat
                add 10 to sScore
+               if not tBoomSnd then Sound.Play "Explode"
+               put true into tBoomSnd
             else
                add 5 to sScore
             end if
@@ -163,7 +171,9 @@ on Game.OnUpdate
          delete variable sBlob[tB]
          subtract 1 from sLives
          put empty into sHUDWas
+         Sound.Play "Hurt"
          if sLives <= 0 then
+            Sound.Play "Lose"
             put true into sOver
             put 0 into sTicks
          end if
@@ -176,6 +186,7 @@ on Game.OnUpdate
       Entity.SetPosition sBlob[tB]["key"], sBlob[tB]["x"], -r - 3 * sin((sTicks + tB * 7) / 4), sBlob[tB]["z"]
    end repeat
    if tLeft is 0 and not sOver then
+      Sound.Play "Win"
       if sLevel >= 5 then
          put true into sOver
          put 0 into sTicks

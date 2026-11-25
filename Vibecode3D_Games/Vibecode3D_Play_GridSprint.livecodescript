@@ -103,6 +103,7 @@ on Grid.StartLevel pLevel
       put Entity.Spawn("Grid.Rival", 0, kGroundY - 20, -3000, "255,140,0") into sRival[i]["key"]
    end repeat
    put 0 into sHeading
+   Sound.Play "Warp"
    Grid.Begin "qual"
 end Grid.StartLevel
 
@@ -358,7 +359,10 @@ on Game.OnUpdate
          break
       case "grid"
          Grid.Rivals false
-         if Grid.Pressed(32, tKeys) then Grid.Begin "race"
+         if Grid.Pressed(32, tKeys) then
+            Sound.Play "Select"
+            Grid.Begin "race"
+         end if
          break
       default
          Grid.Drive tKeys
@@ -373,6 +377,7 @@ on Grid.Drive pKeys
    local tC, tSteer, tWas
    -- gears and pedals
    if Grid.Pressed(65505, pKeys) or Grid.Pressed(65506, pKeys) or Grid.Pressed(103, pKeys) then
+      Sound.Play "Blip"
       if sGear is "low" then
          put "high" into sGear
       else
@@ -426,6 +431,7 @@ on Grid.Drive pKeys
       put Grid.FullTime() into sTime
       put sDist into sCheckDist
       FX.Sparks 0, kGroundY - 80, kCarZ + 200, 10, "0,255,120"
+      Sound.Play "Pickup"
       if (sDist - kStartLine) div sLapLen > (tWas - kStartLine) div sLapLen then Grid.Lap
       put empty into sHUDWas
    else
@@ -453,10 +459,16 @@ end Grid.CheckSigns
 
 on Grid.Crash pWhy
    FX.Sparks 0, kGroundY - 20, kCarZ, 20, "255,80,80"
+   if pWhy is "sign" then
+      Sound.Play "Explode"
+   else
+      Sound.Play "Hurt"
+   end if
    subtract 1 from sLives
    put empty into sHUDWas
    if sLives <= 0 then
       put "over" into sPhase
+      Sound.Play "Lose"
       exit Grid.Crash
    end if
    put sCheckDist into sDist
@@ -472,6 +484,7 @@ on Grid.Lap
    if sPhase is "qual" then
       -- the qualifying time sets your slot: 8th to 1st
       put sPhaseT into sQualT
+      Sound.Play "Powerup"
       put 1 + max(0, min(kRivals, (sQualT - round(sLapLen / 34)) div 25)) into sPlace
       Grid.Begin "grid"
       exit Grid.Lap
@@ -484,6 +497,11 @@ on Grid.Lap
       end repeat
       add (kRivals + 2 - sPlace) * 100 * sLevel to sScore
       put "done" into sPhase
+      if sPlace is 1 then
+         Sound.Play "Win"
+      else
+         Sound.Play "Select"
+      end if
       put empty into sHUDWas
    end if
 end Grid.Lap
@@ -501,6 +519,7 @@ on Grid.Rivals pMoving
       -- bump: you run into the back of a rival (the two boxes touch)
       if pMoving and tRel > 0 and tRel < kCarHalfL + kRivalHalfL and abs(sRival[i]["off"] - sOff) < kCarHalfW + kRivalHalfW then
          put sRival[i]["v"] * 0.6 into sSpeed
+         Sound.Play "Thud"
          put sRival[i]["d"] - (kCarHalfL + kRivalHalfL + 1) into sDist
          FX.Sparks (sRival[i]["off"] - sOff) / 2, Grid.GroundY(0) - 25, kCarZ + kCarHalfL, 6, "255,140,0"
          put sRival[i]["d"] - sDist into tRel

@@ -237,6 +237,7 @@ on Table.StartLevel pLevel
    put "grid" into sPhase
    put 0 into sPhaseT
    put empty into sCount
+   Sound.Play "Warp"
    put "TABLE" && pLevel & ": PULL UP TO THE LINE" into sMsg
    put 0 into sMsgT
    put empty into sHUDWas
@@ -318,6 +319,7 @@ on Game.OnUpdate
    -- off the side of the table
    if abs(sX) > kHalfW then
       FX.Sparks sX, kCarY, kZ, 18, "255,80,80"
+      Sound.Play "PlayerCrash"
       Table.LoseLife "OFF THE TABLE!"
       put 0 into sX
       put 0 into sAng
@@ -375,12 +377,14 @@ on Game.OnUpdate
                subtract 150 from sTime
                put 24 into sSpin
                Table.Say "JUICE! -5 SECONDS"
+               Sound.Play "Hurt"
                break
             default
                subtract 60 from sTime
                put sSpeed * 0.3 into sSpeed
                subtract 30 from sW                   -- bounced back
                Table.Say "BUMP! -2 SECONDS"
+               Sound.Play "Thud"
          end switch
          FX.Sparks sX, kCarY - 20, kZ, 8, "255,200,80"
       end if
@@ -399,6 +403,7 @@ on Game.OnUpdate
       if sW - sRival[tK]["w"] > 300 then
          put false into sRival[tK]["in"]
          add 100 to sScore
+         Sound.Play "Pickup"
          Table.Say "A RIVAL DROPS OUT! +100"
          Entity.SetPosition sRival[tK]["key"], 0, -900, kZ
          next repeat
@@ -443,8 +448,10 @@ on Table.Grid
    else
       -- count: 3, 2, 1 a second each, then GO
       put 3 - sPhaseT div 30 into sCount
+      if sPhaseT mod 30 is 1 and sCount > 0 then Sound.Play "Blip"
       if sCount <= 0 then
          put "race" into sPhase
+         Sound.Play "Select"
          put "GO!" into sMsg
          put 30 into sMsgT
          put empty into sHUDWas
@@ -505,12 +512,14 @@ on Table.LoseLife pWhy
    Table.Say pWhy
    put empty into sHUDWas
    if sLives <= 0 then
+      Sound.Play "Lose"
       put true into sOver
       Table.ShowHUD
    end if
 end Table.LoseLife
 
 on Table.Finish
+   Sound.Play "Win"
    add 500 * sLevel + sTime div 30 * 10 to sScore
    if sLevel >= 5 then
       put true into sWon

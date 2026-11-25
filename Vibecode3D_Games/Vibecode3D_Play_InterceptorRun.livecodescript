@@ -23,6 +23,7 @@ local sCar, sBoat, sX, sVX, sDist, sStageLen, sSlice, sSliceWet, sThing, sThingN
 local sShot, sShotN, sGunWait, sSpecial, sAmmo, sTruckN, sHeli, sHeliX, sTurretWait, sWet
 local sLevel, sLives, sScore, sOver, sWon, sHurt, sScroll, sKeysWas, sTestKeys, sHUDWas, sTicks
 local sRotor, sHeliY, sZoom, sZoomF, sTurret, sHeliGo
+local sBoomTick     -- the frame an Explode last played: once a frame
 
 constant kZ = 380            -- the play plane (screen scale is 300/z: 0.8 px a unit)
 constant kCarY = 170
@@ -296,14 +297,17 @@ on Game.OnUpdate
    if sGunWait > 0 then subtract 1 from sGunWait
    if Int.Down(32, tKeys) and sGunWait <= 0 then
       Int.Fire "gun", sX, 0
+      Sound.Play "PlayerLaser"
       put 5 into sGunWait
    end if
    if (Int.Pressed(120, tKeys) or Int.Pressed(65505, tKeys) or Int.Pressed(65506, tKeys)) and sAmmo > 0 then
       subtract 1 from sAmmo
       if sSpecial is "missiles" then
          Int.Fire "missile", sX, 0
+         Sound.Play "Shoot"
       else
          Int.AddThing "oil", "Int.Oil", sX, sDist - 70, 0, "255,150,0"
+         Sound.Play "Throw"
       end if
       if sAmmo <= 0 then put empty into sSpecial
       put empty into sHUDWas
@@ -315,6 +319,7 @@ on Game.OnUpdate
    if not sWet and sDist >= tWetAt then
       put true into sWet
       FX.Sparks sX, kCarY, kZ, 16, "40,140,255"
+      Sound.Play "Thud"
       Entity.SetPosition sCar, 0, -900, kZ
       put empty into sHUDWas
    end if
@@ -356,7 +361,9 @@ on Game.OnUpdate
       if sLevel >= 5 then
          put true into sWon
          put true into sOver
+         Sound.Play "Win"
       else
+         Sound.Play "Warp"
          Int.GoLevel sLevel + 1
       end if
    end if
@@ -467,6 +474,7 @@ on Int.Helicopter
    if sTurretWait <= 0 and sHeliY > -300 and sHeliGo is not "out" and not sWet then
       put max(1, sqrt(tDX * tDX + tDY * tDY)) into tLen
       Int.AddThing "hshot", "Int.HeliShot", sHeliX + 26 * tDX / tLen, sDist + kCarY - (sHeliY + 26 * tDY / tLen), 0, "255,40,40"
+      Sound.Play "Bullet"
       put kHeliShotV * tDX / tLen into sThing[sThingN]["hx"]
       put kHeliShotV * tDY / tLen into sThing[sThingN]["hy"]
       put Int.ScreenY(sThing[sThingN]["w"]) into sThing[sThingN]["y"]
@@ -545,6 +553,7 @@ on Int.Seek pS
    if sHeliX >= 0 and sHeliY is not empty and abs(sShot[pS]["x"] - sHeliX) < 40 and abs(sShot[pS]["y"] - sHeliY) < 40 then
       FX.Sparks sHeliX, sHeliY, kZ - 60, 30, "255,120,255"
       add 500 to sScore
+      Sound.Play "Hit"
       put -1 into sHeliX
       put empty into sHeliY
       Entity.SetPosition sHeli, 0, -900, kZ - 60
@@ -564,6 +573,8 @@ on Int.Destroy pT
       add 150 to sScore
    end if
    FX.Sparks sThing[pT]["x"], Int.ScreenY(sThing[pT]["w"]), kZ, 14, "255,200,60"
+   if sBoomTick is not sTicks then Sound.Play "Explode"
+   put sTicks into sBoomTick
    Entity.Kill sThing[pT]["key"]
    delete variable sThing[pT]
    put empty into sHUDWas
@@ -671,6 +682,7 @@ on Int.Things
                      put 5 into sAmmo
                   end if
                   add 100 to sScore
+                  Sound.Play "Powerup"
                   FX.Sparks sThing[tT]["x"], Int.ScreenY(sThing[tT]["w"]), kZ, 14, "255,150,0"
                   Entity.Kill sThing[tT]["key"]
                   delete variable sThing[tT]
@@ -807,7 +819,12 @@ on Int.Hurt
    put 45 into sHurt
    FX.Sparks sX, kCarY, kZ, 18, "255,80,80"
    put empty into sHUDWas
-   if sLives <= 0 then put true into sOver
+   if sLives <= 0 then
+      put true into sOver
+      Sound.Play "PlayerCrash"
+   else
+      Sound.Play "Hurt"
+   end if
 end Int.Hurt
 
 on Int.ShowHUD

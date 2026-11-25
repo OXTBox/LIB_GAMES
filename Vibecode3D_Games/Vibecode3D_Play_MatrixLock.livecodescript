@@ -249,6 +249,7 @@ on Lock.Land
       if tL is 0 and c is sPC and r is sPR then put true into tHit
    end repeat
    FX.Sparks Lock.X(sFC), -tL * kS, Lock.Z(sFR), 6, "#FF60D0"
+   Sound.Play "Thud"
    if tHit then
       Lock.LoseLife "A SHAPE LANDED ON YOU"
       exit Lock.Land
@@ -279,13 +280,16 @@ on Lock.ClearRows
          put empty into sOcc[c][r][12]
       end repeat
       add 1 to sCleared
+      Sound.Play "Zap"
       put empty into sHUDWas
       if sCleared >= sNeed then
          if sLevel >= 5 then
             put true into sOver
             put true into sWon
+            Sound.Play "Win"
          else
             add 1 to sLevel
+            Sound.Play "Warp"
             Lock.GoLevel sLevel
          end if
          exit Lock.ClearRows
@@ -310,9 +314,11 @@ on Lock.LoseLife pWhy
    put empty into sHUDWas
    if sLives <= 0 then
       put true into sOver
+      Sound.Play "Lose"
       Lock.Say pWhy, 999
       exit Lock.LoseLife
    end if
+   Sound.Play "Hurt"
    -- the floor is wiped; the rows cleared so far count
    repeat for each key c in sOcc
       repeat for each key r in sOcc[c]
@@ -365,6 +371,7 @@ on Game.OnUpdate
    end if
    if Lock.Pressed(32, tKeys) and sShape is not empty then
       Lock.RotateFoot
+      Sound.Play "Select"
       Lock.FootSize sFoot, tW, tH
       put min(sFC, kN - tW) into sFC
       put min(sFR, kN - tH) into sFR

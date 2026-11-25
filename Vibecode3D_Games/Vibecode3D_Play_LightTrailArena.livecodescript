@@ -322,6 +322,7 @@ on Light.TakeBit pB, pWhich
    Light.Break tCX, tCY
    if pB is 1 then
       add 20 to sScore
+      Sound.Play "Pickup"
       add 1 to sBoosts
       Light.Say "BIT! THE WALLS NEAR IT BREAK.  +1 BOOST"
    else
@@ -509,6 +510,7 @@ on Game.OnUpdate
    if Light.Down(32, tKeys) and not (32 is among the items of sKeysWas) and sBoosts > 0 and sBoost <= 0 then
       subtract 1 from sBoosts
       put 120 into sBoost
+      Sound.Play "Zap"
       put empty into sHUDWas
    end if
    put tKeys into sKeysWas
@@ -574,6 +576,7 @@ on Light.Step pB
       put sBike[pB]["wantx"] into sBike[pB]["dx"]
       put sBike[pB]["wanty"] into sBike[pB]["dy"]
       Entity.SetRotation sBike[pB]["key"], 0, 0, atan2(sBike[pB]["dy"], sBike[pB]["dx"])
+      if pB is 1 then Sound.Play "Blip"
    end if
    put sBike[pB]["cx"] + sBike[pB]["dx"] into tNX
    put sBike[pB]["cy"] + sBike[pB]["dy"] into tNY
@@ -700,8 +703,10 @@ on Light.Crash pB
    Light.CloseSegment pB
    FX.Sparks Light.PX(sBike[pB]["cx"]), Light.PY(sBike[pB]["cy"]), kZ, 22, sBike[pB]["color"]
    Entity.SetPosition sBike[pB]["key"], 0, -900, kZ
+   if pB is 1 then Sound.Play "PlayerCrash"
    if pB > 1 then
       add 100 * sLevel to sScore
+      Sound.Play "Explode"
       put empty into sHUDWas
    end if
 end Light.Crash
@@ -709,18 +714,21 @@ end Light.Crash
 on Light.EndRound
    if sBike[1]["alive"] then
       add 250 * sLevel to sScore
+      Sound.Play "Win"
       if sLevel >= 5 then
          put true into sWon
          put true into sOver
          put empty into sHUDWas
          Light.ShowHUD
       else
+         Sound.Play "Warp"
          Light.GoLevel sLevel + 1
       end if
    else
       subtract 1 from sLives
       if sLives <= 0 then
          put true into sOver
+         Sound.Play "Lose"
          put empty into sHUDWas
          Light.ShowHUD
       else

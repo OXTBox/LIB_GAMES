@@ -88,7 +88,7 @@ on City.TestKeys pKeys
 end City.TestKeys
 
 on Game.OnUpdate
-   local tKeys, tSpace, tN, tB, tTo, tD, tDX, tDY, tR, tHit, tUp, tList
+   local tKeys, tSpace, tN, tB, tTo, tD, tDX, tDY, tR, tHit, tUp, tList, tHitSound, tHitCity
    put City.Keys() into tKeys
    put (32 is among the items of tKeys) into tSpace
    if sOver then
@@ -114,6 +114,7 @@ on Game.OnUpdate
       put sAX into sBurst[sBurstN]["x"]
       put sAY into sBurst[sBurstN]["y"]
       put 0 into sBurst[sBurstN]["age"]
+      Sound.Play "PlayerLaser"
       put Entity.Spawn("City.Burst", sAX, sAY, kZ, "orange") into sBurst[sBurstN]["key"]
       put empty into sHUDWas
    end if
@@ -138,6 +139,7 @@ on Game.OnUpdate
          put tDX / tD * sSpeed into sStreak[sStreakN]["vx"]
          put tDY / tD * sSpeed into sStreak[sStreakN]["vy"]
          put Entity.Spawn("City.Streak", sStreak[sStreakN]["x"], sStreak[sStreakN]["y"], kZ, "red") into sStreak[sStreakN]["key"]
+         Sound.Play "Enemy"
          put sT + 25 + random(max(10, 70 - sLevel * 10)) into sNextAt
          put empty into sHUDWas
       end if
@@ -152,6 +154,8 @@ on Game.OnUpdate
          FX.Sparks sBurst[tB]["x"], sBurst[tB]["y"], kZ, 6, "orange"
       end if
    end repeat
+   put false into tHitSound
+   put false into tHitCity
    repeat for each key tN in sStreak
       add sStreak[tN]["vx"] to sStreak[tN]["x"]
       add sStreak[tN]["vy"] to sStreak[tN]["y"]
@@ -164,6 +168,7 @@ on Game.OnUpdate
          if tDX * tDX + tDY * tDY <= tR * tR then
             put true into tHit
             add 25 to sScore
+            put true into tHitSound
             FX.Sparks sStreak[tN]["x"], sStreak[tN]["y"], kZ, 8, "yellow"
             exit repeat
          end if
@@ -175,6 +180,7 @@ on Game.OnUpdate
             put false into sCity[tTo]["up"]
             Entity.Kill sCity[tTo]["key"]
             FX.Sparks sCity[tTo]["x"], kGround - 20, kZ, 20, "red"
+            put true into tHitCity
          end if
       end if
       if tHit then
@@ -183,20 +189,25 @@ on Game.OnUpdate
          put empty into sHUDWas
       end if
    end repeat
+   if tHitSound then Sound.Play "Hit"
+   if tHitCity then Sound.Play "Explode"
    put 0 into tUp
    repeat with tN = 1 to 6
       if sCity[tN]["up"] then add 1 to tUp
    end repeat
    if tUp = 0 then
       put true into sOver
+      Sound.Play "Lose"
       put empty into sHUDWas
    else if sToCome <= 0 and the number of lines of the keys of sStreak = 0 then
       add tUp * 100 + sBursts * 5 to sScore
       if sLevel >= 5 then
          put true into sOver
          put true into sWon
+         Sound.Play "Win"
          put empty into sHUDWas
       else
+         Sound.Play "Warp"
          City.GoLevel sLevel + 1
       end if
    end if

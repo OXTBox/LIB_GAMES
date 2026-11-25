@@ -256,6 +256,7 @@ on Cpong.HitPad pJ, pB, pR
       put tTan into sBall[pB]["dx"]
    end if
    FX.Sparks sBall[pB]["x"], sCfg["cy"] + sBall[pB]["y"], kZ, 5, sPad[pJ]["color"]
+   Sound.Play "Hit"
 end Cpong.HitPad
 
 -- walls bounce the ball; past a goal mouth it is a point
@@ -267,6 +268,7 @@ on Cpong.Edges pB, pR
       if sGoal["L"] is empty then
          put -tW + pR into sBall[pB]["x"]
          put abs(sBall[pB]["dx"]) into sBall[pB]["dx"]
+         Sound.Play "Bounce"
       else if sBall[pB]["x"] < -tW - 30 then
          Cpong.Point "L"
          exit Cpong.Edges
@@ -276,6 +278,7 @@ on Cpong.Edges pB, pR
       if sGoal["R"] is empty then
          put tW - pR into sBall[pB]["x"]
          put -abs(sBall[pB]["dx"]) into sBall[pB]["dx"]
+         Sound.Play "Bounce"
       else if sBall[pB]["x"] > tW + 30 then
          Cpong.Point "R"
          exit Cpong.Edges
@@ -285,6 +288,7 @@ on Cpong.Edges pB, pR
       if sGoal["T"] is empty then
          put -tH + pR into sBall[pB]["y"]
          put abs(sBall[pB]["dy"]) into sBall[pB]["dy"]
+         Sound.Play "Bounce"
       else if sBall[pB]["y"] < -tH - 30 then
          Cpong.Point "T"
          exit Cpong.Edges
@@ -294,6 +298,7 @@ on Cpong.Edges pB, pR
       if sGoal["B"] is empty then
          put tH - pR into sBall[pB]["y"]
          put -abs(sBall[pB]["dy"]) into sBall[pB]["dy"]
+         Sound.Play "Bounce"
       else if sBall[pB]["y"] > tH + 30 then
          Cpong.Point "B"
          exit Cpong.Edges
@@ -304,15 +309,19 @@ end Cpong.Edges
 on Cpong.Point pSide
    if sGoal[pSide] is "home" then
       add 1 to sAway
+      Sound.Play "Hurt"
    else
       add 1 to sHome
+      Sound.Play "Powerup"
    end if
    put empty into sHUDWas
    if sHome >= sCfg["win"] then
       if sLevel >= sCfg["levels"] then
          put true into sOver
          put true into sWonAll
+         Sound.Play "Win"
       else
+         Sound.Play "Warp"
          Cpong.GoLevel sLevel + 1
       end if
       exit Cpong.Point
@@ -320,6 +329,7 @@ on Cpong.Point pSide
    if sAway >= sCfg["win"] then
       put true into sOver
       put false into sWonAll
+      Sound.Play "Lose"
       exit Cpong.Point
    end if
    Cpong.Serve

@@ -234,13 +234,19 @@ on Game.OnUpdate
    if Rally.Down(65363, tKeys) or Rally.Down(100, tKeys) then add 1.6 to sVX
    put sVX * 0.82 into sVX
    add sVX to sX
-   if Rally.Down(32, tKeys) and not (32 is among the items of sKeysWas) and sJump <= 0 then put kJumpSteps into sJump
+   if Rally.Down(32, tKeys) and not (32 is among the items of sKeysWas) and sJump <= 0 then
+      put kJumpSteps into sJump
+      Sound.Play "Jump"
+   end if
    put tKeys into sKeysWas
    put false into tLand
    put sJump > 0 into tInAir
    if sJump > 0 then
       subtract 1 from sJump
-      if sJump is 0 then put true into tLand
+      if sJump is 0 then
+         put true into tLand
+         Sound.Play "Thud"
+      end if
    end if
    if sHurt > 0 then subtract 1 from sHurt
    -- the ditch
@@ -275,7 +281,9 @@ on Game.OnUpdate
       if sLevel >= 5 then
          put true into sWon
          put true into sOver
+         Sound.Play "Win"
       else
+         Sound.Play "Warp"
          Rally.GoLevel sLevel + 1
       end if
    end if
@@ -406,6 +414,7 @@ end Rally.Things
 on Rally.SpinOut pT, pDir, pSpeed
    if sThing[pT]["spin"] is not empty then exit Rally.SpinOut
    put Rally.Sign(pDir) into sThing[pT]["spin"]
+   Sound.Play "Hit"
    put sThing[pT]["spin"] * max(kSpinSpeed, abs(pSpeed)) into sThing[pT]["vx"]
    put 0 into sThing[pT]["rot"]
    put sScroll into sThing[pT]["v"]          -- it keeps level with you, so it leaves by the side
@@ -479,6 +488,7 @@ end Rally.Sign
 
 on Rally.Wreck pT, pPoints
    add pPoints to sScore
+   Sound.Play "Explode"
    FX.Sparks sThing[pT]["x"], Rally.ScreenY(sThing[pT]["w"]), kZ, 14, "255,200,60"
    Entity.Kill sThing[pT]["key"]
    delete variable sThing[pT]
@@ -491,7 +501,12 @@ on Rally.Hurt pWhy
    put 45 into sHurt
    FX.Sparks sX, kCarY, kZ, 18, "255,80,80"
    put empty into sHUDWas
-   if sLives <= 0 then put true into sOver
+   if sLives <= 0 then
+      put true into sOver
+      Sound.Play "Lose"
+   else
+      Sound.Play "Hurt"
+   end if
 end Rally.Hurt
 
 on Rally.ShowHUD

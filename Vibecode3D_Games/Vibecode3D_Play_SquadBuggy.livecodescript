@@ -502,6 +502,7 @@ on Squad.Drive pMove, pJump
       put true into sAir
       put kJumpV into sVY
       put true into sJumped
+      Sound.Play "Jump"
    end if
    put max(0, sX + pMove) into tNewX
    if sAir then
@@ -651,6 +652,7 @@ on Squad.ThrowOff pSure
    if pSure is not true and random(100) > 45 + sLevel * 8 then exit Squad.ThrowOff
    put item random(the number of items of tOn) of tOn into i
    put "down" into sMan[i]["state"]
+   Sound.Play "Hurt"
    put sX - 60 - random(40) into sMan[i]["x"]
    Entity.Kill sMan[i]["key"]
    put Entity.Spawn("Squad.Down", Squad.SX(sMan[i]["x"]), kBase, kZ - 4, "255,150,0") into sMan[i]["key"]
@@ -665,9 +667,11 @@ on Squad.CheckSquad
    end repeat
    if tLeft > 0 then exit Squad.CheckSquad
    subtract 1 from sLives
+   Sound.Play "PlayerCrash"
    put empty into sHUDWas
    if sLives <= 0 then
       put true into sOver
+      Sound.Play "Lose"
       Squad.Say "THE SQUAD IS GONE"
       Squad.ShowHUD
       exit Squad.CheckSquad
@@ -700,6 +704,7 @@ on Squad.Shoot
       put sX + (i - 2.5) * 16 into sShot[sShotN]["x"]
       put sY + 40 into sShot[sShotN]["h"]
       put tTarget into sShot[sShotN]["target"]
+      Sound.Play "Shoot"
       put Entity.Spawn("Squad.Shot", Squad.SX(sShot[sShotN]["x"]), kBase - sShot[sShotN]["h"], kZ, "255,255,120") into sShot[sShotN]["key"]
    end repeat
 end Squad.Shoot
@@ -777,6 +782,7 @@ on Squad.Fire
    put sqrt(tDX ^ 2 + tDH ^ 2) into tD
    if tD < 1 then exit Squad.Fire
    put true into sFired
+   Sound.Play "PlayerLaser"
    add 1 to sShotN
    put tX into sShot[sShotN]["x"]
    put tH into sShot[sShotN]["h"]
@@ -830,6 +836,7 @@ on Squad.Shots
                Entity.Kill sSnipe[tK]["key"]
                delete variable sSnipe[tK]
                add 75 to sScore
+               Sound.Play "Explode"
                Squad.Say "SNIPER DOWN! +75"
                put true into tHit
             end if
@@ -841,6 +848,7 @@ on Squad.Shots
                Entity.Kill sEnemy[tK]["key"]
                delete variable sEnemy[tK]
                add 50 to sScore
+               Sound.Play "Hit"
                put true into tHit
             end if
          end repeat
@@ -860,6 +868,7 @@ on Squad.Shots
                Entity.Kill sEnemy[tT]["key"]
                delete variable sEnemy[tT]
                add 50 to sScore
+               Sound.Play "Hit"
                put empty into sHUDWas
                put true into tHit
             else
@@ -935,6 +944,7 @@ on Squad.Lob
    put (tTH - tH + 0.5 * kGrav * tT * tT) / tT into sNade[sNadeN]["vh"]
    put Entity.Spawn("Squad.Bomb", Squad.SX(tX), kBase - tH, kZ, "120,255,90") into sNade[sNadeN]["key"]
    put true into sThrown
+   Sound.Play "Throw"
 end Squad.Lob
 
 -- our grenade goes off on the ground: the bomb's blast (crater, walkers, the buggy if near) plus
@@ -1065,6 +1075,7 @@ end Squad.Bombs
 on Squad.Blast pX, pH, pDig
    local tK
    FX.Sparks Squad.SX(pX), kBase - pH, kZ, 18, "255,160,40"
+   Sound.Play "Explode"
    if pDig and sCrR > 0 then
       add 1 to sCraterN
       put pX into sCrater[sCraterN]
@@ -1234,6 +1245,7 @@ on Squad.Flags
    if sHold <= 0 and abs(sX - tFX) < 60 then
       put kHoldSteps into sHold
       add 200 to sScore
+      Sound.Play "Powerup"
       Squad.Say "FLAG REACHED! HOLD IT FOR 20 SECONDS"
    end if
    if sHold > 0 then
@@ -1247,6 +1259,7 @@ on Squad.Flags
             put tFX into sLastFlagX
             add 1 to sFlagX
             if sFlagX > sFlagN then
+               Sound.Play "Win"
                add sBonus to sScore
                if sLevel >= 5 then
                   put true into sWon
@@ -1254,6 +1267,7 @@ on Squad.Flags
                   put empty into sHUDWas
                   Squad.ShowHUD
                else
+                  Sound.Play "Warp"
                   Squad.GoLevel sLevel + 1
                end if
                exit Squad.Flags

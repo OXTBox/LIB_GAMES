@@ -182,6 +182,7 @@ on Game.OnUpdate
          put 0 into sScore
          put false into sOver
          put false into sWon
+         Sound.Play "Select"
          Fuel.GoLevel 1
       end if
       put tKeys into sKeysWas
@@ -211,6 +212,7 @@ on Game.OnUpdate
       put 0 into sFuel
       put "OUT OF FUEL" into sMsg
       put true into sOver
+      Sound.Play "Lose"
    end if
    if sHurt > 0 then subtract 1 from sHurt
    repeat for each key tK in sRail
@@ -251,6 +253,7 @@ on Game.OnUpdate
             -- grab it with Space when it is beside you
             if tGrab and abs(tZ - kCarZ) < 110 and abs(tX - sCarX) < 120 then
                put min(150, sFuel + 50) into sFuel
+               Sound.Play "Pickup"
                add 50 to sScore
                FX.Sparks tX, kGroundY - 30, tZ, 10, "0,255,100"
                put true into tGone
@@ -278,12 +281,15 @@ on Game.OnUpdate
                      put true into sWon
                      put true into sOver
                      put "CHAMPION OF THE FUEL LINE" into sMsg
+                     Sound.Play "Win"
                   else
+                     Sound.Play "Warp"
                      Fuel.GoLevel sLevel + 1
                   end if
                else
                   put "CROSSED THE LINE ON FUMES" into sMsg
                   put true into sOver
+                  Sound.Play "Lose"
                end if
                exit Game.OnUpdate
             end if
@@ -341,6 +347,9 @@ on Fuel.Hurt
    if sLives <= 0 then
       put "WRECKED" into sMsg
       put true into sOver
+      Sound.Play "PlayerCrash"
+   else
+      Sound.Play "Hurt"
    end if
 end Fuel.Hurt
 

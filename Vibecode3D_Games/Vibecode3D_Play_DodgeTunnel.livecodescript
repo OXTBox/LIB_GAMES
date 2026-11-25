@@ -69,6 +69,7 @@ on Dodge.StartLevel pLevel
    put 0 into sDashRest
    put 0 into sHurt
    put empty into sHUDWas
+   Sound.Play "Warp"
 end Dodge.StartLevel
 
 -- the tunnel's square frame (wire lines only)
@@ -119,6 +120,7 @@ on Game.OnUpdate
    if 32 is among the items of tKeys and not (32 is among the items of sKeysWas) and sDashRest <= 0 then
       put 10 into sDash
       put 60 into sDashRest
+      Sound.Play "Zap"
    end if
    put tKeys into sKeysWas
    if sDash > 0 then subtract 1 from sDash
@@ -158,20 +160,26 @@ on Game.OnUpdate
             and abs(sCube[tC]["x"] - sX) < 55 and abs(sCube[tC]["y"] - sY) < 55 then
          subtract 1 from sLives
          put 30 into sHurt
+         Sound.Play "Hurt"
          FX.Sparks sX, sY, kShipZ, 18, "red"
          put empty into sHUDWas
-         if sLives <= 0 then put true into sOver
+         if sLives <= 0 then
+            put true into sOver
+            Sound.Play "Lose"
+         end if
       end if
       if tZ < kShipZ - 150 then
          Entity.Kill sCube[tC]["key"]
          delete variable sCube[tC]
          add 10 to sScore
+         Sound.Play "Blip"
          put empty into sHUDWas
       end if
    end repeat
    -- wave over: the next one
    if sWaveLeft <= 0 and the number of lines of the keys of sCube is 0 and not sOver then
       add 100 * sLevel to sScore
+      Sound.Play "Win"
       if sLevel >= 5 then
          put true into sOver
       else
@@ -196,6 +204,7 @@ on Dodge.Launch
    put item tCorner of "255,80,80|255,200,0|0,255,120|255,0,255" into tColor
    set the itemDel to comma
    put Entity.Spawn("Dodge.Cube", sCube[sCubeN]["x"], sCube[sCubeN]["y"], kShipZ + kFarZ, tColor) into sCube[sCubeN]["key"]
+   Sound.Play "Enemy"
 end Dodge.Launch
 
 on Dodge.ShowHUD

@@ -25,6 +25,7 @@ local sX, sY, sVX, sVY, sOnTable, sBall, sRotX, sRotZ
 local sMode, sTurn, sWinner, sFirstHit, sSunkNow, sLowestAtShot, sShots, sMsg, sFriction
 local sAim, sPower, sDot, sDrag, sMouseWas, sKeysWas, sTestKeys, sTestMouse, sHUDWas
 local sTicks, sLabelsOn, sTopView
+local sClackTick, sRailTick   -- the frame a sound last played: once a frame
 
 constant kW = 820             -- the table (Hurley: the width of the stack)
 constant kH = 480             -- (the height of the stack)
@@ -149,6 +150,7 @@ function NB.Color pBall
 end NB.Color
 
 on NB.NewGame
+   Sound.Play "Select"
    NB.Rack
    put "aim" into sMode
    put empty into sMsg
@@ -233,6 +235,8 @@ on NB.Step
          put item 3 of tNew into sVX[tJ]
          put item 4 of tNew into sVY[tJ]
          if i is 0 and sFirstHit is empty then put tJ into sFirstHit
+         if sClackTick is not sTicks then Sound.Play "Thud"
+         put sTicks into sClackTick
          -- still overlapping: ease this ball off along the line of centres
          -- (Hurley stepped it back 1,1 diagonally; along the line it cannot go through a rail)
          put 0 into tSafe
@@ -247,10 +251,14 @@ on NB.Step
       if sX[i] - kCushion < kR or sX[i] + kR + kCushion > kW then
          subtract sVX[i] from sX[i]
          multiply sVX[i] by -1
+         if sRailTick is not sTicks then Sound.Play "Bounce"
+         put sTicks into sRailTick
       end if
       if sY[i] - kCushion < kR or sY[i] + kR + kCushion > kH then
          subtract sVY[i] from sY[i]
          multiply sVY[i] by -1
+         if sRailTick is not sTicks then Sound.Play "Bounce"
+         put sTicks into sRailTick
       end if
       -- the cloth
       multiply sVX[i] by sFriction
@@ -274,6 +282,7 @@ on NB.Sink pBall
    put 0 into sVX[pBall]
    put 0 into sVY[pBall]
    put pBall & comma after sSunkNow
+   if pBall is not 0 then Sound.Play "Pickup"
    -- sparks over the pocket it went in
    put 9999 into tBest
    repeat for each word tXY in kPockets
@@ -332,6 +341,7 @@ on NB.Shoot pAngle, pPower
    end repeat
    put pPower * cos(pAngle) into sVX[0]
    put pPower * sin(pAngle) into sVY[0]
+   Sound.Play "Hit"
    put NB.Lowest() into sLowestAtShot
    put empty into sFirstHit
    put empty into sSunkNow
@@ -368,6 +378,7 @@ on NB.EndShot
       put sTurn into sWinner
       put "over" into sMode
       put "PLAYER" && sTurn && "SINKS THE 9 AND WINS!" into sMsg
+      Sound.Play "Win"
       NB.Labels true
       put empty into sHUDWas
       NB.ShowHUD
@@ -376,6 +387,7 @@ on NB.EndShot
    if tNine then NB.Spot 9, kFootSpot, 2 * kR + 2
    if tScratch then NB.Spot 0, kHeadSpot, -(2 * kR + 2)
    if tFoul is not empty then
+      Sound.Play "Hurt"
       put 3 - sTurn into sTurn
       put "FOUL: " & tFoul & ". PLAYER" && sTurn && "TO SHOOT" into sMsg
       if tNine then

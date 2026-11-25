@@ -160,6 +160,7 @@ on Trench.NextLap
    if sLap > 5 then
       put true into sOver
       put true into sWon
+      Sound.Play "Win"
       put empty into sHUDWas
       exit Trench.NextLap
    end if
@@ -168,6 +169,7 @@ on Trench.NextLap
    repeat with n = 1 to sBoxN
       if sBox[n]["key"] is empty then put Entity.Spawn("Trench.Box", sBox[n]["x"], 0, 0, "#FF5050") into sBox[n]["key"]
    end repeat
+   Sound.Play "Warp"
    Trench.Say "LAP" && sLap & ": FASTER", 2
 end Trench.NextLap
 
@@ -184,6 +186,7 @@ on Trench.MoveBoxes
       if sBox[n]["cool"] > 0 then subtract 1 from sBox[n]["cool"]
       if tA > 0.2 and tA < 0.5 and sBox[n]["cool"] <= 0 then
          put 400 into sBox[n]["cool"]          -- once a pass
+         Sound.Play "Bullet"
          Trench.FoeFire sBox[n]["x"], Trench.Y(tA, 20), Trench.Z(tA, 20)
       end if
    end repeat
@@ -215,10 +218,13 @@ on Trench.Fire
    put 60 into sShot[sSerial]["life"]
    put Entity.Spawn("Trench.Shot", sPX, Trench.Y(0, sPH), 0, "#40E0FF") into sShot[sSerial]["key"]
    put 7 into sCool
+   Sound.Play "PlayerLaser"
 end Trench.Fire
 
 on Trench.MoveShots
-   local k, n, tA, tPY
+   local k, n, tA, tPY, tBoom, tHurt
+   put false into tBoom
+   put false into tHurt
    repeat for each key k in sShot
       add 0.02 to sShot[k]["a"]
       put max(8, sShot[k]["h"] - 0.9) into sShot[k]["h"]
@@ -232,6 +238,8 @@ on Trench.MoveShots
             FX.Sparks sBox[n]["x"], Trench.Y(tA, 10), Trench.Z(tA, 10), 16, "#FF5050"
             Entity.Kill sBox[n]["key"]
             put empty into sBox[n]["key"]
+            if not tBoom then Sound.Play "Explode"
+            put true into tBoom
             add 100 to sScore
             put 0 into sShot[k]["life"]
             put empty into sHUDWas
@@ -253,6 +261,11 @@ on Trench.MoveShots
       if abs(sFoeShot[k]["x"] - sPX) < 12 and abs(sFoeShot[k]["y"] - tPY) < 12 and abs(sFoeShot[k]["z"]) < 14 then
          put 0 into sFoeShot[k]["life"]
          subtract 1 from sShields
+         if not tHurt then
+            if sShields <= 0 then Sound.Play "PlayerCrash"
+            else Sound.Play "Hurt"
+         end if
+         put true into tHurt
          FX.Sparks sPX, tPY + 10, 30, 20, "#FFB000"
          put empty into sHUDWas
          if sShields <= 0 then

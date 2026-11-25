@@ -335,9 +335,11 @@ on Game.OnUpdate
       if sLevel >= 3 then
          put true into sOver
          put true into sWon
+         Sound.Play "Win"
          put empty into sHUDWas
       else
          put tKeys into sKeyWas
+         Sound.Play "Warp"
          CL.GoLevel sLevel + 1
          exit Game.OnUpdate
       end if
@@ -351,6 +353,7 @@ end Game.OnUpdate
 
 on CL.OpenDoor pC, pR
    Ray.SetCell pC, pR, "d"
+   Sound.Play "Blip"
    put 10 into sDoor[pC & comma & pR]
 end CL.OpenDoor
 
@@ -384,6 +387,7 @@ on CL.Pickups
          CL.Say "A GOLD KEY.", 2
          break
    end switch
+   Sound.Play "Pickup"
    delete variable sItem[tK]
    put empty into sHUDWas
 end CL.Pickups
@@ -397,6 +401,7 @@ on CL.Fire
    end if
    subtract 1 from sAmmo
    put 9 into sFire
+   Sound.Play "PlayerLaser"
    put 3 into sFlash
    put empty into sHUDWas
    put CL.ViewW() / 2 into tCX
@@ -412,11 +417,13 @@ on CL.Fire
    if tBest is empty then exit CL.Fire
    subtract 15 from sMon[tBest]["hp"]
    put 4 into sMon[tBest]["hurt"]
+   Sound.Play "Hit"
    put true into sMon[tBest]["awake"]
    if sMon[tBest]["hp"] <= 0 then
       put true into sMon[tBest]["dead"]
       put 10 into sMon[tBest]["dying"]
       add 1 to sKills
+      Sound.Play "Explode"
    end if
 end CL.Fire
 
@@ -424,11 +431,13 @@ on CL.Hurt pN
    if sOver then exit CL.Hurt
    subtract pN from sHP
    put 6 into sHurt
+   Sound.Play "Hurt"
    put empty into sHUDWas
    if sHP <= 0 then
       put 0 into sHP
       put true into sOver
       put false into sWon
+      Sound.Play "Lose"
    end if
 end CL.Hurt
 
@@ -477,6 +486,7 @@ on CL.Monsters
                put tDX / tD * 0.12 into sOrb[sOrbN]["vx"]
                put tDY / tD * 0.12 into sOrb[sOrbN]["vy"]
                put 200 into sOrb[sOrbN]["life"]
+               Sound.Play "Enemy"
             end if
             put 75 into sMon[tN]["cool"]
          end if

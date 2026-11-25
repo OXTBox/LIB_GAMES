@@ -93,6 +93,7 @@ local sAlert         -- [id]: the Trainer's alerted silo (its next typo launches
 local sGarbled       -- [text] its misspelling, kept so the sergeant gets your name wrong the same way
 local sSarge         -- [key|frame|frames|fps|loaded]: the drill sergeant on the map
 local sClose         -- [until|panel|face|n]: an angry close-up is on screen
+local sBoomT         -- the world clock of the last blast sound (one Explode a frame)
 
 -------------------------------------------------------------------- engine hooks
 
@@ -683,6 +684,7 @@ on Thrm.Recall pName
    put Thrm.KeyByName(pName, "pad") into tKey
    if tKey is empty then return empty
    FX.Sparks sMissiles[tKey]["x"], sMissiles[tKey]["y"], sMissiles[tKey]["z"], 10, kBlue
+   Sound.Play "Select"
    Thrm.EndMissile tKey
    Thrm.Say pName && "RECALLED."
    return "recalled"
@@ -695,6 +697,8 @@ on Thrm.Destroy pName
    if tKey is empty then return empty
    FX.Sparks sMissiles[tKey]["x"], sMissiles[tKey]["y"], sMissiles[tKey]["z"], 50, "#FFFFFF"
    FX.Sparks sMissiles[tKey]["x"], sMissiles[tKey]["y"], sMissiles[tKey]["z"], 20, kEnemy
+   Sound.Play "Hit"
+   Sound.Play "Explode"
    Thrm.EndMissile tKey
    Thrm.Say pName && "DESTROYED."
    return "destroyed"
@@ -773,6 +777,7 @@ end Thrm.BombersHome
 on Thrm.StartWar pCause
    if sWar then exit Thrm.StartWar
    put true into sWar
+   Sound.Play "Zap"
    put "strike" into sPhase
    dispatch "Seq.SetVar" to group "Sequencer" with "cause", pCause
    dispatch "Seq.Jump" to group "Sequencer" with "Strike"
@@ -805,6 +810,7 @@ end Thrm.EnemyTarget
 on Thrm.Strike pSet
    local tKey, n, tId, tT, x0, z0
    put 0 into n
+   Sound.Play "Shoot"
    repeat for each key tKey in sMissiles
       if sMissiles[tKey]["kind"] is not "pad" then next repeat
       put Thrm.StrikeTarget() into tT
@@ -863,6 +869,7 @@ on Thrm.Counter pSet
          if tId is not among the lines of tSources then put tId & cr after tSources
       end repeat
    end if
+   Sound.Play "Enemy"
    repeat with k = 1 to tN
       if tSources is empty then
          -- nothing left on land: submarines at the far edge
@@ -900,6 +907,7 @@ end Thrm.FarSilos
 -- enemy round in the air (two missiles)
 on Thrm.EnemyRound
    local tId, k, tT, tFrom
+   Sound.Play "Enemy"
    repeat with k = 1 to 2
       put Thrm.PickBase("red", "Silo", empty) into tId
       if tId is empty then
@@ -926,6 +934,7 @@ on Thrm.LaunchOne
    end if
    put Thrm.StrikeTarget() into tT
    Thrm.FlyMissile "blue", x0, z0, word 1 of tT, word 2 of tT, 0, kStrikeSecs, empty, word 3 of tT
+   Sound.Play "Shoot"
    Thrm.Say "YOUR MISSILE IS AWAY."
 end Thrm.LaunchOne
 
@@ -956,6 +965,8 @@ on Thrm.Land pKey
    put sMissiles[pKey]["z1"] into z
    put Thrm.Sag(x, z) into y
    FX.Sparks x, y, z, 80, sMissiles[pKey]["color"]
+   if sBoomT is not sWorldT then Sound.Play "Explode"
+   put sWorldT into sBoomT
    FX.Sparks x, y - 20, z, 40, "#FFFFFF"
    Thrm.TrailPoint pKey, x, y, z, sMissiles[pKey]["color"]
    put x && z & cr after sStruck

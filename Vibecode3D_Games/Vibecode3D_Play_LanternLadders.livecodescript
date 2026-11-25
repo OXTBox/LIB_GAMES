@@ -333,6 +333,7 @@ on Game.OnUpdate
          -- jump off sideways
          put false into sOnLadder
          put -5 into sVY
+         Sound.Play "Jump"
          if tLeft then put -tSpeed into sVX
          if tRight then put tSpeed into sVX
       end if
@@ -349,6 +350,7 @@ on Game.OnUpdate
       if sOnGround then put 0 into sCoyote
       if tJump and not sJumpWas and sCoyote <= 5 and sVY >= 0 then
          put kJump into sVY
+         Sound.Play "Jump"
          put 99 into sCoyote
       end if
       add 1 to sCoyote
@@ -366,6 +368,7 @@ on Game.OnUpdate
             repeat for each line tSeg in sRows[r]
                if sX + kPW * 0.5 > item 1 of tSeg and sX - kPW * 0.5 < item 2 of tSeg then
                   put LL.Top(r) into sY
+                  if sVY > 3 then Sound.Play "Thud"
                   put 0 into sVY
                   put true into sOnGround
                   exit repeat
@@ -409,6 +412,7 @@ on Game.OnUpdate
       if abs(sFlask[n]["x"] - sX) < 20 and abs(sFlask[n]["y"] - (sY - 10)) < 26 then
          put true into sFlask[n]["taken"]
          put min(sOilMax, sOil + kFlaskOil * 30) into sOil
+         Sound.Play "Pickup"
          Entity.Kill sFlask[n]["key"]
          FX.Sparks sFlask[n]["x"], sFlask[n]["y"], kZ, 14, "#FFC040"
          LL.Say "OIL", 1
@@ -457,7 +461,9 @@ on Game.OnUpdate
       if sLevel >= 5 then
          put true into sOver
          put true into sWon
+         Sound.Play "Win"
       else
+         Sound.Play "Warp"
          add 1 to sLevel
          LL.GoLevel sLevel
       end if
@@ -490,10 +496,12 @@ on LL.LoseLife pWhy
    put empty into sHUDWas
    if sLives <= 0 then
       put true into sOver
+      Sound.Play "Lose"
       LL.Say pWhy, 999
       LL.ShowHUD
       exit LL.LoseLife
    end if
+   Sound.Play "Hurt"
    LL.Respawn
    LL.Say pWhy & ".  BACK TO THE BOTTOM", 3
 end LL.LoseLife

@@ -43,6 +43,7 @@ local sArmy          -- [key][from|target|team|x0|y0|z0|x1|y1|z1|t0|arc]
 local sShot          -- [key][army|t0|x|y|z]
 local sCX, sCY, sCZ  -- the player's camera position
 local sKeyWas, sNextAI, sNextRegen, sHover, sMenu, sEndAt
+local sBulletTick, sHurtTick, sExplodeTick   -- the frame a sound last played: once a frame
 
 -------------------------------------------------------------------- engine hooks
 
@@ -331,6 +332,7 @@ end Antack.MenuHover
 
 on Antack.MenuClick pX, pY
    Antack.MenuHover
+   Sound.Play "Select"
    switch item 1 of sMenu[sHover]
       case "EASY"
          Antack.GoLevel "Fight1"
@@ -354,10 +356,12 @@ on Antack.EndScreen pWon
    local tW, tH, tSize, tText, tLine2
    Antack.Clear
    if pWon then
+      Sound.Play "Win"
       put "won" into sScreen
       put "YOU WIN!" into tText
       put "CLICK TO PLAY AGAIN" into tLine2
    else
+      Sound.Play "Lose"
       put "lost" into sScreen
       put "YOU LOST!" into tText
       put "CLICK TO TRY AGAIN" into tLine2
@@ -396,6 +400,7 @@ on Antack.StartLevel pName
    end if
    Antack.Clear
    put "play" into sScreen
+   Sound.Play "Warp"
    put pName into sLevel
    put sData["levels"][pName] into tLevel
    get Entity.Spawn("Antack.T_" & tLevel["terrain"], 0, 0, 0, kGroundColor)
@@ -584,8 +589,11 @@ on Antack.Launch pTeam, pN
    end repeat
    if tFrom is empty then exit Antack.Launch
    if pTeam is 0 then
+      Sound.Play "Throw"
       put "white" into tColor
    else
+      if sBulletTick is not sTicks then Sound.Play "Bullet"
+      put sTicks into sBulletTick
       put kEnemyColor into tColor
    end if
    put Entity.Spawn("Antack.Missile", sBase[tFrom]["x"], sBase[tFrom]["y"] - 30, sBase[tFrom]["z"], tColor) into tArmy
@@ -660,7 +668,11 @@ on Antack.Land pArmy
    end if
    if tTarget is not empty and not sBase[tTarget]["dead"] then
       subtract 1 from sBase[tTarget]["life"]
+      if sBase[tTarget]["team"] is 0 and sHurtTick is not sTicks then Sound.Play "Hurt"
+      if sBase[tTarget]["team"] is 0 then put sTicks into sHurtTick
       if sBase[tTarget]["life"] <= 0 then
+         if sExplodeTick is not sTicks then Sound.Play "Explode"
+         put sTicks into sExplodeTick
          put true into sBase[tTarget]["dead"]
          Antack.SetMesh tTarget, "Antack.HillDead"
          FX.Sparks sBase[tTarget]["x"], sBase[tTarget]["y"] - 20, sBase[tTarget]["z"], 40, tColor
@@ -700,6 +712,7 @@ on Antack.Fire pX, pY
    end repeat
    if tBest is empty or tBestD > 90 * 90 then exit Antack.Fire
    put Entity.Spawn("Antack.Shot", sCX, sCY + 15, sCZ, "yellow") into tShot
+   Sound.Play "PlayerLaser"
    put tBest into sShot[tShot]["army"]
    put Antack.Now() into sShot[tShot]["t0"]
    put sCX into sShot[tShot]["x"]
@@ -722,6 +735,7 @@ on Antack.MoveShots pNow
       put sqrt(dx * dx + dy * dy + dz * dz) into d
       if d <= kShotSpeed + 20 then
          FX.Sparks Entity.GetPosition(tArmy, "x"), Entity.GetPosition(tArmy, "y"), Entity.GetPosition(tArmy, "z"), 20, "yellow"
+         Sound.Play "Hit"
          Antack.EndArmy tArmy
          delete variable sShot[tShot]
          Entity.Kill tShot

@@ -120,6 +120,7 @@ on Game.OnUpdate
          put 3 into sLives
          put 0 into sScore
          put false into sOver
+         Sound.Play "Select"
          Dive.GoLevel 1
       end if
       exit Game.OnUpdate
@@ -158,6 +159,7 @@ on Game.OnUpdate
          delete variable sPearl[tN]
          subtract 1 from sPearls
          add 50 to sScore
+         Sound.Play "Pickup"
          put empty into sHUDWas
       end if
    end repeat
@@ -165,8 +167,10 @@ on Game.OnUpdate
       add sAir div 30 * 5 to sScore
       if sLevel >= 5 then
          put true into sOver
+         Sound.Play "Win"
          put empty into sHUDWas
       else
+         Sound.Play "Warp"
          Dive.GoLevel sLevel + 1
       end if
    end if
@@ -176,7 +180,12 @@ end Game.OnUpdate
 on Dive.Hurt
    subtract 1 from sLives
    FX.Sparks sX, sY, kZ, 12, "red"
-   if sLives <= 0 then put true into sOver
+   if sLives <= 0 then
+      put true into sOver
+      Sound.Play "PlayerCrash"
+   else
+      Sound.Play "Hurt"
+   end if
    Dive.Up
    Dive.ShowHUD
 end Dive.Hurt

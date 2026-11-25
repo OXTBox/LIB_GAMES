@@ -63,6 +63,7 @@ on Duel.StartLevel pLevel
    put Entity.Spawn("Duel.Bat", -kBatX, 0, kZ, "cyan") into sBatL
    put Entity.Spawn("Duel.Bat", kBatX, 0, kZ, "orange") into sBatR
    put Entity.Spawn("Duel.Ball", 0, 0, kZ, "white") into sBall
+   Sound.Play "Warp"
    Duel.Serve 1
 end Duel.StartLevel
 
@@ -101,7 +102,10 @@ on Game.OnUpdate
       exit Game.OnUpdate
    end if
    if sServe then
-      if 32 is among the items of tKeys then put false into sServe
+      if 32 is among the items of tKeys then
+         put false into sServe
+         Sound.Play "Throw"
+      end if
       Duel.ShowHUD
       exit Game.OnUpdate
    end if
@@ -118,27 +122,33 @@ on Game.OnUpdate
    if sBY < kTop + 8 then
       put kTop + 8 into sBY
       put abs(sDY) into sDY
+      Sound.Play "Bounce"
    end if
    if sBY > kBottom - 8 then
       put kBottom - 8 into sBY
       put -abs(sDY) into sDY
+      Sound.Play "Bounce"
    end if
    if sDX < 0 and sBX <= -kBatX + 15 and sBX >= -kBatX - 12 and abs(sBY - sLY) <= tHalf + 8 then
       put abs(sDX) into sDX
       put (sBY - sLY) / tHalf * sSpeed * 0.9 into sDY
       FX.Sparks sBX, sBY, kZ, 5, "cyan"
+      Sound.Play "Hit"
    end if
    if sDX > 0 and sBX >= kBatX - 15 and sBX <= kBatX + 12 and abs(sBY - sRY) <= tHalf + 8 then
       put -abs(sDX) into sDX
       put (sBY - sRY) / tHalf * sSpeed * 0.9 into sDY
       FX.Sparks sBX, sBY, kZ, 5, "orange"
+      Sound.Play "Blip"
    end if
    Entity.SetPosition sBall, sBX, sBY, kZ
    if sBX > kRight + 20 then
       add 1 to sYou
+      Sound.Play "Pickup"
       Duel.Point -1
    else if sBX < kLeft - 20 then
       add 1 to sCpu
+      Sound.Play "Hurt"
       Duel.Point 1
    end if
    Duel.ShowHUD
@@ -146,12 +156,14 @@ end Game.OnUpdate
 
 on Duel.Point pDir
    if sYou >= sToWin then
+      Sound.Play "Win"
       if sLevel >= 5 then
          put true into sOver
       else
          Duel.GoLevel sLevel + 1
       end if
    else if sCpu >= sToWin then
+      Sound.Play "Lose"
       Duel.StartLevel sLevel
    else
       Duel.Serve pDir

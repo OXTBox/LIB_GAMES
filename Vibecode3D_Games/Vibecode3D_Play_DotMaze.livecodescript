@@ -140,6 +140,7 @@ on Game.OnUpdate
          put 3 into sLives
          put 0 into sScore
          put false into sOver
+         Sound.Play "Select"
          Maze.GoLevel 1
       end if
       exit Game.OnUpdate
@@ -177,6 +178,7 @@ on Game.OnUpdate
          delete variable sDot[sC & comma & sR]
          subtract 1 from sDots
          add 10 to sScore
+         Sound.Play "Pickup"
          put empty into sHUDWas
       end if
    end if
@@ -207,7 +209,9 @@ on Game.OnUpdate
       if sChaser[tN]["c"] = sC and sChaser[tN]["r"] = sR then
          subtract 1 from sLives
          FX.Sparks Maze.X(sC), Maze.Y(sR), kZ, 12, "red"
+         Sound.Play "PlayerCrash"
          if sLives <= 0 then put true into sOver
+         if sLives <= 0 then Sound.Play "Lose"
          Maze.Reset
          exit repeat
       end if
@@ -216,7 +220,9 @@ on Game.OnUpdate
       if sLevel >= 5 then
          put true into sOver
          put empty into sHUDWas
+         Sound.Play "Win"
       else
+         Sound.Play "Warp"
          Maze.GoLevel sLevel + 1
       end if
    end if

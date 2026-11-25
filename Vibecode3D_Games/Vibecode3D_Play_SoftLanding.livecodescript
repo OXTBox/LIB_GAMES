@@ -76,6 +76,7 @@ on Land.StartLevel pLevel
    put "fly" into sState
    put Entity.Spawn("Land.Lander", sX, sY, kZ, "white") into sLander
    put empty into sHUDWas
+   Sound.Play "Warp"
 end Land.StartLevel
 
 function Land.Keys
@@ -95,6 +96,7 @@ on Game.OnUpdate
    put tSpace into sSpaceWas
    if sState is not "fly" then
       if tPress then
+         Sound.Play "Select"
          if sState is "landed" then
             if sLevel >= 5 then
                put 3 into sLives
@@ -146,11 +148,19 @@ on Game.OnUpdate
    if sY + 13 >= sGround[tC] then
       if tC >= sPadCol and tC < sPadCol + sPadW and sVY <= sMaxSpeed and abs(sVX) <= sMaxSpeed then
          put "landed" into sState
+         Sound.Play "Thud"
+         Sound.Play "Win"
          add 100 + max(0, sFuel) to sScore
       else
          put "crashed" into sState
          subtract 1 from sLives
          FX.Sparks sX, sY, kZ, 20, "red"
+         Sound.Play "Explode"
+         if sLives <= 0 then
+            Sound.Play "Lose"
+         else
+            Sound.Play "PlayerCrash"
+         end if
       end if
       put empty into sHUDWas
    end if

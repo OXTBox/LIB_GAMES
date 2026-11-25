@@ -623,6 +623,7 @@ on Probe.MoveOrbiters
                subtract 2 * tN * dx / d from sSpear["vx"]
                subtract 2 * tN * dy / d from sSpear["vy"]
             end if
+            Sound.Play "Hit"
             Probe.Say "SMASHED", 1
             next repeat
          end if
@@ -657,6 +658,7 @@ on Probe.Throw
    put sAimX * sSpeed into sSpear["vx"]
    put sAimY * sSpeed into sSpear["vy"]
    put "flying" into sSpear["state"]
+   Sound.Play "Throw"
    put 0 into sSpear["bounces"]
    put Entity.Spawn("Probe.Spear", sSpear["x"], sSpear["y"], kZ, "#40E0FF") into sSpear["key"]
 end Probe.Throw
@@ -694,6 +696,7 @@ on Probe.MoveSpear
       put (sSpear["vy"] - 2 * tV * item 2 of tN) * 0.3 into sSpear["vy"]
       put "loose" into sSpear["state"]
       FX.Sparks sSpear["x"], sSpear["y"], kZ, 6, "#80B0FF"
+      Sound.Play "Zap"
       if sMsg is empty then Probe.Say "ENERGY PULSE: AIM FOR A CUBE OR A GAP", 1
    end if
    -- ricochets off walls and bumpers: the first three keep the spear lively
@@ -704,6 +707,7 @@ on Probe.MoveSpear
       put max(kLeft, min(kRight, sSpear["x"])) into sSpear["x"]
       put max(kTop, min(kBottom, sSpear["y"])) into sSpear["y"]
       add 1 to sSpear["bounces"]
+      Sound.Play "Bounce"
       FX.Sparks sSpear["x"], sSpear["y"], kZ, 4, "#40E0FF"
       if sSpear["bounces"] > 3 then
          put sSpear["vx"] * 0.75 into sSpear["vx"]
@@ -726,6 +730,7 @@ on Probe.MoveSpear
             Entity.Kill sRing[k][i]["key"]
             put empty into sRing[k][i]["key"]
             FX.Sparks sRing[k][i]["x"], sRing[k][i]["y"], kZ, 10, "#FF60D0"
+            Sound.Play "Explode"
             Probe.DropToken sRing[k][i]["x"], sRing[k][i]["y"]
             put "return" into sSpear["state"]
             exit Probe.MoveSpear
@@ -736,6 +741,7 @@ on Probe.MoveSpear
    if abs(sSpear["x"] - kBossX) < 22 and abs(sSpear["y"] - kBossY) < 30 and tV > 1 and sSpear["vx"] * (kBossX - sSpear["x"]) + sSpear["vy"] * (kBossY - sSpear["y"]) > 0 then
       if the number of chars of sGot >= the number of chars of sPass then
          FX.Sparks kBossX, kBossY, kZ, 60, "#B060FF"
+         Sound.Play "Win"
          Entity.Kill sSpear["key"]
          put "hand" into sSpear["state"]
          if sLevel >= 5 then
@@ -751,6 +757,7 @@ on Probe.MoveSpear
       put -sSpear["vx"] into sSpear["vx"]
       put -sSpear["vy"] * 0.9 into sSpear["vy"]
       put "loose" into sSpear["state"]
+      Sound.Play "Thud"
       Probe.Say "ACCESS DENIED: THE PASSWORD IS NOT COMPLETE", 2
    end if
    -- loose: dangerous while it moves; lying still it can be picked up
@@ -813,6 +820,7 @@ on Probe.Tokens
          delete variable sTok[t]
          if the number of chars of sGot < the number of chars of sPass then
             put char (the number of chars of sGot + 1) of sPass after sGot
+            Sound.Play "Pickup"
             FX.Sparks sPX, sPY - 20, kZ, 8, "#FFE060"
             if sGot is sPass then Probe.Say "PASSWORD COMPLETE: HIT THE CONE", 3
          end if
@@ -825,9 +833,11 @@ on Probe.LoseLife
    FX.Sparks sPX, sPY, kZ, 30, "#40E0FF"
    subtract 1 from sLives
    put 60 into sSafe
+   Sound.Play "Hurt"
    put empty into sHUDWas
    if sLives <= 0 then
       put true into sOver
+      Sound.Play "Lose"
       Probe.Say "SPEARED BY YOUR OWN PROBE", 999
       exit Probe.LoseLife
    end if

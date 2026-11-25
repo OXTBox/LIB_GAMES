@@ -154,6 +154,7 @@ on Hust.StartLevel pLevel
    put 0 into sHurt
    -- the booths stand where they stood: the one that rang last does not ring first on the new level
    Hust.NextBooth
+   Sound.Play "Warp"
    put "LEVEL" && pLevel & ": ANSWER THE RINGING BOOTH" into sMsg
    put 60 into sMsgT
    put empty into sHUDWas
@@ -373,6 +374,7 @@ on Game.OnUpdate
             delete variable sParked[tK]
             Entity.SetPosition sMe, 0, -900, kZ
             Hust.AddHeat 1
+            Sound.Play "Blip"
             Hust.Say "YOU TOOK A CAR. HEAT UP"
             put true into tNear
             exit repeat
@@ -398,6 +400,7 @@ on Game.OnUpdate
          put item 2 of it into sDest["y"]
          Entity.SetPosition sDest["key"], sDest["x"], sDest["y"], kZ + 1
          Hust.PlaceBolt sDest["y"]
+         Sound.Play "Pickup"
          Hust.Say "GOT IT. TO THE YELLOW MARK"
       end if
    else if sJob is "drop" then
@@ -417,6 +420,7 @@ on Game.OnUpdate
          Entity.SetPosition sBolt["key"], 0, -900, kZ
          put 300 into sFastT
          FX.Sparks sX, sY, kZ, 16, "160,255,60"
+         Sound.Play "Powerup"
          Hust.Say "SPEED! 10 SECONDS"
       end if
    end if
@@ -425,6 +429,7 @@ on Game.OnUpdate
       put 0 into sHeat
       Hust.Patrols
       FX.Sparks sX, sY, kZ, 16, "200,80,255"
+      Sound.Play "Zap"
       Hust.Say "FRESH PAINT. HEAT CLEARED"
       Hust.MoveShop
    end if
@@ -460,6 +465,7 @@ end Hust.LeaveCar
 
 on Hust.StartJob
    put "fetch" into sJob
+   Sound.Play "Select"
    get Hust.Spot(sX, sY)
    put item 1 of it into sPkg["x"]
    put item 2 of it into sPkg["y"]
@@ -481,6 +487,7 @@ on Hust.JobDone
    FX.Sparks sX, sY, kZ, 16, "255,255,0"
    Hust.AddHeat 1
    if sJobsDone >= sNeed then
+      Sound.Play "Win"
       add sBonus to sScore
       if sLevel >= 5 then
          put true into sWon
@@ -490,6 +497,7 @@ on Hust.JobDone
       end if
       exit Hust.JobDone
    end if
+   Sound.Play "Pickup"
    Hust.NextBooth
    Hust.Say "JOB DONE. ANOTHER BOOTH IS RINGING"
 end Hust.JobDone
@@ -515,6 +523,7 @@ on Hust.TooSlow
    put false into sBolt["on"]
    Entity.SetPosition sBolt["key"], 0, -900, kZ
    Hust.AddHeat 1
+   Sound.Play "Hurt"
    Hust.NextBooth
    Hust.Say "TOO SLOW. THEY HUNG UP. ANOTHER BOOTH RINGS"
 end Hust.TooSlow
@@ -628,10 +637,13 @@ on Hust.Caught
    subtract 1 from sLives
    put 60 into sHurt
    FX.Sparks sX, sY, kZ, 20, "255,40,40"
+   Sound.Play "Hurt"
    put 0 into sHeat
    Hust.Patrols
    if sInCar then Hust.LeaveCar
    if sLives <= 0 then
+      Sound.Play "PlayerCrash"
+      Sound.Play "Lose"
       put true into sOver
    else
       Hust.Say "BUSTED! HEAT CLEARED, A LIFE GONE"

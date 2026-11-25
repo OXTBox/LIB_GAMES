@@ -98,6 +98,7 @@ on Game.OnUpdate
    add 1 to sTicks
    if sNextMazeAt is not empty and sTicks >= sNextMazeAt then
       add 1 to sSeed
+      Sound.Play "Warp"
       Couple.NewMaze
       exit Game.OnUpdate
    end if
@@ -429,6 +430,7 @@ on Couple.Switch
    end if
    put empty into sHero["PROMPT"]["path"]
    put empty into sHero["GLAZE"]["path"]
+   Sound.Play "Select"
    put sTicks + 45 into sMsgUntil
 end Couple.Switch
 
@@ -641,10 +643,12 @@ on Couple.BallUpdate
    if sBall["h"] <= 0 then
       put 0 into sBall["h"]
       put kBallHop into sBall["vh"]
+      Sound.Play "Thud"
       subtract 1 from sBall["sides"]
       if sBall["sides"] < kBallMinSides then
          -- worn out: it shatters, and a new one turns up somewhere else
          FX.Sparks sBall["x"], -kBallR, sBall["z"], 14, kBallColor
+         Sound.Play "Explode"
          add 1 to sBallLost
          Couple.BallSay "THE BALL WORE OUT  A NEW ONE IS LOOSE"
          Couple.BallSpawn false
@@ -664,11 +668,13 @@ on Couple.BallUpdate
       put tX into sBall["x"]
    else
       put -sBall["vx"] into sBall["vx"]
+      Sound.Play "Bounce"
    end if
    if Couple.BallFits(sBall["x"], tZ) then
       put tZ into sBall["z"]
    else
       put -sBall["vz"] into sBall["vz"]
+      Sound.Play "Bounce"
    end if
    Entity.SetPosition sBall["key"], sBall["x"], -(kBallR + sBall["h"]), sBall["z"]
    -- a hero walking into it kicks it the way the hero faces (harder when running)
@@ -689,6 +695,7 @@ on Couple.BallUpdate
             put dz / d * 1.2 into sBall["vz"]
          end if
          put 12 into sBall["cool"]
+         Sound.Play "Hit"
          Couple.BallMet tName, "KICKED"
          exit repeat
       end if
@@ -714,6 +721,7 @@ on Couple.BallUse
       put 22 into sBall["h"]
       put 2 into sBall["vh"]
       put 15 into sBall["cool"]
+      Sound.Play "Hit"
       Couple.BallSay sActive && "KICKED THE BALL"
       exit Couple.BallUse
    end if
@@ -722,6 +730,7 @@ on Couple.BallUse
    if dx * dx + dz * dz < 56 * 56 then          -- within reach: about two thirds of a cell
       put "held" into sBall["state"]
       put sActive into sBall["by"]
+      Sound.Play "Pickup"
       Couple.BallMet sActive, "HAS"
    end if
 end Couple.BallUse
@@ -752,6 +761,7 @@ on Couple.BallKickAngled pTurn
    put cos(tYaw) * 5 into sBall["vz"]
    put 3 into sBall["vh"]
    put 15 into sBall["cool"]
+   Sound.Play "Hit"
    Couple.BallMet sActive, "KICKED"
    if pTurn > 0 then
       Couple.BallSay sActive && "KICKED THE BALL RIGHT"
@@ -826,6 +836,7 @@ on Couple.CheckExit
    put Couple.CellAt(sHero["PROMPT"]["x"], sHero["PROMPT"]["z"]) into tA
    put Couple.CellAt(sHero["GLAZE"]["x"], sHero["GLAZE"]["z"]) into tB
    if tA is sExitCell and tB is sExitCell then
+      Sound.Play "Win"
       put sTicks + round(2500 / sStepMS) into sNextMazeAt
       HUD.Set "Couple.Msg", "MAZE CLEARED  NEW MAZE COMING", gViewLeft + 20, gViewTop + 130, 18
    end if

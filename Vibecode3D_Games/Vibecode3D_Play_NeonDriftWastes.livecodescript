@@ -131,6 +131,7 @@ on Game.OnUpdate
          put 3 into sLives
          put 0 into sScore
          put false into sOver
+         Sound.Play "Select"
          Scene.ClearAll
          Neon.Build
          Neon.GoLevel 1
@@ -141,7 +142,10 @@ on Game.OnUpdate
    -- lanes: one press, one lane
    if (Neon.Pressed(65361, tKeys) or Neon.Pressed(97, tKeys)) and sLane > 1 then subtract 1 from sLane
    if (Neon.Pressed(65363, tKeys) or Neon.Pressed(100, tKeys)) and sLane < 3 then add 1 to sLane
-   if Neon.Pressed(32, tKeys) and sJumpT <= 0 then put 18 into sJumpT
+   if Neon.Pressed(32, tKeys) and sJumpT <= 0 then
+      put 18 into sJumpT
+      Sound.Play "Jump"
+   end if
    put tKeys into sKeysWas
    add ((sLane - 2) * kLaneW - sCarX) * 0.3 to sCarX             -- glide into the lane
    put kGroundY - 14 into sCarY
@@ -189,11 +193,13 @@ on Game.OnUpdate
          switch sThing[tT]["kind"]
             case "cassette"
                add 100 to sScore
+               Sound.Play "Pickup"
                FX.Sparks tX, tY, tZ, 8, "0,255,220"
                put true into tHit
                break
             case "chill"
                put 150 into sChill
+               Sound.Play "Powerup"
                FX.Sparks tX, tY, tZ, 10, "cyan"
                put true into tHit
                break
@@ -212,7 +218,10 @@ on Game.OnUpdate
       end if
    end repeat
    -- a new level every 1500 metres (100 units a metre)
-   if sDist >= sLevel * 150000 and sLevel < 5 then Neon.GoLevel sLevel + 1
+   if sDist >= sLevel * 150000 and sLevel < 5 then
+      Sound.Play "Warp"
+      Neon.GoLevel sLevel + 1
+   end if
    Neon.ShowHUD
 end Game.OnUpdate
 
@@ -272,7 +281,12 @@ function Neon.Hurt pX, pZ
    subtract 1 from sLives
    put 30 into sHurt
    FX.Sparks sCarX, sCarY, kCarZ, 16, "255,60,170"
-   if sLives <= 0 then put true into sOver
+   if sLives <= 0 then
+      put true into sOver
+      Sound.Play "PlayerCrash"
+   else
+      Sound.Play "Hurt"
+   end if
    return true
 end Neon.Hurt
 

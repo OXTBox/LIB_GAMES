@@ -539,6 +539,7 @@ on DD.Shoot
          put 8 into sP["cool"]
    end switch
    FX.Sparks (sP["x"] + sin(sP["h"]) * 0.8) * kM, -(sP["y"] + 1.3) * kM, (sP["z"] + cos(sP["h"]) * 0.8) * kM, 4, "#FFF0A0"
+   Sound.Play "Shoot"
    put empty into tBest
    put tRange into tBestD
    repeat for each key k in sZ
@@ -570,8 +571,10 @@ end DD.Wrap
 on DD.HurtZombie pK, pDmg, pYours
    subtract pDmg from sZ[pK]["hp"]
    FX.Sparks sZ[pK]["x"] * kM, -1.2 * kM, sZ[pK]["z"] * kM, 6, "#A0FF60"
+   if pYours then Sound.Play "Hit"
    if sZ[pK]["hp"] > 0 then exit DD.HurtZombie
    Entity.Kill sZ[pK]["key"]
+   Sound.Play "Explode"
    delete variable sZ[pK]
    if pYours then
       add 10 to sScore
@@ -600,14 +603,17 @@ on DD.Dead
       else if sP["floor"] is 1 then
          subtract 12 * kDT from sP["hp"]
          if sTicks mod 15 is 0 then FX.Sparks sP["x"] * kM, -1.4 * kM, sP["z"] * kM, 5, "#FF4040"
+         if sTicks mod 15 is 0 then Sound.Play "Hurt"
       end if
       Entity.SetPosition sZ[k]["key"], sZ[k]["x"] * kM, 0, sZ[k]["z"] * kM
       Entity.SetRotation sZ[k]["key"], 0, atan2(tDX, tDZ) + 3.14159, 0
    end repeat
    if sP["hp"] <= 0 then
       subtract 1 from sLives
+      Sound.Play "PlayerCrash"
       if sLives <= 0 then
          put true into sOver
+         Sound.Play "Lose"
          DD.Say "THE DEAD TOOK YOU. SPACE TO TRY AGAIN"
       else
          DD.StartMap sMap
@@ -667,6 +673,7 @@ on DD.Pickups
       if abs(item 2 of tLine - sP["x"]) < 1.5 and abs(item 3 of tLine - sP["z"]) < 1.5 and (abs(sP["y"]) < 0.5 or sMap is 2) then
          if not (item 1 of tLine is among the items of sP["weapons"]) then put comma & item 1 of tLine after sP["weapons"]
          put item 1 of tLine into sP["weapon"]
+         Sound.Play "Pickup"
          Entity.Kill item 4 of tLine
          DD.Say "A" && toUpper(item 1 of tLine) & "! (" & item 1 of tLine & " is key" && itemOffset(item 1 of tLine, "pistol,shotgun,rifle") & ")"
       else
@@ -681,6 +688,7 @@ on DD.Places
    if sP["move"] is not empty then exit DD.Places      -- not while climbing the ledge
    if sDoor is not empty and abs(item 1 of sDoor - sP["x"]) < item 3 of sDoor and abs(item 2 of sDoor - sP["z"]) < 2.5 then
       add 100 to sScore
+      Sound.Play "Warp"
       DD.StartMap 2
       exit DD.Places
    end if
@@ -689,11 +697,13 @@ on DD.Places
    if abs(item 1 of sGoal - sP["x"]) < item 3 of sGoal and abs(item 2 of sGoal - sP["z"]) < item 4 of sGoal then
       if sMap is 2 then
          add 200 to sScore
+         Sound.Play "Warp"
          DD.StartMap 3
          DD.Say "THE OFFICE... AND THEN YOU ARE SOMEWHERE ELSE"
       else
          add 500 to sScore
          put true into sWon
+         Sound.Play "Win"
          put true into sOver
          DD.Say "TO BE CONTINUED..."
          put empty into sHUDWas
@@ -1187,6 +1197,7 @@ on DD.RobotFire pK
    put atan2(sZ[pK]["x"] - sRobot["x"], sZ[pK]["z"] - sRobot["z"]) into tA
    put Entity.Spawn("DD.Bolt", (sRobot["x"] + sin(tA) * 0.6) * kM, -1.4 * kM, (sRobot["z"] + cos(tA) * 0.6) * kM, "#80E0FF") into sBolt[sBoltN]["key"]
    Entity.SetRotation sBolt[sBoltN]["key"], 0, tA, 0
+   Sound.Play "Bullet"
 end DD.RobotFire
 
 on DD.Bolts

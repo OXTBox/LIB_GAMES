@@ -338,12 +338,14 @@ on Game.OnUpdate
    if Crater.Down(32, tKeys) and not (32 is among the items of sKeysWas) and sAir <= 0 then
       put -9.5 into sVY
       put 1 into sAir
+      Sound.Play "Jump"
    end if
    if sFireWait > 0 then subtract 1 from sFireWait
    if (Crater.Down(65362, tKeys) or Crater.Down(120, tKeys) or Crater.Down(119, tKeys)) and sFireWait <= 0 then
       Crater.Fire 0, -12
       Crater.Fire 14, 0
       put 9 into sFireWait
+      Sound.Play "PlayerLaser"
    end if
    put tKeys into sKeysWas
    put tV into sRollV
@@ -358,6 +360,7 @@ on Game.OnUpdate
          put kGroundY into sY
          put 0 into sVY
          put 0 into sAir
+         Sound.Play "Thud"
       end if
    end if
    -- the ground under the rover: a crater swallows you
@@ -471,15 +474,18 @@ on Crater.Posts
    if (tN - 1) * kSection > sLastLetterD then
       put (tN - 1) * kSection into sLastLetterD
       add max(0, 900 - sSectionT) div 3 + 100 to sScore
+      Sound.Play "Pickup"
       Crater.Say "POINT" && char tN - 1 of sLetter & "!"
       put 0 into sSectionT
       if tN - 1 >= length(sLetter) then
          if sLevel >= 5 then
             put true into sWon
             put true into sOver
+            Sound.Play "Win"
             put empty into sHUDWas
             Crater.ShowHUD
          else
+            Sound.Play "Warp"
             Crater.GoLevel sLevel + 1
          end if
       end if
@@ -493,6 +499,7 @@ on Crater.Saucers
    put the number of lines of the keys of sSaucer into tN
    if sNoSpawn is not true and tN < 1 + sLevel div 2 and random(90) is 1 and sDist > 400 then
       put 1 into tSide
+      Sound.Play "Enemy"
       if sLevel >= 2 and random(3) is 1 then put -1 into tSide
       Crater.AddSaucer tSide
    end if
@@ -531,6 +538,7 @@ on Crater.Saucers
       subtract 1 from sSaucer[tK]["wait"]
       if sSaucer[tK]["wait"] <= 0 and abs(sSaucer[tK]["x"]) < 440 and sNoSpawn is not true then
          put max(25, 80 - sLevel * 10) + random(40) into sSaucer[tK]["wait"]
+         Sound.Play "Bullet"
          add 1 to sBombN
          put sSaucer[tK]["x"] into sBomb[sBombN]["x"]
          put sSaucer[tK]["y"] + 14 into sBomb[sBombN]["y"]
@@ -573,6 +581,7 @@ end Crater.PutSaucer
 -- two saucers meet: one goes up in sparks, the other falls where they met
 on Crater.SaucerCrash pA, pB
    put (sSaucer[pA]["x"] + sSaucer[pB]["x"]) / 2 into sSaucer[pA]["x"]
+   Sound.Play "Explode"
    FX.Sparks sSaucer[pA]["x"], sSaucer[pA]["y"], kZ, 24, "255,0,255"
    Entity.Kill sSaucer[pB]["key"]
    delete variable sSaucer[pB]
@@ -638,6 +647,7 @@ on Crater.Shots
          repeat for each key tK in sSaucer
             if abs(sSaucer[tK]["x"] - sShot[tS]["x"]) < 32 and abs(sSaucer[tK]["y"] - sShot[tS]["y"]) < 16 then
                FX.Sparks sSaucer[tK]["x"], sSaucer[tK]["y"], kZ, 18, "255,0,255"
+               Sound.Play "Hit"
                Entity.Kill sSaucer[tK]["key"]
                delete variable sSaucer[tK]
                add 200 to sScore
@@ -661,6 +671,7 @@ on Crater.Shots
                   Crater.Say "WRECK CLEARED! +300"
                else
                   FX.Sparks sShot[tS]["x"], kGroundY - 17, kZ, 14, "255,150,0"
+                  Sound.Play "Thud"
                   add 100 to sScore
                end if
                put true into tHit
@@ -692,6 +703,7 @@ on Crater.Bombs
       end if
       if sBomb[tB]["y"] >= kGroundY then
          FX.Sparks sBomb[tB]["x"], kGroundY, kZ, 12, "255,120,40"
+         Sound.Play "Explode"
          put (sBomb[tB]["x"] - kRoverX + sDist) div kSliceW into tIdx
          if sBomb[tB]["x"] > kRoverX + 90 and Crater.Clear(tIdx) and sRock[tIdx]["x"] is empty then put "hole" into sCourse[tIdx]
          Entity.Kill sBomb[tB]["key"]
@@ -704,9 +716,11 @@ on Crater.Lose pWhy
    if sHurt > 0 then exit Crater.Lose
    subtract 1 from sLives
    FX.Sparks kRoverX, sY - 20, kZ, 26, "255,80,80"
+   Sound.Play "PlayerCrash"
    put empty into sHUDWas
    if sLives <= 0 then
       put true into sOver
+      Sound.Play "Lose"
       Crater.Say pWhy
       Crater.ShowHUD
       exit Crater.Lose

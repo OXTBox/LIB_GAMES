@@ -127,6 +127,7 @@ on Game.OnUpdate
       put sCX into sShotX
       put kCannonY - 24 into sShotY
       put Entity.Spawn("Raid.Shot", sShotX, sShotY, kZ, "yellow") into sShot
+      Sound.Play "PlayerLaser"
    end if
    -- the march: faster as fewer are left; a step down and a turn at each edge
    put sSpeed * (1 + (kCols * 5 - sLeftCount) / 20) into tStep
@@ -150,6 +151,7 @@ on Game.OnUpdate
       put true into sOver
       put 0 into sLives
       put empty into sHUDWas
+      Sound.Play "Lose"
    end if
    -- your shot
    if sShot is not empty then
@@ -161,9 +163,11 @@ on Game.OnUpdate
             put true into tHit
             subtract 1 from sR[tN]["hits"]
             FX.Sparks sShotX, sShotY, kZ, 6, "yellow"
+            Sound.Play "Hit"
             if sR[tN]["hits"] <= 0 then
                Entity.Kill sR[tN]["key"]
                delete variable sR[tN]
+               Sound.Play "Explode"
                subtract 1 from sLeftCount
                add 10 to sScore
                put empty into sHUDWas
@@ -185,6 +189,7 @@ on Game.OnUpdate
       put sR[tPick]["x"] + sOffX into sBomb[sBombN]["x"]
       put sR[tPick]["y"] + sOffY + 16 into sBomb[sBombN]["y"]
       put Entity.Spawn("Raid.Bomb", sBomb[sBombN]["x"], sBomb[sBombN]["y"], kZ, "orange") into sBomb[sBombN]["key"]
+      Sound.Play "Bullet"
    end if
    repeat for each key tB in sBomb
       add 6 + sLevel to sBomb[tB]["y"]
@@ -195,7 +200,9 @@ on Game.OnUpdate
          subtract 1 from sLives
          FX.Sparks sCX, kCannonY, kZ, 14, "red"
          put empty into sHUDWas
+         Sound.Play "Hurt"
          if sLives <= 0 then put true into sOver
+         if sLives <= 0 then Sound.Play "Lose"
       end if
       if tHit or sBomb[tB]["y"] > kBottom + 10 then
          Entity.Kill sBomb[tB]["key"]
@@ -205,7 +212,9 @@ on Game.OnUpdate
    if sLeftCount <= 0 then
       if sLevel >= 5 then
          put true into sOver
+         Sound.Play "Win"
       else
+         Sound.Play "Warp"
          Raid.GoLevel sLevel + 1
       end if
    end if

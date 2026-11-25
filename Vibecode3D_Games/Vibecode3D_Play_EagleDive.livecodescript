@@ -84,6 +84,7 @@ on ED.StartLevel pLevel
       put 1 into pLevel
    end if
    put pLevel into sLevel
+   Sound.Play "Warp"
    Scene.ClearAll
    Particles.Clear
    HUD.Clear
@@ -303,7 +304,7 @@ end ED.MakeEagle
 
 -- one step of flight: keys set where the nose wants to go, then gravity and the wings
 on ED.Fly pKeys
-   local tTurn, tGoal, tWas, tA, tFwd, tH, tDist, tBack
+   local tTurn, tGoal, tWas, tA, tFwd, tH, tDist, tBack, tWasDive
    -- turning, with a bank to show it
    put 0 into tTurn
    if ED.Down(65361, pKeys) or ED.Down(97, pKeys) then subtract 1 from tTurn
@@ -319,7 +320,9 @@ on ED.Fly pKeys
    add tTurn * 1.15 * kDT to sE["yaw"]
    add (tTurn * 0.55 - sE["bank"]) * 0.12 to sE["bank"]
    -- the nose: Space dives, Up climbs, Down noses down, nothing glides level
+   put sE["dive"] into tWasDive
    put ED.Down(32, pKeys) into sE["dive"]
+   if sE["dive"] and not tWasDive and sState is "fly" then Sound.Play "Jump"
    put 0 into tGoal
    if ED.Down(65362, pKeys) or ED.Down(119, pKeys) then put 0.42 into tGoal
    if ED.Down(65364, pKeys) or ED.Down(115, pKeys) then put -0.42 into tGoal
@@ -358,6 +361,7 @@ on ED.Fly pKeys
          if sE["pitch"] < -0.3 then
             -- a splash: the dive ends in the water
             FX.Sparks sE["x"] * kM, 0, sE["z"] * kM, 10, "#A0D0FF"
+            Sound.Play "Thud"
             put sE["v"] * 0.85 into sE["v"]
          else
             put sE["v"] - 0.15 into sE["v"]  -- wet feet slow you
@@ -553,6 +557,11 @@ on ED.Talons
          add 1 to sCaught
          add 1 to sScore
          if sE["v"] > 20 then
+            Sound.Play "Powerup"
+         else
+            Sound.Play "Pickup"
+         end if
+         if sE["v"] > 20 then
             ED.Say "A DIVING CATCH!  FISH" && sCaught, 2
          else
             ED.Say "GOT ONE!  FISH" && sCaught, 2
@@ -603,8 +612,10 @@ on ED.Sunset
    put 0 into sTime
    put "dusk" into sState
    if sCaught >= sGoal then
+      Sound.Play "Win"
       ED.Say "SUNSET. WELL FISHED:" && sCaught && "FISH!  SPACE: FLY ON", 999
    else
+      Sound.Play "Lose"
       ED.Say "SUNSET." && sCaught && "OF" && sGoal && "FISH.  SPACE: TRY AGAIN", 999
    end if
 end ED.Sunset

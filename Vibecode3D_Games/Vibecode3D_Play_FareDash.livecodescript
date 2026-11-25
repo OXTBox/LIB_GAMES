@@ -343,6 +343,7 @@ on Game.OnUpdate
          -- a crash: three seconds lost
          subtract 90 from sClock
          put 12 into sBump
+         Sound.Play "Hurt"
          put 40 into sCar[tK]["near"]
          FX.Sparks sX, sY, kZ, 12, "255,80,80"
          put "CRASH! -3 SECONDS" into sMsg
@@ -351,6 +352,7 @@ on Game.OnUpdate
          -- a near miss
          put 40 into sCar[tK]["near"]
          put round(25 * 1.5) into tTip
+         Sound.Play "Blip"
       end if
       if sCar[tK]["near"] > 0 then subtract 1 from sCar[tK]["near"]
    end repeat
@@ -366,6 +368,7 @@ on Game.OnUpdate
       Entity.SetRotation sFare["key"], 0, 0, sTicks / 10
       if abs(sFare["x"] - sX) < 26 and abs(sFare["y"] - sY) < 26 then
          put true into sRide
+         Sound.Play "Pickup"
          put 0 into sRideT
          get Fare.Spot(sX, sY)
          put item 1 of it into sDest["x"]
@@ -381,6 +384,7 @@ on Game.OnUpdate
       Entity.SetRotation sDest["key"], 0, 0, sTicks / 12
       if abs(sDest["x"] - sX) < 30 and abs(sDest["y"] - sY) < 30 then
          add 1 to sDelivered
+         Sound.Play "Powerup"
          add 100 + max(0, 300 - sRideT) div 3 to sScore
          add 600 to sClock
          FX.Sparks sX, sY, kZ, 16, "255,255,0"
@@ -390,8 +394,10 @@ on Game.OnUpdate
             add 250 * sLevel + sClock div 30 * 5 to sScore
             if sLevel >= 5 then
                put true into sWon
+               Sound.Play "Win"
                put true into sOver
             else
+               Sound.Play "Warp"
                Fare.GoLevel sLevel + 1
             end if
             exit Game.OnUpdate
@@ -406,7 +412,9 @@ on Game.OnUpdate
       FX.Sparks sX, sY, kZ, 20, "255,80,80"
       if sLives <= 0 then
          put true into sOver
+         Sound.Play "Lose"
       else
+         Sound.Play "PlayerCrash"
          put 1350 into sClock
          Fare.NewFare
          put "OUT OF TIME! THE FARE WALKED" into sMsg

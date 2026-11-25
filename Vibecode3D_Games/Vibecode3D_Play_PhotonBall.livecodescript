@@ -319,6 +319,7 @@ on PB.NewMatch
    put 0 into sLastTalk
    PB.GiveBall "PROMPT"
    PB.Camera
+   Sound.Play "Warp"
    PB.Say "start", "*", 100
 end PB.NewMatch
 
@@ -536,6 +537,7 @@ on PB.Jump pName
    if not PB.OnGround(pName) then exit PB.Jump
    put kJumpV into sHero[pName]["vh"]
    add 0.01 to sHero[pName]["h"]
+   Sound.Play "Jump"
    PB.Act pName, "jump"
    PB.StaminaAdd pName, -2, "JUMP"
 end PB.Jump
@@ -695,6 +697,7 @@ on PB.Launch pName, pVel, pEasy
    put empty into sBall["touched"]
    put (pEasy is true) into sBall["easy"]
    put empty into sPlan
+   Sound.Play "Throw"
    PB.PredictLand
    -- the thrower's turn is over; the partner's begins (catching it)
    PB.TurnEnd pName
@@ -874,12 +877,16 @@ on PB.BallStep
       put sHero[tName]["z"] into sBall["z"]
    else
       PB.Advance sBall
-      if sBall["hit"] is not empty and sBall["hit"] is not "floor" then PB.PredictLand
+      if sBall["hit"] is not empty and sBall["hit"] is not "floor" then
+         Sound.Play "Bounce"
+         PB.PredictLand
+      end if
       if sBall["emblem"] is not empty then PB.EmblemStruck sBall["emblem"]
       if sBall["x"] * sHero[sBall["thrower"]]["side"] < 0 then put true into sBall["crossed"]
       if sBall["hit"] is "floor" then
          put (sBall["touched"] is empty) into tFirst
          if tFirst then
+            Sound.Play "Thud"
             put PB.OwnerAt(sBall["x"]) into tOwner
             put tOwner into sBall["touched"]
             put empty into sLandX
@@ -942,6 +949,7 @@ on PB.Catch pName
    put sBall["easy"] into tWas
    if sBall["touched"] is not empty then
       -- a pick-up from the floor: no points, no rally
+      Sound.Play "Blip"
       PB.GiveBall pName
       exit PB.Catch
    end if
@@ -956,6 +964,7 @@ on PB.Catch pName
    add 1 to sMatchCatches
    add 1 to sRally
    put max(sBestRally, sRally) into sBestRally
+   Sound.Play "Pickup"
    if pName is sActive then put 0 into sPlayerDrops
    -- stamina: every 3 catches in a row without a miss +1
    add 1 to sHero[pName]["streak"]
@@ -979,6 +988,7 @@ end PB.Catch
 on PB.Drop pName
    add 1 to sTosses
    put 0 into sRally
+   Sound.Play "Hurt"
    if pName is sActive then add 1 to sPlayerDrops
    -- stamina: a miss ends the catches in a row; running and missing -1
    put 0 into sHero[pName]["streak"]
@@ -1778,6 +1788,7 @@ end PB.EmblemHit
 -- half (once a throw)
 on PB.EmblemStruck pN
    local tName
+   Sound.Play "Zap"
    if sEmblem[pN]["key"] is not empty then
       Entity.SetColor sEmblem[pN]["key"], "#FFFFFF"
       put sTicks + 8 into sEmblem[pN]["flash"]
@@ -1788,6 +1799,7 @@ on PB.EmblemStruck pN
    end if
    if sBall["mended"] is not empty then exit PB.EmblemStruck
    put true into sBall["mended"]
+   Sound.Play "Powerup"
    if sEmblem[pN]["wall"] < 0 then
       put "PROMPT" into tName
    else
@@ -2346,6 +2358,7 @@ on PB.Smash pName
    PB.SetTile PB.TileOf(sHero[pName]["x"], sHero[pName]["z"]), 3
    PB.StartFall pName
    put true into sHero[pName]["nohang"]
+   Sound.Play "Explode"
    PB.Message pName & " SMASHED THROUGH"
    PB.Say "smash", pName, 100
 end PB.Smash
@@ -2428,6 +2441,7 @@ on PB.Respawn pName
    put 0 into sHero[pName]["vh"]
    put 0 into sHero[pName]["g"]
    put false into sHero[pName]["nohang"]
+   Sound.Play "PlayerCrash"
    PB.Message pName & " FELL   -" & kFallCost
    PB.Say "fall", pName, 100
 end PB.Respawn
@@ -2465,6 +2479,7 @@ end PB.SafeLanding
 on PB.GameOver pName
    local tMid
    put true into sOver
+   Sound.Play "Lose"
    put (gViewLeft + gViewRight) / 2 into tMid
    HUD.Remove "PB.Intro1"
    HUD.Remove "PB.Intro2"

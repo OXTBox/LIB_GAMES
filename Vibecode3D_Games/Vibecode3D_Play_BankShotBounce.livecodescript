@@ -284,6 +284,7 @@ on BS.Step
          put item 2 of tNew into sVY[i]
          put item 3 of tNew into sVX[tJ]
          put item 4 of tNew into sVY[tJ]
+         Sound.Play "Hit"
          put 0 into tSafe
          repeat while BS.Dist(sX[i], sY[i], sX[tJ], sY[tJ]) <= 2 * kR and tSafe < 60
             put atan2(sY[i] - sY[tJ], sX[i] - sX[tJ]) into tA
@@ -296,10 +297,12 @@ on BS.Step
       if sX[i] - kCushion < kR or sX[i] + kR + kCushion > kW then
          subtract sVX[i] from sX[i]
          multiply sVX[i] by -1
+         Sound.Play "Bounce"
       end if
       if sY[i] - kCushion < kR or sY[i] + kR + kCushion > kH then
          subtract sVY[i] from sY[i]
          multiply sVY[i] by -1
+         Sound.Play "Bounce"
       end if
       BS.Bumpers i
       BS.Blocks i
@@ -343,6 +346,7 @@ on BS.Bumpers pBall
       put tBX + tNX * (kR + tBR + 0.5) into sX[pBall]
       put tBY + tNY * (kR + tBR + 0.5) into sY[pBall]
       BS.Reflect pBall, tNX, tNY, kBumpKick
+      Sound.Play "Blip"
       FX.Sparks BS.WX(tBX + tNX * tBR), -kR, BS.WZ(tBY + tNY * tBR), 4, "#FF8C1A"
    end repeat
 end BS.Bumpers
@@ -384,6 +388,7 @@ on BS.Blocks pBall
          put tCY + tNY * (kR + 0.01) into sY[pBall]
       end if
       BS.Reflect pBall, tNX, tNY
+      Sound.Play "Thud"
    end repeat
 end BS.Blocks
 
@@ -406,12 +411,15 @@ on BS.Sink pBall
    put pBall & comma after sSunkNow
    if pBall is 0 then
       put true into sScratch
+      Sound.Play "Hurt"
    else if pBall is sNext then
       put true into sScored[pBall]
+      Sound.Play "Pickup"
       add pBall * 10 to sScore
       put BS.NextBall() into sNext
    else
       put pBall & comma after sRespot
+      Sound.Play "Thud"
    end if
    put 9999 into tBest
    repeat for each word tXY in sPockets
@@ -495,6 +503,7 @@ on BS.Shoot pAngle, pPower
    BS.HideAim
    BS.Labels false
    put "moving" into sMode
+   Sound.Play "Shoot"
 end BS.Shoot
 
 -- every ball has stopped: lives, spots, the next table
@@ -512,9 +521,11 @@ on BS.EndShot
       add sBonus to sScore
       if sLevel >= kLevels then
          put "won" into sMode
+         Sound.Play "Win"
          put "EVERY TABLE CLEARED!  SCORE" && sScore into sMsg
       else
          put "clear" into sMode
+         Sound.Play "Win"
          put "TABLE" && sLevel && "CLEAR!  BONUS" && sBonus into sMsg
       end if
       BS.Labels false
@@ -530,6 +541,7 @@ on BS.EndShot
       if sLives <= 0 then
          put 0 into sLives
          put "over" into sMode
+         Sound.Play "Lose"
          put "YOUR BALL WENT DOWN. NO LIVES LEFT" into sMsg
          BS.Labels false
          put empty into sHUDWas

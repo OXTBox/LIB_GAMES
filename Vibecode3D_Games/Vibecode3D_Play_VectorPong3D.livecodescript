@@ -131,6 +131,7 @@ on Game.OnUpdate
       put kNear + 30 into sBZ
       if 32 is among the items of tKeys then
          put false into sServe
+         Sound.Play "Throw"
          put sSpeed * 0.25 into sDX
          put -sSpeed * 0.2 into sDY
          put sSpeed into sDZ
@@ -142,28 +143,33 @@ on Game.OnUpdate
    add sDX to sBX
    add sDY to sBY
    add sDZ to sBZ
-   -- side walls, floor and ceiling
+   -- side walls, floor and ceiling (a wall bounce sounds once per frame)
    if sBX < -kW + 11 then
       put -kW + 11 into sBX
       put abs(sDX) into sDX
+      Sound.Play "Bounce"
    end if
    if sBX > kW - 11 then
       put kW - 11 into sBX
       put -abs(sDX) into sDX
+      Sound.Play "Bounce"
    end if
    if sBY < -kH + 11 then
       put -kH + 11 into sBY
       put abs(sDY) into sDY
+      Sound.Play "Bounce"
    end if
    if sBY > kH - 11 then
       put kH - 11 into sBY
       put -abs(sDY) into sDY
+      Sound.Play "Bounce"
    end if
    -- floating blocks: the ball turns back when it runs into one
    repeat for each key n in sBlocks
       if abs(sBX - sBlocks[n]["x"]) < 66 and abs(sBY - sBlocks[n]["y"]) < 56 and abs(sBZ - sBlocks[n]["z"]) < 41 then
          put -sDZ into sDZ
          add sDZ * 2 to sBZ
+         Sound.Play "Thud"
          FX.Sparks sBX, sBY, sBZ, 6, "yellow"
       end if
    end repeat
@@ -181,8 +187,10 @@ on Game.OnUpdate
          put (sBX - sBatX) / kBatW * sSpeed * 0.55 into sDX
          put (sBY - sBatY) / kBatH * sSpeed * 0.45 into sDY
          FX.Sparks sBX, sBY, sBZ, 5, "cyan"
+         Sound.Play "Hit"
       else if sBZ < kNear - 40 then
          add 1 to sTheirs
+         Sound.Play "Hurt"
          Pong.Point
       end if
    end if
@@ -192,8 +200,10 @@ on Game.OnUpdate
          put -abs(sDZ) into sDZ
          put (sBX - sCpuX) / kBatW * sSpeed * 0.5 into sDX
          put (sBY - sCpuY) / kBatH * sSpeed * 0.4 into sDY
+         Sound.Play "Blip"
       else if sBZ > kFar + 40 then
          add 1 to sMine
+         Sound.Play "Pickup"
          Pong.Point
       end if
    end if
@@ -207,11 +217,14 @@ on Pong.Point
    if sMine >= sWin then
       if sLevel >= 5 then
          put true into sOver
+         Sound.Play "Win"
       else
+         Sound.Play "Warp"
          Pong.GoLevel sLevel + 1
       end if
    else if sTheirs >= sWin then
       put true into sOver
+      Sound.Play "Lose"
    end if
 end Pong.Point
 

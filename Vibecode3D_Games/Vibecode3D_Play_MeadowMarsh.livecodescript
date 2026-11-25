@@ -40,6 +40,7 @@ local sE, sNextId, sMode, sHits, sPick, sPickN
 local sBan, sYaw, sCamD, sKeysWas, sTestKeys
 local sFr, sSlot, sPoolKey, sPoolColor, sPoolUsed, sLastFx, sK
 local sScore, sMsg, sMsgT, sHUDWas, sHelp, sNextAt
+local sSndHit, sSndHurt, sSndShot, sSndDie   -- the tick each sound last played: once a frame at most
 
 -------------------------------------------------------------------- 1. THE ENGINE CALLS US
 
@@ -245,6 +246,7 @@ on MM.StartLevel pLevel
       put 1 into pLevel
    end if
    put pLevel into sLevel
+   Sound.Play "Warp"
    Scene.ClearAll
    Particles.Clear
    HUD.Clear
@@ -899,6 +901,7 @@ on MM.SetMode pMode
       put sE[tId]["x"] into sE[tId]["hx"]
       put sE[tId]["z"] into sE[tId]["hz"]
    end repeat
+   Sound.Play "Select"
    MM.Say pMode, 1.5
 end MM.SetMode
 
@@ -1169,6 +1172,14 @@ on MM.Attack pId, pT, pUse
       MM.Hurt pT, tDmg, pId
       exit MM.Attack
    end if
+   if sSndShot is not sTicks then
+      if pUse is "spell" or pUse is "spell2" then
+         Sound.Play "Zap"
+      else
+         Sound.Play "Shoot"
+      end if
+   end if
+   put sTicks into sSndShot
    if MM.PowerForm(tPower) is "wave" then
       -- a war cry: everyone of the other side in front, within the spell's reach
       MM.Cry pId, tPower, tDmg, MM.Kind(tKind, "range")
@@ -1255,6 +1266,17 @@ end MM.Push
 on MM.Hurt pId, pDmg, pBy
    if sE[pId]["side"] is empty then exit MM.Hurt
    subtract pDmg from sE[pId]["hp"]
+   if sE[pId]["side"] is "foe" then
+      if sSndHit is not sTicks then
+         Sound.Play "Hit"
+      end if
+      put sTicks into sSndHit
+   else
+      if sSndHurt is not sTicks then
+         Sound.Play "Hurt"
+      end if
+      put sTicks into sSndHurt
+   end if
    if sE[pId]["side"] is "foe" and sE[pId]["awake"] is not true then MM.Wake pId
    if sE[pId]["side"] is "foe" and sE[pBy]["side"] is "party" then put pBy into sE[pId]["target"]
    if sE[pId]["hp"] > 0 then exit MM.Hurt
@@ -1271,6 +1293,14 @@ on MM.Die pId
    Entity.Kill sE[pId]["key"]
    Entity.Kill sE[pId]["hpKey"]
    if sE[pId]["mpKey"] is not empty then Entity.Kill sE[pId]["mpKey"]
+   if sSndDie is not sTicks then
+      if sE[pId]["side"] is "foe" then
+         Sound.Play "Explode"
+      else
+         Sound.Play "PlayerCrash"
+      end if
+   end if
+   put sTicks into sSndDie
    if sE[pId]["side"] is "foe" then
       add 10 + MM.Kind(tKind, "hp") div 5 to sScore
       if tKind is "bog_witch" then
@@ -1502,6 +1532,7 @@ on MM.Pickups
          switch tKind
             case "food"
                put min(sE[tId]["hpMax"], sE[tId]["hp"] + 25) into sE[tId]["hp"]
+               Sound.Play "Pickup"
                put sNow + 20 into sE[tId]["fed"]
                MM.Say "FOOD: THE" && toUpper(sE[tId]["kind"]) && "IS FED, MANA COMES BACK FAST", 2.5
                break
@@ -1511,12 +1542,14 @@ on MM.Pickups
                   if MM.Dist(tId, tOther2) <= 8 then put min(sE[tOther2]["mpMax"], sE[tOther2]["mp"] + 30) into sE[tOther2]["mp"]
                end repeat
                add 25 to sScore
+               Sound.Play "Pickup"
                MM.Say "A JEWEL: MANA FOR EVERYONE NEAR", 2.5
                break
             case "captive"
                MM.AddUnit item random(3) of "warrior,bowman,caster", tX, tZ
                put the result into tNew
                add 50 to sScore
+               Sound.Play "Powerup"
                MM.Say "FREED! A" && toUpper(sE[tNew]["kind"]) && "JOINS YOU", 3
                break
          end switch
@@ -1597,6 +1630,7 @@ on MM.OrderAttack pFoe
    end if
    put "attack" into sE[tId]["order"]
    put pFoe into sE[tId]["target"]
+   Sound.Play "Select"
    FX.Sparks sE[pFoe]["x"] * kM, -(MM.H(sE[pFoe]["x"], sE[pFoe]["z"]) + 2.2) * kM, sE[pFoe]["z"] * kM, 8, "#FF3030"
 end MM.OrderAttack
 
@@ -1610,6 +1644,7 @@ on MM.OrderGo pX, pZ
    put "go" into sE[tId]["order"]
    put pX into sE[tId]["gx"]
    put pZ into sE[tId]["gz"]
+   Sound.Play "Select"
    FX.Sparks pX * kM, -(MM.H(pX, pZ) + 0.1) * kM, pZ * kM, 8, "#58E04A"
 end MM.OrderGo
 
@@ -1656,9 +1691,11 @@ end MM.PickFree
 on MM.CheckEnd
    if MM.Side("party") is empty then
       put "lost" into sState
+      Sound.Play "Lose"
       MM.Say "THE PARTY IS GONE. SPACE TO TRY AGAIN", 999
    else if MM.Side("foe") is empty then
       put "won" into sState
+      Sound.Play "Win"
       add 200 to sScore
       if sLevel is 1 then
          MM.Say "THE MEADOW IS SAFE!  SPACE: ON TO THE MARSH", 999

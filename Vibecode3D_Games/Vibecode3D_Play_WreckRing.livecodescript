@@ -100,6 +100,7 @@ on Wreck.StartLevel pLevel
    put 0 into sPowN
    put 60 into sNextPow
    put 0 into sEndT
+   Sound.Play "Warp"
    put "ROUND" && pLevel & ": BE THE LAST CAR MOVING" into sMsg
    put 60 into sMsgT
    put empty into sHUDWas
@@ -236,6 +237,7 @@ on Game.OnUpdate
    else if tAlive is 1 then
       put 50 into sEndT
       put "LAST CAR MOVING!" into sMsg
+      Sound.Play "Win"
       put 50 into sMsgT
    end if
    Wreck.Draw
@@ -362,6 +364,11 @@ on Wreck.Bumps
             put 10 into sCar[i]["hit"]
             put 10 into sCar[j]["hit"]
             FX.Sparks (sCar[i]["x"] + sCar[j]["x"]) / 2, (sCar[i]["y"] + sCar[j]["y"]) / 2, kZ, 10, "255,220,120"
+            if i is 1 then
+               Sound.Play "Hurt"
+            else
+               Sound.Play "Thud"
+            end if
             if i is 1 then add round(tSpeed * 10 * max(0.2, tHitI)) to sScore
          end if
          -- push apart
@@ -385,6 +392,7 @@ on Wreck.Land pC
       if abs(sCar[j]["x"] - sCar[pC]["x"]) < 34 and abs(sCar[j]["y"] - sCar[pC]["y"]) < 34 then
          Wreck.Damage j, 40
          FX.Sparks sCar[j]["x"], sCar[j]["y"], kZ, 16, "255,255,255"
+         Sound.Play "Hit"
          if pC is 1 then
             add 200 to sScore
             put "CRUSHED!" into sMsg
@@ -400,6 +408,8 @@ on Wreck.Damage pC, pN
       put 0 into sCar[pC]["hp"]
       put false into sCar[pC]["alive"]
       FX.Sparks sCar[pC]["x"], sCar[pC]["y"], kZ, 26, "255,120,40"
+      Sound.Play "Explode"
+      if pC is 1 then Sound.Play "PlayerCrash"
       Entity.SetRotation sCar[pC]["key"], 0.5, 0.4, sCar[pC]["ang"]
       if pC > 1 then add 300 * sLevel to sScore
    end if
@@ -436,9 +446,11 @@ on Wreck.PowerUps
                case "rocket"
                   put min(100, sCar[i]["hp"] + 20) into sCar[i]["hp"]
                   put 45 into sCar[i]["boost"]
+                  Sound.Play "Powerup"
                   break
                case "repair"
                   put min(100, sCar[i]["hp"] + 50) into sCar[i]["hp"]
+                  Sound.Play "Pickup"
                   break
                case "mine"
                   Wreck.Damage i, 30
@@ -479,6 +491,7 @@ on Wreck.EndRound
    else
       subtract 1 from sLives
       if sLives <= 0 then
+         Sound.Play "Lose"
          put true into sOver
          put empty into sHUDWas
          Wreck.ShowHUD

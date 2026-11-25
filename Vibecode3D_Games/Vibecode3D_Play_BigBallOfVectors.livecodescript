@@ -321,6 +321,7 @@ on Game.OnUpdate
          FX.Sparks sAgent[tK]["x"], -10, sAgent[tK]["z"], 10, "cyan"
          Entity.Kill sAgent[tK]["key"]
          delete variable sAgent[tK]
+         Sound.Play "Pickup"
          add 1 to sCaught
          add 1 to sSides
          add 3 to sR
@@ -330,8 +331,10 @@ on Game.OnUpdate
             if sLevel >= 5 then
                put true into sOver
                put true into sWon
+               Sound.Play "Win"
                put 0 into sTicks
             else
+               Sound.Play "Powerup"
                Ball.GoLevel sLevel + 1
             end if
             exit Game.OnUpdate
@@ -351,10 +354,12 @@ on Game.OnUpdate
          Entity.Kill sAgent[tK]["key"]
          delete variable sAgent[tK]
          add 1 to sEscaped
+         Sound.Play "Enemy"
          put empty into sHUDWas
          Ball.AddHazard
          Ball.AddAgent
          if sEscaped >= kMaxEscapes then
+            Sound.Play "Lose"
             put true into sOver
             put 0 into sTicks
          end if
@@ -374,6 +379,7 @@ on Game.OnUpdate
       Entity.SetRotation sHaz[tK]["key"], 0, sTicks / 10, 0
       if sRogue <= 0 and abs(sHaz[tK]["x"] - sX) < sR + 16 and abs(sHaz[tK]["z"] - sZ) < sR + 16 then
          put 60 into sRogue
+         Sound.Play "Hurt"
          FX.Sparks sX, -sR, sZ, 16, "#FF60D0"
          put empty into sHUDWas
       end if

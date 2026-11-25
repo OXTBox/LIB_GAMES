@@ -97,6 +97,7 @@ on Ramp.StartLevel pLevel
    set the itemDel to comma
    put 0 into sDone
    put 0 into sDoneT
+   Sound.Play "Warp"
    put "COURSE" && pLevel & ": GO!" into sMsg
    put 50 into sMsgT
    put empty into sHUDWas
@@ -319,6 +320,7 @@ on Game.OnUpdate
       subtract 0.35 from sFuel
       if sHeat >= 100 then
          put 75 into sCool
+         Sound.Play "Zap"
          Ramp.Say "OVERHEATED! COOLING DOWN"
       end if
    else
@@ -351,6 +353,7 @@ on Game.OnUpdate
       -- over a lip (the ground falls away faster than the bike): into the air
       if sSlope - tNewSlope > 0.35 and sSlope > 0.2 and sVX > 2 then
          put true into sAir
+         Sound.Play "Jump"
          put sVX * sSlope into sVY
          put tG into sY
          put 0 into sPeak
@@ -368,6 +371,7 @@ on Game.OnUpdate
    if sCan[tIdx] is true then
       put false into sCan[tIdx]
       put min(100, sFuel + 40) into sFuel
+      Sound.Play "Pickup"
       add 50 to sScore
       Ramp.Say "FUEL +40"
    end if
@@ -391,11 +395,13 @@ on Ramp.Land pG
    put abs(sAng - atan(tSlope)) into tDiff
    if tDiff < 0.6 then
       add round(sPeak) to sScore
+      Sound.Play "Thud"
       if sPeak > 40 then Ramp.Say "CLEAN LANDING +" & round(sPeak)
       put tSlope into sSlope
       put sVY * tSlope * 0.2 + sVX into sVX              -- a good landing on a down slope keeps speed
    else
       FX.Sparks kBikeX, kBase - sY, kZ, 20, "255,120,40"
+      Sound.Play "PlayerCrash"
       subtract 1 from sLives
       put 40 into sTumble
       put sVX * 0.3 into sVX
@@ -474,6 +480,11 @@ on Ramp.CrossLine
    put sDone + 1 into sPlace
    put 1 into sDone
    put 60 into sDoneT
+   if sPlace is 1 then
+      Sound.Play "Win"
+   else
+      Sound.Play "Blip"
+   end if
    Ramp.Say "FINISHED IN PLACE" && sPlace
 end Ramp.CrossLine
 
@@ -482,6 +493,7 @@ on Ramp.Result
    if sPlace is 4 then
       subtract 1 from sLives
       if sLives <= 0 then
+         Sound.Play "Lose"
          put true into sOver
          put empty into sHUDWas
          exit Ramp.Result

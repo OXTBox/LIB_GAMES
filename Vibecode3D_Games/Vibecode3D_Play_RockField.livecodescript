@@ -109,7 +109,7 @@ on Rock.TestKeys pKeys
 end Rock.TestKeys
 
 on Game.OnUpdate
-   local tKeys, tFire, tN, tS, tR, tHit, tK
+   local tKeys, tFire, tN, tS, tR, tHit, tK, tHitSound, tBigSound
    put Rock.Keys() into tKeys
    if sOver then
       if 32 is among the items of tKeys and sFireWas is not true then
@@ -142,6 +142,7 @@ on Game.OnUpdate
       put sin(sA) * kShotSpeed into sShot[sShotN]["vx"]
       put -cos(sA) * kShotSpeed into sShot[sShotN]["vy"]
       put 40 into sShot[sShotN]["life"]
+      Sound.Play "PlayerLaser"
       put Entity.Spawn("Rock.Shot", sShot[sShotN]["x"], sShot[sShotN]["y"], kZ, "cyan") into sShot[sShotN]["key"]
    end if
    put tFire into sFireWas
@@ -152,6 +153,8 @@ on Game.OnUpdate
       Entity.SetPosition sRock[tN]["key"], sRock[tN]["x"], sRock[tN]["y"], kZ
    end repeat
    -- shots fly, and split what they meet
+   put false into tHitSound
+   put false into tBigSound
    repeat for each key tS in sShot
       put Rock.Wrap(sShot[tS]["x"] + sShot[tS]["vx"], kLeft, kRight) into sShot[tS]["x"]
       put Rock.Wrap(sShot[tS]["y"] + sShot[tS]["vy"], kTop, kBottom) into sShot[tS]["y"]
@@ -163,9 +166,11 @@ on Game.OnUpdate
          if sRock[tN]["big"] then put 42 into tR
          if abs(sShot[tS]["x"] - sRock[tN]["x"]) <= tR and abs(sShot[tS]["y"] - sRock[tN]["y"]) <= tR then
             put true into tHit
+            put true into tHitSound
             FX.Sparks sRock[tN]["x"], sRock[tN]["y"], kZ, 8, "orange"
             if sRock[tN]["big"] then
                add 20 to sScore
+               put true into tBigSound
                repeat with tK = 1 to sSplit
                   Rock.Add false, sRock[tN]["x"], sRock[tN]["y"], sRock[tN]["speed"] * 1.5
                end repeat
@@ -183,6 +188,8 @@ on Game.OnUpdate
          delete variable sShot[tS]
       end if
    end repeat
+   if tHitSound then Sound.Play "Hit"
+   if tBigSound then Sound.Play "Explode"
    -- a rock on the ship (not in the first two seconds after a start)
    if sSafe > 0 then
       subtract 1 from sSafe
@@ -199,7 +206,9 @@ on Game.OnUpdate
             put 0 into sVY
             put 60 into sSafe
             put empty into sHUDWas
+            Sound.Play "PlayerCrash"
             if sLives <= 0 then put true into sOver
+            if sLives <= 0 then Sound.Play "Lose"
             exit repeat
          end if
       end repeat
@@ -208,7 +217,9 @@ on Game.OnUpdate
       if sLevel >= 5 then
          put true into sOver
          put empty into sHUDWas
+         Sound.Play "Win"
       else
+         Sound.Play "Warp"
          Rock.GoLevel sLevel + 1
       end if
    end if

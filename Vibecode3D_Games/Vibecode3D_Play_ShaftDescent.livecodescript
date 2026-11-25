@@ -170,12 +170,15 @@ on Shaft.TestKeys pKeys
 end Shaft.TestKeys
 
 on Game.OnUpdate
-   local tKeys, tJump, tOldY, r, tSeg, n, tTop, tShift
+   local tKeys, tJump, tOldY, r, tSeg, n, tTop, tShift, tWasGround
    add 1 to sTicks
    put Shaft.Keys() into tKeys
    put (32 is among the items of tKeys) into tJump
    if sOver then
-      if tJump and not sJumpWas then Game.OnStart
+      if tJump and not sJumpWas then
+         Sound.Play "Select"
+         Game.OnStart
+      end if
       put tJump into sJumpWas
       exit Game.OnUpdate
    end if
@@ -194,7 +197,10 @@ on Game.OnUpdate
       put sVX * 0.6 into sVX
    end if
    -- the jump: a real curve (a starting speed, then gravity); a short tap = a short hop
-   if tJump and not sJumpWas and sOnGround then put kJump into sVY
+   if tJump and not sJumpWas and sOnGround then
+      put kJump into sVY
+      Sound.Play "Jump"
+   end if
    if not tJump and sVY < -3 then put -3 into sVY
    put tJump into sJumpWas
    put min(kFallMax, sVY + kGravity) into sVY
@@ -203,6 +209,7 @@ on Game.OnUpdate
    put max(-kHalfW + kPW, min(kHalfW - kPW, sX)) into sX
    add sVY to sY
    -- landing: feet cross the top of a platform this step, while over its span
+   put sOnGround into tWasGround
    put false into sOnGround
    if sVY >= 0 then
       put round(sY / kRowGap) into r
@@ -212,6 +219,7 @@ on Game.OnUpdate
                put r * kRowGap - kThick / 2 into sY
                put 0 into sVY
                put true into sOnGround
+               if not tWasGround then Sound.Play "Thud"
                exit repeat
             end if
          end repeat
@@ -225,6 +233,7 @@ on Game.OnUpdate
             if sX > item 1 of tSeg and sX < item 2 of tSeg then
                put r * kRowGap + kThick / 2 + kPH into sY
                put 1 into sVY
+               Sound.Play "Bounce"
                exit repeat
             end if
          end repeat
@@ -263,7 +272,9 @@ on Game.OnUpdate
       if sLevel >= 5 then
          put true into sOver
          put true into sWon
+         Sound.Play "Win"
       else
+         Sound.Play "Warp"
          add 1 to sLevel
          Shaft.GoLevel sLevel
       end if
@@ -277,10 +288,12 @@ on Shaft.LoseLife pWhy
    put empty into sHUDWas
    if sLives <= 0 then
       put true into sOver
+      Sound.Play "PlayerCrash"
       Shaft.Say pWhy, 999
       Shaft.ShowHUD
       exit Shaft.LoseLife
    end if
+   Sound.Play "Hurt"
    Shaft.Respawn
    Shaft.Say pWhy & ".  BACK TO THE TOP", 3
 end Shaft.LoseLife

@@ -215,6 +215,7 @@ on Game.OnUpdate
          put false into sHills
          put false into sOver
          put false into sWon
+         Sound.Play "Select"
          Coast.GoLevel 1
       end if
       put tKeys into sKeysWas
@@ -269,11 +270,13 @@ on Game.OnUpdate
          switch sThing[tT]["kind"]
             case "bonus"
                add 100 to sScore
+               Sound.Play "Pickup"
                FX.Sparks tX, kGroundY - 30, tZ, 8, "60,120,255"
                put true into tHit
                break
             case "gate"
                add 300 to sTime
+               Sound.Play "Powerup"
                if sLives < 3 then add 1 to sLives
                FX.Sparks sCarX, kGroundY - 60, kCarZ, 12, "0,255,120"
                put true into tHit
@@ -306,7 +309,9 @@ on Game.OnUpdate
       if sLevel >= 5 then
          put true into sWon
          put true into sOver
+         Sound.Play "Win"
       else
+         Sound.Play "Warp"
          Coast.GoLevel sLevel + 1
       end if
    end if
@@ -364,7 +369,12 @@ on Coast.Hurt
    put 40 into sHurt
    FX.Sparks sCarX, kGroundY - 20, kCarZ, 18, "255,80,80"
    put empty into sHUDWas
-   if sLives <= 0 then put true into sOver
+   if sLives <= 0 then
+      put true into sOver
+      Sound.Play "PlayerCrash"
+   else
+      Sound.Play "Hurt"
+   end if
 end Coast.Hurt
 
 on Coast.ShowHUD
