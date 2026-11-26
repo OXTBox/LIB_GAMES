@@ -67,7 +67,7 @@ constant kBlast = 2.0          -- grenade radius, metres
 constant kNoiseCrowd = 4       -- this many of the dead within kNoiseNear make noise
 constant kNoiseNear = 1.6
 constant kNoiseHeard = 8       -- metres the noise wakes the living
-constant kBloodMax = 70        -- blood marks kept on the ground
+constant kBloodMax = 3         -- blood marks kept on the ground (owner 25 Nov: an extreme limit; 0 = none)
 constant kReload = 2.2         -- seconds a reload takes; the shooter stands still
 constant kMags = 2             -- spare magazines a shooter carries
 constant kCrates = 3           -- ammo crates a level
@@ -1163,6 +1163,7 @@ end uDead.FxStep
 on uDead.Bleed pId
    local tKey
    if sE[pId]["hurt"] is not true or sE[pId]["state"] is not "alive" then exit uDead.Bleed
+   if kBloodMax < 1 then exit uDead.Bleed
    if sNow < sE[pId]["bleedAt"] then exit uDead.Bleed
    put sNow + 0.45 into sE[pId]["bleedAt"]
    put Entity.Spawn("uDead.Blood", sE[pId]["x"] * kM, 0, sE[pId]["z"] * kM, "#B01010") into tKey
