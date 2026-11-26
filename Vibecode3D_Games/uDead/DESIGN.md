@@ -61,6 +61,19 @@ Changed:
 - **Finding the way:** the original runs A* per walker. One A* search on these maps costs about
   120 ms in xTalk, so everyone steers by shared distance maps instead (to the nearest living, to
   the nearest dead, to you, to each order's goal), each flooded a few milliseconds a step.
+  One map a target (26 Nov 2026): every zombie sent to the same cell or person reads the same
+  map ("Oc" & cell, "Op" & person); a person's map is made again when they step into another
+  cell (at most every half second); a map nobody follows is dropped.
+- **The grid (the owner's answers, 26 Nov 2026):** one cell per map tile, the size of a character
+  (the width of a leg stance): the 0.5 m cells. Only cells people can really walk are open (2008:
+  a height test kept them off roofs and container tops). The 2008 grid file (`AStarGrid.lua`,
+  saved next to the level) was the walk graph, not ready-made paths; generated maps make theirs
+  at load, so there is no file to save.
+- **Red target dots (the owner's 2008 design):** one red dot per zombie with a target, at the
+  point of target. A ground click = a dot on the ground (the cell's middle); a person = a dot
+  floating over their head that follows them, so several dots on one person show several zombies
+  are coming (they sit in a small circle); in a rush each zombie's dot is on the living nearest
+  it. A door or window aimed at gets a colour shift (red / pink), no dot.
 - **No rag dolls, sound, music or blood decals** yet. People are stick figures: green the dead,
   white unarmed, yellow with a pipe, orange / blue (police) / tan (soldiers) with guns, pink snipers.
 - **Balance is mine, not the original's** (its bullet damage is in the C engine): pistol 185 a hit,
