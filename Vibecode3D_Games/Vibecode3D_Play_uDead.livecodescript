@@ -9,7 +9,7 @@
 ## (Legacy: the 30 maps of 2009, converted by tools/udg_to_udead.py into
 ## uDead/udead_levels.txt, play with  uDead.Legacy true .)  Design: uDead/DESIGN.md.
 ##
-## CONTROLS  mouse: look     W A S D: move     arrows: turn (when the mouse is not held)
+## CONTROLS  hold the right mouse button: look     W A S D: move     arrows: turn
 ##           click: send the nearest free zombie to that spot, or at that person or door;
 ##                  more clicks send more zombies
 ##           F follow me   H or Space hold   R rush (everyone hunts the nearest living)
@@ -58,7 +58,9 @@ constant kBlast = 2.0          -- grenade radius, metres
 constant kNoiseCrowd = 4       -- this many of the dead within kNoiseNear make noise
 constant kNoiseNear = 1.6
 constant kNoiseHeard = 8       -- metres the noise wakes the living
-constant kBloodMax = 70        -- blood marks kept on the ground
+constant kBloodMax = 3         -- blood marks kept on the ground (owner 25 Nov: an extreme limit; 0 = none)
+constant kLookRightMouse = true -- mouse look only while the right button is held (owner 25 Nov, for now);
+                                -- false = the old way: the mouse always looks
 constant kReload = 2.2         -- seconds a reload takes; the shooter stands still
 constant kMags = 2             -- spare magazines a shooter carries
 constant kCrates = 3           -- ammo crates a level
@@ -70,7 +72,7 @@ local sGenWalls, sGenBars, sGenCast, sGenArms, sGenDoor, sGenUsed, sGenReach, sG
 local sCols, sRows, sPass, sDoorAt, sDoor, sDoorCount
 local sChunkList, sChunkAt, sChunkKey
 local sE, sIds, sNextId, sZ, sH             -- everyone; ids of the walking dead and the living
-local sPX, sPZ, sMouseReady, sTestKeys, sKeyWas
+local sPX, sPZ, sMouseReady, sTestKeys, sKeyWas, sLookHeld
 local sState, sNow, sSpeed, sMode, sHideHUD, sHelp, sTip, sTipAt
 local sField, sJob, sJobName, sJobD, sJobQ, sJobHead, sJobTail, sJobDoors
 local sAmmo, sAmmoN, sFx, sFxN, sBlood, sStrobeAt, sStrobeOn, sNoiseAt, sEase
@@ -100,7 +102,7 @@ on Game.OnStart
    if sLevel is not a number or sLevel < 1 then put 1 into sLevel
    if sLegacy is true and sLevel > the number of lines of sLevelNames then put 1 into sLevel
    uDead.StartLevel sLevel
-   if gNoMouse is not true then set the lockCursor to true
+   if gNoMouse is not true and not kLookRightMouse then set the lockCursor to true
 end Game.OnStart
 
 on Game.OnUpdate
@@ -138,6 +140,7 @@ end Game.OnUpdate
 
 on Game.OnClick pX,pY,pButton
    if sError is not empty then exit Game.OnClick
+   if kLookRightMouse and pButton is 3 then exit Game.OnClick   -- the right button looks
    if sState is "play" then uDead.Command
 end Game.OnClick
 
@@ -150,7 +153,7 @@ on Game.OnPause
 end Game.OnPause
 
 on Game.OnResume
-   if gNoMouse is not true then set the lockCursor to true
+   if gNoMouse is not true and not kLookRightMouse then set the lockCursor to true
    put false into sMouseReady
 end Game.OnResume
 
@@ -1000,6 +1003,7 @@ end uDead.FxStep
 on uDead.Bleed pId
    local tKey
    if sE[pId]["hurt"] is not true or sE[pId]["state"] is not "alive" then exit uDead.Bleed
+   if kBloodMax < 1 then exit uDead.Bleed
    if sNow < sE[pId]["bleedAt"] then exit uDead.Bleed
    put sNow + 0.45 into sE[pId]["bleedAt"]
    put Entity.Spawn("uDead.Blood", sE[pId]["x"] * kM, 0, sE[pId]["z"] * kM, "#B01010") into tKey
@@ -2009,7 +2013,25 @@ on uDead.Look
    if uDead.Held(65363, tKeys) then add kTurn to gCameraYaw
    if uDead.Held(65362, tKeys) then put min(1.35, gCameraPitch + kTurn / 2) into gCameraPitch
    if uDead.Held(65364, tKeys) then put max(-1.35, gCameraPitch - kTurn / 2) into gCameraPitch
-   if sTestKeys is not empty or gNoMouse is true then exit uDead.Look
+   if sTestKeys is not empty then exit uDead.Look
+   if kLookRightMouse then
+      -- held right button = look (a person pressing it, so gNoMouse does not stop it)
+      if mouse(3) is not "down" then
+         if sLookHeld is true then
+            put false into sLookHeld
+            set the lockCursor to false
+         end if
+         put false into sMouseReady
+         exit uDead.Look
+      end if
+      if sLookHeld is not true then
+         put true into sLookHeld
+         set the lockCursor to true
+         put false into sMouseReady
+      end if
+   else if gNoMouse is true then
+      exit uDead.Look
+   end if
    if the short name of the topStack is not the short name of this stack then
       put false into sMouseReady
       exit uDead.Look
