@@ -15,6 +15,7 @@
 ## CONTROLS  hold the right mouse button: look     W A S D: move     arrows: turn
 ##           click: send the nearest free zombie to that spot, or at that person or door;
 ##                  more clicks send more zombies
+##                  a red dot marks each zombie's target (doors and windows turn red)
 ##           F follow me   H or Space hold   R rush (everyone hunts the nearest living)
 ##           Z zombie time (slow motion)   I help   L hide the HUD   Escape pause
 ##           J (cheat) the living drop dead
@@ -86,6 +87,7 @@ local sE, sIds, sNextId, sZ, sH             -- everyone; ids of the walking dead
 local sPX, sPZ, sMouseReady, sTestKeys, sKeyWas, sLookHeld
 local sState, sNow, sSpeed, sMode, sHideHUD, sHelp, sTip, sTipAt
 local sField, sJob, sJobName, sJobD, sJobQ, sJobHead, sJobTail, sJobDoors
+local sDot, sDoorRed                        -- the red dots (one a zombie with a target); doors shown as aimed at
 local sAmmo, sAmmoN, sFx, sFxN, sBlood, sStrobeAt, sStrobeOn, sNoiseAt, sEase
 local sNades, sNextCheck, sCountZ, sCountH, sHUDWas, sMsg, sMsgUntil, sNextLevelAt
 
@@ -134,8 +136,10 @@ on Game.OnUpdate
       put sStepMS / 1000 * sSpeed into tDT
       add tDT to sNow
       uDead.Lists
+      uDead.OrderJobs
       uDead.FieldWork
       uDead.Zombies tDT
+      uDead.Dots
       uDead.Humans tDT
       uDead.Grenades
       uDead.Risers
@@ -225,6 +229,8 @@ on uDead.StartLevel pIndex
    put empty into sNades
    put empty into sFx
    put empty into sBlood
+   put empty into sDot
+   put empty into sDoorRed
    put 0 into sStrobeAt
    put 0 into sNoiseAt
    -- the first level is a cake walk, the second easier than before (the owner, 11 13 2026)
@@ -1058,6 +1064,8 @@ on uDead.MakeMeshes
       Mesh.Define "uDead.Ring" & tR, uDead.RingMesh(tR * 0.6)
    end repeat
    Mesh.Define "uDead.Blood", uDead.BloodMesh()
+   -- the red target dot, on the ground (at a spot, or at a person's feet)
+   Mesh.Define "uDead.DotLow", uDead.DotMesh(0.03)
 end uDead.MakeMeshes
 
 function uDead.RingMesh pR
@@ -1070,6 +1078,19 @@ function uDead.RingMesh pR
    end repeat
    return tM
 end uDead.RingMesh
+
+function uDead.DotMesh pY
+   local tM, tIdx, n, a1, a2
+   put Mesh.New() into tM
+   repeat with n = 0 to 7
+      put n * 2 * pi / 8 into a1
+      put (n + 1) * 2 * pi / 8 into a2
+      uDead.Line tM, tIdx, 0.09 * sin(a1), pY, 0.09 * cos(a1), 0.09 * sin(a2), pY, 0.09 * cos(a2)
+   end repeat
+   uDead.Line tM, tIdx, -0.05, pY, 0, 0.05, pY, 0
+   uDead.Line tM, tIdx, 0, pY, -0.05, 0, pY, 0.05
+   return tM
+end uDead.DotMesh
 
 function uDead.BloodMesh
    local tM, tIdx
@@ -1560,16 +1581,21 @@ on uDead.FieldBegin pName
          end repeat
          break
       case "O"
-         put char 2 to -1 of pName into tId
-         if sE[tId]["order"] is "goto" then
-            put uDead.CellOf(sE[tId]["gx"], sE[tId]["gz"]) into tSources
-         else if sE[tId]["order"] is "attack" and sE[sE[tId]["target"]]["state"] is "alive" then
-            put uDead.CellOf(sE[sE[tId]["target"]]["x"], sE[sE[tId]["target"]]["z"]) into tSources
+         -- an order's map, one a target: "Oc" & a cell (a spot), "Op" & a person
+         if char 2 of pName is "c" then
+            put char 3 to -1 of pName into tSources
          else
-            delete variable sJob[pName]
-            delete variable sField[pName]
-            exit uDead.FieldBegin
+            put char 3 to -1 of pName into tId
+            if sE[tId]["state"] is "alive" and sE[tId]["kind"] is "h" then
+               put uDead.CellOf(sE[tId]["x"], sE[tId]["z"]) into tSources
+            else
+               delete variable sJob[pName]
+               delete variable sField[pName]
+               exit uDead.FieldBegin
+            end if
          end if
+         put tSources into sJob[pName]["cell"]
+         put sTicks * sStepMS / 1000 into sJob[pName]["made"]
          break
    end switch
    repeat for each line tI in tSources
@@ -1680,6 +1706,7 @@ on uDead.Zombies pDT
    local tId, tNear, tVictim, tD, tHow, tMoved, tSpeed, tField
    repeat for each line tId in sZ
       put max(0, sE[tId]["penalty"] - pDT * 100) into sE[tId]["penalty"]
+      put empty into sE[tId]["near"]
       if sE[tId]["state"] is not "alive" then next repeat
       if sE[tId]["busy"] > sNow then next repeat           -- eating, or getting up
       if sE[tId]["rushAt"] is not empty then
@@ -1693,6 +1720,7 @@ on uDead.Zombies pDT
       put uDead.Nearest(tId, sH) into tNear
       put item 1 of tNear into tVictim
       put item 2 of tNear into tD
+      put tVictim into sE[tId]["near"]
       if sE[tId]["order"] is "attack" then
          if sE[sE[tId]["target"]]["state"] is "alive" and sE[sE[tId]["target"]]["kind"] is "h" then
             put sE[tId]["target"] into tVictim
@@ -1721,7 +1749,7 @@ on uDead.Zombies pDT
       put empty into tField
       put kZWalk into tSpeed
       if sE[tId]["order"] is not empty then
-         put "O" & tId into tField
+         put uDead.OrderField(tId) into tField
          put kZRush into tSpeed
          if sE[tId]["order"] is "goto" then
             if abs(sE[tId]["x"] - sE[tId]["gx"]) + abs(sE[tId]["z"] - sE[tId]["gz"]) < 0.6 then
@@ -1777,12 +1805,130 @@ on uDead.Spread
    end repeat
 end uDead.Spread
 
+-- (the order's map goes when nobody follows it any more: uDead.OrderJobs)
 on uDead.ClearOrder pId
    put empty into sE[pId]["order"]
    put empty into sE[pId]["target"]
-   delete variable sJob["O" & pId]
-   delete variable sField["O" & pId]
 end uDead.ClearOrder
+
+-------------------------------------------------------------------- orders and their red dots
+
+-- The owner's 2008 design (his words, 26 Nov 2026): one red dot per zombie, at the point of
+-- its target. A ground click = a dot on the ground (on the cell's middle); a person = a dot
+-- at their feet that follows them, so several dots round one person show several zombies are coming; in a rush
+-- the dot is on the living nearest each zombie. A door or window aimed at only changes colour.
+-- Every zombie sent to the same cell or person steers by the same map: one flood a target.
+function uDead.OrderField pId
+   if sE[pId]["order"] is "goto" then return "Oc" & uDead.CellOf(sE[pId]["gx"], sE[pId]["gz"])
+   if sE[pId]["order"] is "attack" then return "Op" & sE[pId]["target"]
+   return empty
+end uDead.OrderField
+
+-- one job a target; jobs nobody follows go; a person's map is made again when they step
+-- into another cell, at most every half second
+on uDead.OrderJobs
+   local tId, tName, tNeed, tGone, tNowS, tCell
+   put sTicks * sStepMS / 1000 into tNowS
+   repeat for each line tId in sZ
+      if sE[tId]["state"] is not "alive" then next repeat
+      put uDead.OrderField(tId) into tName
+      if tName is not empty then put true into tNeed[tName]
+   end repeat
+   repeat for each key tName in sJob
+      if char 1 of tName is "O" and tNeed[tName] is not true and tName is not sJobName then put tName & cr after tGone
+   end repeat
+   repeat for each key tName in sField
+      if char 1 of tName is "O" and tNeed[tName] is not true then put tName & cr after tGone
+   end repeat
+   repeat for each line tName in tGone
+      delete variable sJob[tName]
+      delete variable sField[tName]
+   end repeat
+   repeat for each key tName in tNeed
+      if sJob[tName] is not an array then
+         put 0 into sJob[tName]["every"]
+         put 0 into sJob[tName]["at"]
+      else if char 2 of tName is "p" and tName is not sJobName and sJob[tName]["at"] > tNowS then
+         put char 3 to -1 of tName into tId
+         put uDead.CellOf(sE[tId]["x"], sE[tId]["z"]) into tCell
+         if tCell is not sJob[tName]["cell"] then put max(tNowS, sJob[tName]["made"] + 0.5) into sJob[tName]["at"]
+      end if
+   end repeat
+end uDead.OrderJobs
+
+on uDead.Dots
+   local tId, tTo, tSeen, tN, tX, tZ, tA, tR, tMesh, tDoor, tDoors, tHas, tKey
+   repeat for each line tId in sZ
+      put empty into tTo
+      if sE[tId]["state"] is "alive" and sE[tId]["busy"] <= sNow then
+         if sE[tId]["order"] is "attack" then
+            put "p" & sE[tId]["target"] into tTo
+         else if sE[tId]["order"] is "goto" then
+            put sDoorAt[uDead.CellOf(sE[tId]["gx"], sE[tId]["gz"])] into tDoor
+            if tDoor is empty then
+               put "c" & uDead.CellOf(sE[tId]["gx"], sE[tId]["gz"]) into tTo
+            else
+               put true into tDoors[tDoor]
+            end if
+         else if sE[tId]["beh"] is "RUSH" and sE[tId]["near"] is not empty then
+            put "p" & sE[tId]["near"] into tTo
+         end if
+      end if
+      if tTo is empty then next repeat
+      put true into tHas[tId]
+      add 1 to tSeen[tTo]
+      put tSeen[tTo] - 1 into tN
+      if char 1 of tTo is "p" then
+         put char 2 to -1 of tTo into tKey
+         put sE[tKey]["x"] into tX
+         put sE[tKey]["z"] into tZ
+         put "uDead.DotLow" into tMesh
+      else
+         put char 2 to -1 of tTo into tKey
+         put (tKey mod sCols + 0.5) * kCellM into tX
+         put (tKey div sCols + 0.5) * kCellM into tZ
+         put "uDead.DotLow" into tMesh
+      end if
+      -- more dots on one target: a small circle round it
+      if tN > 0 then
+         put tN * 2.4 into tA
+         put 0.17 + 0.05 * trunc(tN / 6) into tR
+         add tR * sin(tA) to tX
+         add tR * cos(tA) to tZ
+      end if
+      if sDot[tId] is empty then
+         put Entity.Spawn(tMesh, tX * kM, 0, tZ * kM, "#FF2020") into sDot[tId]
+      else
+         Entity.SetPosition sDot[tId], tX * kM, 0, tZ * kM
+      end if
+   end repeat
+   put empty into tKey
+   repeat for each key tId in sDot
+      if tHas[tId] is not true then put tId & cr after tKey
+   end repeat
+   repeat for each line tId in tKey
+      Entity.Kill sDot[tId]
+      delete variable sDot[tId]
+   end repeat
+   -- doors and windows aimed at: red-shifted, back to their own colour when nobody is sent
+   repeat with tDoor = 1 to sDoorCount
+      if sDoor[tDoor]["key"] is empty then next repeat
+      if (tDoors[tDoor] is true) is not (sDoorRed[tDoor] is true) then
+         put (tDoors[tDoor] is true) into sDoorRed[tDoor]
+         if sDoorRed[tDoor] then
+            if sDoor[tDoor]["kind"] is "window" then
+               Entity.SetColor sDoor[tDoor]["key"], "#FF7AA0"
+            else
+               Entity.SetColor sDoor[tDoor]["key"], "#FF4A2A"
+            end if
+         else if sDoor[tDoor]["kind"] is "window" then
+            Entity.SetColor sDoor[tDoor]["key"], "#9FE8FF"
+         else
+            Entity.SetColor sDoor[tDoor]["key"], "#C08A3A"
+         end if
+      end if
+   end repeat
+end uDead.Dots
 
 on uDead.HitDoor pN, pDT
    local tCell
@@ -2411,9 +2557,6 @@ on uDead.Command
       put "attack" into sE[tZomb]["order"]
       put tBest into sE[tZomb]["target"]
       put empty into sE[tZomb]["rushAt"]
-      put 1.2 into sJob["O" & tZomb]["every"]
-      put 0 into sJob["O" & tZomb]["at"]
-      delete variable sField["O" & tZomb]
       FX.Sparks sE[tBest]["x"] * kM, -1.9 * kM, sE[tBest]["z"] * kM, 8, "#FF3030"
       exit uDead.Command
    end if
@@ -2428,9 +2571,6 @@ on uDead.Command
    put tGX into sE[tZomb]["gx"]
    put tGZ into sE[tZomb]["gz"]
    put empty into sE[tZomb]["rushAt"]
-   put 0 into sJob["O" & tZomb]["every"]
-   put 0 into sJob["O" & tZomb]["at"]
-   delete variable sField["O" & tZomb]
    FX.Sparks tGX * kM, -0.1 * kM, tGZ * kM, 8, "#58E04A"
 end uDead.Command
 
