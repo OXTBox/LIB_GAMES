@@ -1899,8 +1899,11 @@ on uDead.Dots
       end if
       if sDot[tId] is empty then
          put Entity.Spawn(tMesh, tX * kM, 0, tZ * kM, "#FF2020") into sDot[tId]
+      else if Entity.Get(sDot[tId], "mesh") is not tMesh then
+         -- a ground dot that becomes a head dot (a rush after a walk): a new one, with its own size
+         Entity.Kill sDot[tId]
+         put Entity.Spawn(tMesh, tX * kM, 0, tZ * kM, "#FF2020") into sDot[tId]
       else
-         uDead.SetMesh sDot[tId], tMesh
          Entity.SetPosition sDot[tId], tX * kM, 0, tZ * kM
       end if
    end repeat
