@@ -71,8 +71,8 @@ Changed:
   at load, so there is no file to save.
 - **Red target dots (the owner's 2008 design):** one red dot per zombie with a target, at the
   point of target. A ground click = a dot on the ground (the cell's middle); a person = a dot
-  floating over their head that follows them, so several dots on one person show several zombies
-  are coming (they sit in a small circle); in a rush each zombie's dot is on the living nearest
+  on the ground at their feet that follows them (owner 26 Nov: feet, not over the head), so several
+  dots round one person show several zombies are coming (they sit in a small circle); in a rush each zombie's dot is on the living nearest
   it. A door or window aimed at gets a colour shift (red / pink), no dot.
 - **No rag dolls, sound, music or blood decals** yet. People are stick figures: green the dead,
   white unarmed, yellow with a pipe, orange / blue (police) / tan (soldiers) with guns, pink snipers.

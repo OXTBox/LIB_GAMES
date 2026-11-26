@@ -901,9 +901,8 @@ on uDead.MakeMeshes
       Mesh.Define "uDead.Ring" & tR, uDead.RingMesh(tR * 0.6)
    end repeat
    Mesh.Define "uDead.Blood", uDead.BloodMesh()
-   -- the red target dots: one on the ground, one floating over a person's head
+   -- the red target dot, on the ground (at a spot, or at a person's feet)
    Mesh.Define "uDead.DotLow", uDead.DotMesh(0.03)
-   Mesh.Define "uDead.DotHigh", uDead.DotMesh(2.05)
 end uDead.MakeMeshes
 
 function uDead.RingMesh pR
@@ -1653,7 +1652,7 @@ end uDead.ClearOrder
 
 -- The owner's 2008 design (his words, 26 Nov 2026): one red dot per zombie, at the point of
 -- its target. A ground click = a dot on the ground (on the cell's middle); a person = a dot
--- that follows them, so several dots over one head show several zombies are coming; in a rush
+-- at their feet that follows them, so several dots round one person show several zombies are coming; in a rush
 -- the dot is on the living nearest each zombie. A door or window aimed at only changes colour.
 -- Every zombie sent to the same cell or person steers by the same map: one flood a target.
 function uDead.OrderField pId
@@ -1720,7 +1719,7 @@ on uDead.Dots
          put char 2 to -1 of tTo into tKey
          put sE[tKey]["x"] into tX
          put sE[tKey]["z"] into tZ
-         put "uDead.DotHigh" into tMesh
+         put "uDead.DotLow" into tMesh
       else
          put char 2 to -1 of tTo into tKey
          put (tKey mod sCols + 0.5) * kCellM into tX
@@ -1735,10 +1734,6 @@ on uDead.Dots
          add tR * cos(tA) to tZ
       end if
       if sDot[tId] is empty then
-         put Entity.Spawn(tMesh, tX * kM, 0, tZ * kM, "#FF2020") into sDot[tId]
-      else if Entity.Get(sDot[tId], "mesh") is not tMesh then
-         -- a ground dot that becomes a head dot (a rush after a walk): a new one, with its own size
-         Entity.Kill sDot[tId]
          put Entity.Spawn(tMesh, tX * kM, 0, tZ * kM, "#FF2020") into sDot[tId]
       else
          Entity.SetPosition sDot[tId], tX * kM, 0, tZ * kM
