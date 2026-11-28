@@ -137,7 +137,8 @@ on Game.OnUpdate
    add 1 to sTicks
    if not sReady then exit Game.OnUpdate
    -- the keyboard belongs to the game while it plays: take it back from any field
-   if sTicks mod 15 is 1 and word 1 of the focusedObject is among the words of "field button" then focus on nothing   -- typing belongs to the game (a focused menu button swallowed Return)
+   -- (but never from the note box: the ` key's GameNote field, g1-09 27 Nov)
+   if sTicks mod 15 is 1 and word 1 of the focusedObject is among the words of "field button" and not Thrm.InNote(the focusedObject) then focus on nothing   -- typing belongs to the game (a focused menu button swallowed Return)
    dispatch "Seq.Step" to group "Sequencer" with kPace * sStepMS / 1000
    Thrm.AdvanceWorld
    Thrm.MoveMissiles
@@ -177,8 +178,16 @@ end Collision.Hit
 -------------------------------------------------------------------- typing
 
 -- typed keys go to the running clips (the engine only listens for Escape and CapsLock)
+-- the note box (GameNotes, the ` key) types its own letters: the game never takes them (g1-09, 27 Nov)
+function Thrm.InNote pObject
+   if pObject is empty or word 1 of pObject is not "field" then return false
+   return the short name of pObject is "GameNote"
+end Thrm.InNote
+
 on keyDown pKey
-   if sReady and bPlaying and pKey is "\" then
+   if Thrm.InNote(the target) then
+      pass keyDown
+   else if sReady and bPlaying and pKey is "\" then
       Thrm.FocusKey
    else if sReady and bPlaying then
       Thrm.KeyTick
@@ -236,7 +245,9 @@ on Thrm.FocusKey
 end Thrm.FocusKey
 
 on backspaceKey
-   if sReady and bPlaying then
+   if Thrm.InNote(the target) then
+      pass backspaceKey
+   else if sReady and bPlaying then
       Thrm.KeyTick
       dispatch "Seq.Key" to group "Sequencer" with "backspace"
    else
